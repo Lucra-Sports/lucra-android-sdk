@@ -8,6 +8,7 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentContainerView
+import com.lucrasports.sdk.app.BuildConfig.TESTING_AUTH_ID
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.style_guide.ClientTheme
@@ -61,7 +62,7 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
             application = application,
             lucraUiProvider = LucraUi(),
             lucraClientListener = this,
-            authClientId = BuildConfig.TESTING_AUTH_ID,
+            authClientId = TESTING_AUTH_ID, //TODO Update the buildConfig value in app/build.gradle.kts
             environment = Environment.STAGING,
             outputLogs = true,
             clientTheme = ClientTheme(

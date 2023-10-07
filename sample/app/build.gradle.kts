@@ -20,8 +20,14 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // These are required for auth0 to run even though it won't use the web auth callback flow
-        addManifestPlaceholders(mapOf("auth0Domain" to "LUCRA_SDK_TEST", "auth0Scheme" to "LUCRA_SDK_TEST"))
+        addManifestPlaceholders(
+            mapOf(
+                "auth0Domain" to "LUCRA_SDK_TEST",
+                "auth0Scheme" to "LUCRA_SDK_TEST"
+            )
+        )
 
+        // TODO Add your auth0 auth id here
         buildConfigField(
             "String",
             "TESTING_AUTH_ID",
