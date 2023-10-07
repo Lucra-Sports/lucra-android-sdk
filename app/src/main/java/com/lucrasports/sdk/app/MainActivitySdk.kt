@@ -8,16 +8,15 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentContainerView
-import com.lucrasports.sdk.app.BuildConfig.TESTING_AUTH_ID
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.ColorStyle
-import com.lucrasports.sdk.core.style_guide.Font
-import com.lucrasports.sdk.core.style_guide.FontFamily
-import com.lucrasports.sdk.core.style_guide.FontWeight
 import com.lucrasports.sdk.core.ui.LucraUiProvider
 import com.lucrasports.sdk.ui.LucraUi
+import com.lucrasports.sdk.core.style_guide.Font
+import com.lucrasports.sdk.core.style_guide.FontWeight
+import com.lucrasports.sdk.core.style_guide.FontFamily
 
 class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
 
@@ -62,7 +61,7 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
             application = application,
             lucraUiProvider = LucraUi(),
             lucraClientListener = this,
-            authClientId = TESTING_AUTH_ID, //TODO Update the buildConfig value in app/build.gradle.kts
+            authClientId = BuildConfig.TESTING_AUTH_ID,
             environment = Environment.STAGING,
             outputLogs = true,
             clientTheme = ClientTheme(
@@ -119,22 +118,15 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
 
         verifyIdentityButton.setOnClickListener {
 //            showLucraFragment(LucraUiProvider.LucraFlow.VerifyIdentity)
-            LucraClient().checkUsersKYCStatus(
-                "user-id",
-                object : LucraClient.LucraKYCStatusListener {
-                    override fun onKYCStatusCheckFailed(exception: Exception) {
-                        Toast.makeText(
-                            this@MainActivitySdk,
-                            "Verified Failed ${exception}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+            LucraClient().checkUsersKYCStatus("user-id", object : LucraClient.LucraKYCStatusListener {
+                override fun onKYCStatusCheckFailed(exception: Exception) {
+                    Toast.makeText(this@MainActivitySdk, "Verified Failed ${exception}", Toast.LENGTH_LONG).show()
+                }
 
-                    override fun onKYCStatusAvailable(isVerified: Boolean) {
-                        Toast.makeText(this@MainActivitySdk, "Verified Success", Toast.LENGTH_LONG)
-                            .show()
-                    }
-                })
+                override fun onKYCStatusAvailable(isVerified: Boolean) {
+                    Toast.makeText(this@MainActivitySdk, "Verified Success", Toast.LENGTH_LONG).show()
+                }
+            })
 
             showLucraDialogFragment(LucraUiProvider.LucraFlow.VerifyIdentity)
         }
