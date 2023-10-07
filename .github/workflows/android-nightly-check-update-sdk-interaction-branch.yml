@@ -34,8 +34,8 @@ jobs:
     - name: Check for Existing PR
       if: env.CREATE_PR == 'true'
       run: |
-        PR_EXISTS=$(gh pr list --base develop --head update/sdk-interaction --json number --jq ".[0].number")
-        if [ "$PR_EXISTS" == "null" ]; then
+        PR_COUNT=$(gh pr list --base develop --head update/sdk-interaction --limit 100 | wc -l)
+        if [ "$PR_COUNT" -eq "0" ]; then
           echo "No PR exists!";
           echo "CREATE_PR=true" >> $GITHUB_ENV
         else
@@ -44,7 +44,7 @@ jobs:
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Ensure you have the `gh` CLI tool installed and available for use in your runners.
+
 
     - name: Create PR
       if: env.CREATE_PR == 'true'
