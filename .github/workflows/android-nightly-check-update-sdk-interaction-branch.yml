@@ -1,0 +1,54 @@
+name: Nightly PR Creation from update/sdk-interaction to develop
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run every day at midnight
+  workflow_dispatch:
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history so we can check for changes
+
+    - name: Check for Changes & Existence of Branch
+      run: |
+        git fetch origin
+        if git show-ref --quiet refs/remotes/origin/update/sdk-interaction; then
+          echo "Branch exists!";
+          CHANGES=$(git rev-list origin/develop..origin/update/sdk-interaction --count)
+          if [ "$CHANGES" -ne 0 ]; then
+            echo "There are changes!";
+            echo "CREATE_PR=true" >> $GITHUB_ENV
+          else
+            echo "No changes between branches.";
+          fi
+        else
+          echo "Branch doesn't exist.";
+        fi
+
+    - name: Check for Existing PR
+      if: env.CREATE_PR == 'true'
+      run: |
+        PR_EXISTS=$(gh pr list --base develop --head update/sdk-interaction --json number --jq ".[0].number")
+        if [ "$PR_EXISTS" == "null" ]; then
+          echo "No PR exists!";
+          echo "CREATE_PR=true" >> $GITHUB_ENV
+        else
+          echo "PR already exists!";
+          echo "CREATE_PR=false" >> $GITHUB_ENV
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Ensure you have the `gh` CLI tool installed and available for use in your runners.
+
+    - name: Create PR
+      if: env.CREATE_PR == 'true'
+      run: |
+        gh pr create --base develop --head update/sdk-interaction --title "Update from internal app-sdk-development" --body "Automated PR from update/sdk-interaction to develop." --repo Lucra-Sports/lucra-android-sdk
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
