@@ -1,0 +1,37 @@
+name: Android Build & Unit Tests
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: buildjet-8vcpu-ubuntu-2204
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # TODO this needs to be a PAT with access to https://github.com/Lucra-Sports/lucra-android
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Setup secrets
+        run: |
+          echo GPR_USER=LucraAndroidGithubAction >> gradle.properties
+          echo GPR_KEY=$GITHUB_TOKEN >> gradle.properties
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Clean Build Cache
+        run: |
+          ./gradlew clean
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug --stacktrace --warning-mode all
+        env:
+          GRADLE_OPTS: -Xmx4096m

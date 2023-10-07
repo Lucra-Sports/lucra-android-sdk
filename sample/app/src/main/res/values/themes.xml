@@ -1,0 +1,11 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Lucra" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:statusBarColor">#001B60</item>
+        <item name="android:windowBackground">#001B60</item>
+    </style>
+
+    <style name="Theme.Lucra" parent="Base.Theme.Lucra" />
+</resources>
