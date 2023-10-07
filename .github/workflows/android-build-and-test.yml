@@ -26,6 +26,7 @@ jobs:
         run: |
           echo GPR_USER=LucraAndroidGithubAction >> gradle.properties
           echo GPR_KEY=$GITHUB_TOKEN >> gradle.properties
+          echo gradle.properties
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Clean Build Cache
