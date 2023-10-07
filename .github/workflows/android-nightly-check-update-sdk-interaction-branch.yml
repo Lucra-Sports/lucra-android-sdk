@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  create-pr:
+  create-pr-for-update-sdk-interaction-if-updated:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,6 +49,6 @@ jobs:
     - name: Create PR
       if: env.CREATE_PR == 'true'
       run: |
-        gh pr create --base develop --head update/sdk-interaction --title "Update from internal app-sdk-development" --body "Automated PR from update/sdk-interaction to develop." --repo Lucra-Sports/lucra-android-sdk
+        gh pr create --base develop --head update/sdk-interaction --title "Update from internal app-sdk-development" --body "Automated PR from update/sdk-interaction to develop. Branch update/sdk-interaction is automatically updated when there are core lucra-android:app-sdk-development or lucra-android:sdk/SDK_README.md. See https://github.com/Lucra-Sports/lucra-android/blob/develop/.github/workflows/android-update-public-sdk-app-and-documentation.yml for more details." --repo Lucra-Sports/lucra-android-sdk
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
