@@ -1,4 +1,5 @@
 # Lucra SDK
+[Release notes](SDK_RELEASE_NOTES.md)
 
 ## Getting Started
 
@@ -27,9 +28,9 @@ In `app/build.gradle`
 
 ```gradle 
 // All surface level APIs to interact with Lucra
-implementation("com.lucrasports:sdk-core:1.0.1-alpha") //TODO reference latest github release #
+implementation("com.lucrasports:sdk-core:1.1.0-beta) //TODO reference latest github release #
 // Optional for UI functionality
-implementation("com.lucrasports:sdk-ui:1.0.1-alpha") //TODO reference latest github release #
+implementation("com.lucrasports:sdk-ui:1.1.0-beta") //TODO reference latest github release #
 ```
 
 #### Auth0 compliance (if not already using Auth0)
