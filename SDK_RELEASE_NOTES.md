@@ -1,4 +1,6 @@
 # Release Notes
+## 1.1.1-beta
+* Testing release process, no changes
 
 ## 1.1.0-beta
 
