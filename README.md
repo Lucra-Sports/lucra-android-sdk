@@ -28,7 +28,7 @@ In `app/build.gradle`
 
 ```gradle 
 // All surface level APIs to interact with Lucra
-implementation("com.lucrasports:sdk-core:1.1.0-beta) //TODO reference latest github release #
+implementation("com.lucrasports:sdk-core:1.1.0-beta") //TODO reference latest github release #
 // Optional for UI functionality
 implementation("com.lucrasports:sdk-ui:1.1.0-beta") //TODO reference latest github release #
 ```
