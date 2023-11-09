@@ -44,6 +44,10 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
         findViewById(R.id.withdrawFundsButton)
     }
 
+    private val myContestsButton: AppCompatButton by lazy {
+        findViewById(R.id.myContestsButton)
+    }
+
     private val allButtons: List<AppCompatButton> by lazy {
         listOf(profileButton, addFundsButton, createGamesButton)
     }
@@ -116,6 +120,11 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
         withdrawFundsButton.setOnClickListener {
 //            showLucraFragment(LucraUiProvider.LucraFlow.WithdrawFunds)
             showLucraDialogFragment(LucraUiProvider.LucraFlow.WithdrawFunds)
+        }
+
+        myContestsButton.setOnClickListener {
+//            showLucraFragment(LucraUiProvider.LucraFlow.WithdrawFunds)
+            showLucraDialogFragment(LucraUiProvider.LucraFlow.MyMatchup)
         }
 
         verifyIdentityButton.setOnClickListener {
