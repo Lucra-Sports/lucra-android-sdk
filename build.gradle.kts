@@ -15,7 +15,7 @@ allprojects {
         // Required for Lucra SDK
         maven {
             name = "LucraGithubPackages"
-            url = uri("https://maven.pkg.github.com/Lucra-Sports/lucra-android")
+            url = uri("https://maven.pkg.github.com/Lucra-Sports/lucra-android-sdk")
             credentials {
                 val gprUser: String? = findProperty("GPR_USER") as String? ?: System.getenv("GPR_USER")
                 val gprKey: String? = findProperty("GPR_KEY") as String? ?: System.getenv("GPR_KEY")
