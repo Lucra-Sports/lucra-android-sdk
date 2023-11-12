@@ -149,7 +149,7 @@ LucraClient.initialize(
     // Optionally provide Lucra.Logger implementation to track events happening through the experience
     customLogger = null,
     // Optionally provide environment to use, defaults to Environment.PRODUCTION
-    environment = Environment.DEVELOPMENT,
+    environment = Environment.SANDBOX,
     // Optionally specify to output logs to Logcat, defaults to false
     outputLogs = true,
     // Optionally add your own color scheme and fonts, defaults to the Lucra Defaults

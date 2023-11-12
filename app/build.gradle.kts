@@ -62,7 +62,7 @@ android {
 
 
 dependencies {
-    implementation("com.lucrasports:sdk-ui:1.0.1-alpha-SNAPSHOT-2023-09-21-1695313286")
+    implementation("com.lucrasports.sdk:sdk-ui:1.1.2-beta")
 
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
