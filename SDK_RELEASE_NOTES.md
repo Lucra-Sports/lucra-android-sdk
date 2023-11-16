@@ -1,4 +1,8 @@
 # Release Notes
+## 1.1.2-beta
+* Introduced SANDBOX Environment, `environment = Environment.SANDBOX`
+* Updated maven artifact location from `https://maven.pkg.github.com/Lucra-Sports/lucra-android` to `https://maven.pkg.github.com/Lucra-Sports/lucra-android-sdk`
+
 ## 1.1.1-beta
 * Testing release process, no changes
 
