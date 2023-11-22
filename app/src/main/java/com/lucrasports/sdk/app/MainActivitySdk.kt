@@ -68,7 +68,7 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
             // This must be updated to the correct auth0 client id per environment
             // Logins won't work if there's a mismatch
             authClientId = BuildConfig.TESTING_AUTH_ID,
-            environment = Environment.SANDBOX,
+            environment = Environment.STAGING,
             outputLogs = true,
             clientTheme = ClientTheme(
                 colorStyle = ColorStyle(
