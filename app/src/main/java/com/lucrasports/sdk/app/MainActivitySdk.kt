@@ -1,6 +1,7 @@
 package com.lucrasports.sdk.app
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -15,14 +16,12 @@ import com.lucrasports.sdk.core.style_guide.ColorStyle
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
 import com.lucrasports.sdk.core.style_guide.FontWeight
+import com.lucrasports.sdk.core.ui.LucraFlowListener
 import com.lucrasports.sdk.core.ui.LucraUiProvider
 import com.lucrasports.sdk.ui.LucraUi
 
-class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
+class MainActivitySdk : AppCompatActivity() {
 
-    companion object {
-        private const val LUCRA_FRAGMENT_TAG = "lucraFragment"
-    }
 
     private val profileButton: AppCompatButton by lazy {
         findViewById(R.id.profileButton)
@@ -34,6 +33,10 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
 
     private val createGamesButton: AppCompatButton by lazy {
         findViewById(R.id.createGamesButton)
+    }
+
+    private val contestFeedButton: AppCompatButton by lazy {
+        findViewById(R.id.contestFeedButton)
     }
 
     private val verifyIdentityButton: AppCompatButton by lazy {
@@ -55,16 +58,13 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
     private val fragmentContainerView: FragmentContainerView
         get() = findViewById(R.id.lucraFragment)
 
-    private var lucraDialog: DialogFragment? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_sdk)
 
         LucraClient.initialize(
             application = application,
-            lucraUiProvider = LucraUi(),
-            lucraClientListener = this,
+            lucraUiProvider = buildLucraUiInstance(),
             // This must be updated to the correct auth0 client id per environment
             // Logins won't work if there's a mismatch
             authClientId = BuildConfig.TESTING_AUTH_ID,
@@ -103,32 +103,30 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
         )
 
         addFundsButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.AddFunds)
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.AddFunds)
+            launchFlow(LucraUiProvider.LucraFlow.AddFunds)
         }
 
         profileButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.Profile)
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.Profile)
+            launchFlow(LucraUiProvider.LucraFlow.Profile)
         }
 
         createGamesButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.CreateGamesMatchup)
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+            launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
         }
 
         withdrawFundsButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.WithdrawFunds)
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.WithdrawFunds)
+            launchFlow(LucraUiProvider.LucraFlow.WithdrawFunds)
         }
 
         myContestsButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.WithdrawFunds)
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.MyMatchup)
+            launchFlow(LucraUiProvider.LucraFlow.MyMatchup)
+        }
+
+        contestFeedButton.setOnClickListener {
+            launchFlow(LucraUiProvider.LucraFlow.PublicFeed)
         }
 
         verifyIdentityButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.VerifyIdentity)
             LucraClient().checkUsersKYCStatus(
                 "user-id",
                 object : LucraClient.LucraKYCStatusListener {
@@ -146,12 +144,36 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
                     }
                 })
 
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.VerifyIdentity)
+            launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
         }
     }
 
-    private fun getInflatedLucraFragment(): Fragment? =
-        supportFragmentManager.findFragmentByTag(LUCRA_FRAGMENT_TAG)
+    private fun buildLucraUiInstance() = LucraUi(
+        lucraFlowListener = object : LucraFlowListener {
+            override fun launchNewLucraFlowEntryPoint(entryLucraFlow: LucraUiProvider.LucraFlow): Boolean {
+                Log.d("Sample", "launchNewLucraFlowEntryPoint: $entryLucraFlow")
+                showLucraDialogFragment(entryLucraFlow)
+                return true
+            }
+
+            override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
+                Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
+                supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
+                    Log.d("Sample", "Found $entryLucraFlow as $it")
+
+                    if (it is DialogFragment)
+                        it.dismiss()
+                    else
+                        supportFragmentManager.beginTransaction().remove(it).commit()
+                } ?: run {
+                    Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow not found")
+                }
+            }
+        }
+    )
+
+    private fun getInflatedLucraFragment(tag: String): Fragment? =
+        supportFragmentManager.findFragmentByTag(tag)
 
     private fun showLucraFragment(lucraFlow: LucraUiProvider.LucraFlow) {
         fragmentContainerView.visibility = View.VISIBLE
@@ -159,33 +181,35 @@ class MainActivitySdk : AppCompatActivity(), LucraClient.LucraClientListener {
             // Material buttons float over the container for some reason even w/ elevation 0
             it.visibility = View.GONE
         }
-        if (getInflatedLucraFragment() != null) supportFragmentManager.beginTransaction()
+        if (getInflatedLucraFragment(lucraFlow.toString()) != null) supportFragmentManager.beginTransaction()
             .replace(
-                R.id.lucraFragment, LucraClient().getLucraFragment(lucraFlow), LUCRA_FRAGMENT_TAG
+                R.id.lucraFragment,
+                LucraClient().getLucraFragment(lucraFlow),
+                lucraFlow.toString()
             ).commit()
         else supportFragmentManager.beginTransaction().add(
-            R.id.lucraFragment, LucraClient().getLucraFragment(lucraFlow), LUCRA_FRAGMENT_TAG
+            R.id.lucraFragment,
+            LucraClient().getLucraFragment(lucraFlow),
+            lucraFlow.toString()
         ).commit()
     }
 
     private fun showLucraDialogFragment(lucraFlow: LucraUiProvider.LucraFlow) {
-        lucraDialog = LucraClient().getLucraDialogFragment(lucraFlow)
-        lucraDialog?.show(supportFragmentManager, LUCRA_FRAGMENT_TAG)
+        LucraClient().getLucraDialogFragment(lucraFlow).also {
+            it.show(supportFragmentManager, lucraFlow.toString())
+        }
+    }
+
+
+    private fun launchFlow(lucraFlow: LucraUiProvider.LucraFlow) {
+//        showLucraFragment(lucraFlow)
+        showLucraDialogFragment(lucraFlow)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        LucraClient.release()
-    }
-
-    override fun onLucraExit() {
-        // TODO fragment setup
-//        getInflatedLucraFragment()?.let {
-//            supportFragmentManager.beginTransaction().remove(it).commit()
-//        }
-//        allButtons.forEach {
-//            it.visibility = View.VISIBLE
-//        }
-        lucraDialog?.dismiss()
+        // NOTE: Don't release on rotation with a dialog fragment open, this will break the instance
+        // e.g. DialogFragment will recover before a flow has been set again. 
+//        LucraClient.release()
     }
 }
