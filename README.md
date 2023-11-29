@@ -30,9 +30,9 @@ In `app/build.gradle`
 
 ```gradle 
 // All surface level APIs to interact with Lucra
-implementation("com.lucrasports.sdk:sdk-core:1.1.2-beta") //TODO reference latest github release #
+implementation("com.lucrasports.sdk:sdk-core:2.0.0-beta") //TODO reference latest github release #
 // Optional for UI functionality
-implementation("com.lucrasports.sdk:sdk-ui:1.1.2-beta") //TODO reference latest github release #
+implementation("com.lucrasports.sdk:sdk-ui:2.0.0-beta") //TODO reference latest github release #
 ```
 
 #### Auth0 compliance (if not already using Auth0)
@@ -139,14 +139,33 @@ In your application class, initialize the Lucra instance in `onCreate`.
 LucraClient.initialize(
     // Required - provide Auth0 client ID to use for authorization
     authClientId = "your client id",
-    // Required - set the listener for the instance
-    lucraClientListener = object : LucraClientListener {
-        fun onLucraExit() {
-            // Handle Lucra attempt to exit flow
-        }
-    },
     // Optionally provide LucraUiProvider implementation from "com.lucrasports.sdk:sdk-ui:*"
-    lucraUiProvider = LucraUi(),
+    lucraUiProvider = LucraUi(
+      lucraFlowListener = object : LucraFlowListener {
+
+        // Callback for entering Lucra permitted flow launch points.
+        override fun launchNewLucraFlowEntryPoint(entryLucraFlow: LucraUiProvider.LucraFlow): Boolean {
+          Log.d("Sample", "launchNewLucraFlowEntryPoint: $entryLucraFlow")
+          showLucraDialogFragment(entryLucraFlow)
+          return true
+        }
+        
+        //Callback for exiting all Lucra permitted flow launch points
+        override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
+          Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
+          supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
+            Log.d("Sample", "Found $entryLucraFlow as $it")
+
+            if (it is DialogFragment)
+              it.dismiss()
+            else
+              supportFragmentManager.beginTransaction().remove(it).commit()
+          } ?: run {
+            Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow not found")
+          }
+        }
+      }
+    ),
     // Optionally provide Lucra.Logger implementation to track events happening through the experience
     customLogger = null,
     // Optionally provide environment to use, defaults to Environment.PRODUCTION

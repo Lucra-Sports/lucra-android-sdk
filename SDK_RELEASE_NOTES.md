@@ -1,4 +1,12 @@
 # Release Notes
+## 2.0.0-beta
+
+* [Breaking Change] Introduced required `LucraFlowListener` as a property of `LucraUi` to consume permitted flow launch points. See README for more details
+  * Implement `launchNewLucraFlowEntryPoint` to accept full screen launch points
+  * Implement `onFlowDismissRequested` to dismiss any full screen launch points, including the original launch point.
+* [Breaking Change] Removed `LucraClient#lucraClientListener` in favor of `LucraFlowListener` in `LucraUi`
+* Fixed duplicate logs upon client recreation
+
 ## 1.1.2-beta
 * Introduced SANDBOX Environment, `environment = Environment.SANDBOX`
 * Updated maven artifact location from `https://maven.pkg.github.com/Lucra-Sports/lucra-android` to `https://maven.pkg.github.com/Lucra-Sports/lucra-android-sdk`

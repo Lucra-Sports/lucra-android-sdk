@@ -49,6 +49,18 @@
             app:layout_constraintStart_toStartOf="parent" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/publicFeedButton"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Public Feed"
+            app:backgroundTint="#006ee6"
+            app:layout_constraintBottom_toTopOf="@id/withdrawFundsButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/withdrawFundsButton"
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
@@ -85,6 +97,15 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:text="My Contests"
+            app:backgroundTint="#006ee6" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/contestFeedButton"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Public Sports Contest Feed"
             app:backgroundTint="#006ee6" />
     </LinearLayout>
 
