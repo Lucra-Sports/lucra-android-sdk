@@ -50,10 +50,6 @@ class MainActivitySdk : AppCompatActivity() {
         findViewById(R.id.withdrawFundsButton)
     }
 
-    private val publicFeedButton: AppCompatButton by lazy {
-        findViewById(R.id.publicFeedButton)
-    }
-
     private val myContestsButton: AppCompatButton by lazy {
         findViewById(R.id.myContestsButton)
     }
@@ -115,11 +111,6 @@ class MainActivitySdk : AppCompatActivity() {
 
         addFundsButton.setOnClickListener {
             launchFlow(LucraUiProvider.LucraFlow.AddFunds)
-        }
-
-        publicFeedButton.setOnClickListener {
-//            showLucraFragment(LucraUiProvider.LucraFlow.PublicFeed)
-            showLucraDialogFragment(LucraUiProvider.LucraFlow.PublicFeed)
         }
 
         profileButton.setOnClickListener {
