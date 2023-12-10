@@ -66,42 +66,42 @@ The following manifest permissions, features, receivers and services are require
 ```xml
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
-    <uses-permission android:name="android.webkit.PermissionRequest" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-    <uses-feature android:name="android.hardware.camera.autofocus" />
-    <uses-feature android:name="android.hardware.camera" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+  <uses-permission android:name="android.webkit.PermissionRequest" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+  <uses-feature android:name="android.hardware.camera.autofocus" />
+  <uses-feature android:name="android.hardware.camera" />
 
-    <application
-    ...
-    >
+  <application
+  ...
+  >
 
-    <!--    Geocomply requirements-->
-    <receiver android:name="com.geocomply.client.GeoComplyClientBootBroadcastReceiver"
-        android:enabled="true" android:exported="true">
-        <intent-filter>
-            <action android:name="android.intent.action.BOOT_COMPLETED" />
-            <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-        </intent-filter>
-    </receiver>
+  <!--    Geocomply requirements-->
+  <receiver android:name="com.geocomply.client.GeoComplyClientBootBroadcastReceiver"
+          android:enabled="true" android:exported="true">
+    <intent-filter>
+      <action android:name="android.intent.action.BOOT_COMPLETED" />
+      <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+    </intent-filter>
+  </receiver>
 
-    <service android:name="com.geocomply.location.WarmingUpLocationProvidersService"
-        android:exported="false" />
-    <service android:name="com.geocomply.security.GCIsolatedSecurityService"
-        android:exported="false" android:isolatedProcess="true" tools:targetApi="q" />
+  <service android:name="com.geocomply.location.WarmingUpLocationProvidersService"
+          android:exported="false" />
+  <service android:name="com.geocomply.security.GCIsolatedSecurityService"
+          android:exported="false" android:isolatedProcess="true" tools:targetApi="q" />
 
-    <receiver android:name="com.geocomply.client.GeoComplyClientBroadcastReceiver" />
+  <receiver android:name="com.geocomply.client.GeoComplyClientBroadcastReceiver" />
 </application></manifest>
 ```
 
@@ -125,8 +125,8 @@ application class, provider the LucraCoilImageLoader
 ```kotlin
 // Don't forget to set the app manifest to use this Application
 class MyApplication : Application(), ImageLoaderFactory {
-    // Use Lucra's ImageLoader to decode SVGs as needed
-    override fun newImageLoader() = LucraCoilImageLoader.get(this)
+  // Use Lucra's ImageLoader to decode SVGs as needed
+  override fun newImageLoader() = LucraCoilImageLoader.get(this)
 }
 
 ```
@@ -137,46 +137,46 @@ In your application class, initialize the Lucra instance in `onCreate`.
 
 ```kotlin
 LucraClient.initialize(
-    // Required - provide Auth0 client ID to use for authorization
-    authClientId = "your client id",
-    // Optionally provide LucraUiProvider implementation from "com.lucrasports.sdk:sdk-ui:*"
-    lucraUiProvider = LucraUi(
-      lucraFlowListener = object : LucraFlowListener {
+  // Required - provide Auth0 client ID to use for authorization
+  authClientId = "your client id",
+  // Optionally provide LucraUiProvider implementation from "com.lucrasports.sdk:sdk-ui:*"
+  lucraUiProvider = LucraUi(
+    lucraFlowListener = object : LucraFlowListener {
 
-        // Callback for entering Lucra permitted flow launch points.
-        override fun launchNewLucraFlowEntryPoint(entryLucraFlow: LucraUiProvider.LucraFlow): Boolean {
-          Log.d("Sample", "launchNewLucraFlowEntryPoint: $entryLucraFlow")
-          showLucraDialogFragment(entryLucraFlow)
-          return true
-        }
-        
-        //Callback for exiting all Lucra permitted flow launch points
-        override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
-          Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
-          supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
-            Log.d("Sample", "Found $entryLucraFlow as $it")
+      // Callback for entering Lucra permitted flow launch points.
+      override fun launchNewLucraFlowEntryPoint(entryLucraFlow: LucraUiProvider.LucraFlow): Boolean {
+        Log.d("Sample", "launchNewLucraFlowEntryPoint: $entryLucraFlow")
+        showLucraDialogFragment(entryLucraFlow)
+        return true
+      }
 
-            if (it is DialogFragment)
-              it.dismiss()
-            else
-              supportFragmentManager.beginTransaction().remove(it).commit()
-          } ?: run {
-            Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow not found")
-          }
+      //Callback for exiting all Lucra permitted flow launch points
+      override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
+        Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
+        supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
+          Log.d("Sample", "Found $entryLucraFlow as $it")
+
+          if (it is DialogFragment)
+            it.dismiss()
+          else
+            supportFragmentManager.beginTransaction().remove(it).commit()
+        } ?: run {
+          Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow not found")
         }
       }
-    ),
-    // Optionally provide Lucra.Logger implementation to track events happening through the experience
-    customLogger = null,
-    // Optionally provide environment to use, defaults to Environment.PRODUCTION
-    environment = Environment.SANDBOX,
-    // Optionally specify to output logs to Logcat, defaults to false
-    outputLogs = true,
-    // Optionally add your own color scheme and fonts, from "com.lucrasports.sdk:sdk-ui:*", defaults to the Lucra Defaults
-    clientTheme = ClientTheme(
-        colorStyle = ColorStyle(),
-        fontFamily = FontFamily()
-    )
+    }
+  ),
+  // Optionally provide Lucra.Logger implementation to track events happening through the experience
+  customLogger = null,
+  // Optionally provide environment to use, defaults to Environment.PRODUCTION
+  environment = Environment.SANDBOX,
+  // Optionally specify to output logs to Logcat, defaults to false
+  outputLogs = true,
+  // Optionally add your own color scheme and fonts, from "com.lucrasports.sdk:sdk-ui:*", defaults to the Lucra Defaults
+  clientTheme = ClientTheme(
+    colorStyle = ColorStyle(),
+    fontFamily = FontFamily()
+  )
 )
 ```
 
@@ -185,7 +185,99 @@ LucraClient.initialize(
 Use Lucra instance easily by invoking the class operator `LucraClient().*` or fetching the
 instance `LucraClient.getInstance().*`
 
-Once you have the instance, you can interact with our SDK interfaces:
+Once you have the instance, you can interact with our headless SDK methods:
+
+### User API
+
+Get and update the current user's properties
+
+**Methods**
+
+`getSDKUser`
+
+Returns the `SDKUser` for the current logged in user.
+> [!IMPORTANT]
+> At the moment, users can only log in after attempting to interact with a `LucraFlow`
+
+
+- **Parameters:**
+  - `onResult`: `SDKUserResult` callback
+
+- **Example usage:**
+
+```kotlin
+ LucraClient().getSDKUser {
+            when (it) {
+                is SDKUserResult.Error -> {
+                    Log.e("Lucra SDK Sample", "Unable to get username ${it.error}")
+                }
+
+                SDKUserResult.NotLoggedIn -> {
+                    Log.e(
+                        "Lucra SDK Sample",
+                        "User not logged in yet! Close this dialog and try again"
+                    )
+                }
+
+                is SDKUserResult.Success -> {
+                    val sdkUser = it.sdkUser
+                    // Show user details
+                }
+                else -> {}
+            }
+        }
+```
+
+`configure`
+
+Updates the `SDKUser` for the current logged in user
+> [!IMPORTANT]
+> At the moment, users can only log in after attempting to interact with a `LucraFlow`
+
+
+- **Parameters:**
+  - `onResult`: `SDKUserResult` callback
+
+- **Example usage:**
+```kotlin
+// sdkUser from `getSDKUser`
+LucraClient().configure(sdkUser.copy(username = newUsername)) {
+        when (it) {
+            is SDKUserResult.Error -> {
+                Log.e(
+                    "Lucra SDK Sample",
+                    "Unable to update username ${it.error}"
+                )
+            }
+
+            SDKUserResult.InvalidUsername -> {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Invalid username, try a different one",
+                    Toast.LENGTH_LONG
+                )
+                    .show()
+            }
+
+            SDKUserResult.NotLoggedIn -> {
+                Log.e(
+                    "Lucra SDK Sample",
+                    "User not logged in yet!"
+                )
+            }
+
+            is SDKUserResult.Success -> {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Username updated to ${it.sdkUser.username}",
+                    Toast.LENGTH_LONG
+                )
+                    .show()
+                dialog.dismiss()
+            }
+        }
+    }
+```
 
 ### GamesMatchup API
 
@@ -200,9 +292,9 @@ operation.
 Creates a new game contest.
 
 - **Parameters:**
-    - `gameTypeId`: ID associated with the game type.
-    - `atStake`: Amount of money being wagered.
-    - `onResult`: Callback with a result of type `CreateGamesMatchupResult`.
+  - `gameTypeId`: ID associated with the game type.
+  - `atStake`: Amount of money being wagered.
+  - `onResult`: Callback with a result of type `CreateGamesMatchupResult`.
 
 - **Example usage:**
 
@@ -227,9 +319,9 @@ LucraClient().createContest(
 Accepts a contest with the given ID.
 
 - **Parameters:**
-    - `matchupId`: ID of the contest.
-    - `teamId`: ID of the team the user wants to join.
-    - `onResult`: Callback with a result of type `MatchupActionResult`.
+  - `matchupId`: ID of the contest.
+  - `teamId`: ID of the team the user wants to join.
+  - `onResult`: Callback with a result of type `MatchupActionResult`.
 
 - **Example usage:**
 
@@ -254,8 +346,8 @@ LucraClient().acceptGamesYouPlayContest(
 Cancels a contest with the given ID.
 
 - **Parameters:**
-    - `matchupId`: ID of the contest.
-    - `onResult`: Callback with a result of type `MatchupActionResult`.
+  - `matchupId`: ID of the contest.
+  - `onResult`: Callback with a result of type `MatchupActionResult`.
 
 - **Example usage:**
 
@@ -296,12 +388,49 @@ Represents the result of creating a `GamesMatchup`.
 Represents the types of errors that can occur when creating a `GamesMatchup`.
 
 - `UserStateError`: Errors related to the current user account status or available funds.
-    - `NotInitialized`: User account is not initialized.
-    - `Unverified`: User account is unverified.
-    - `NotAllowed`: User is not allowed to perform the operation.
-    - `InsufficientFunds`: User has insufficient funds.
+  - `NotInitialized`: User account is not initialized.
+  - `Unverified`: User account is unverified.
+  - `NotAllowed`: User is not allowed to perform the operation.
+  - `InsufficientFunds`: User has insufficient funds.
 - `LocationError`: Errors related to the user's location. Contains a `message`.
 - `APIError`: All other errors. Contains a `message`.
+
+### Get User's KYC Status
+
+Fetching the KYC status will determine if the current user is verified or not, allowing for money and sports contest interactions. If the user is not verified, launch the `VerifyIdentity` LucraFlow.
+
+**Methods**
+
+`checkUsersKYCStatus`
+
+Returns the status of the current logged in user.
+
+- **Parameters:**
+  - `userId`: ID associated to the current user (see)
+  - `lucraKYCStatusListener`: Listener to implement specific callbacks for KYC interaction
+
+- **Example usage:**
+
+```kotlin
+    LucraClient().checkUsersKYCStatus(
+        "user-id", //fetched from #getSDKUser
+        object : LucraClient.LucraKYCStatusListener {
+            override fun onKYCStatusCheckFailed(exception: Exception) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Verified Failed ${exception}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            override fun onKYCStatusAvailable(isVerified: Boolean) {
+                Toast.makeText(this@MainActivitySdk, "Verified Success", Toast.LENGTH_LONG)
+                    .show()
+                if (!isVerified) 
+                    launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
+            }
+        })
+```
 
 ### UI styling
 
@@ -341,33 +470,33 @@ It is recommended that you include all 4 font weights.
 ```kotlin
 
 LucraClient.initialize(
-    /*...*/
-    clientTheme = ClientTheme(
-        colorStyle = ColorStyle(
-            primary = "#1976D2",
-            secondary = "#F57C00",
-            tertiary = "#388E3C",
-            surface = "#FFFFFF",
-            background = "#F5F5F5",
-            onPrimary = "#FFFFFF",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF",
-            onSurface = "#000000",
-            onBackground = "#000000"
+  /*...*/
+  clientTheme = ClientTheme(
+    colorStyle = ColorStyle(
+      primary = "#1976D2",
+      secondary = "#F57C00",
+      tertiary = "#388E3C",
+      surface = "#FFFFFF",
+      background = "#F5F5F5",
+      onPrimary = "#FFFFFF",
+      onSecondary = "#FFFFFF",
+      onTertiary = "#FFFFFF",
+      onSurface = "#000000",
+      onBackground = "#000000"
+    ),
+    fontFamily = FontFamily(
+      listOf(
+        Font(
+          fontName = "my_font_bold",
+          weight = FontWeight.Bold
         ),
-        fontFamily = FontFamily(
-            listOf(
-                Font(
-                    fontName = "my_font_bold",
-                    weight = FontWeight.Bold
-                ),
-                Font(
-                    fontName = "my_font",
-                    weight = FontWeight.Normal
-                )
-            )
+        Font(
+          fontName = "my_font",
+          weight = FontWeight.Normal
         )
+      )
     )
+  )
 )
 ```
 
@@ -398,20 +527,26 @@ their identity yet
 Launch the profile view for users to add and withdrawal funds, identity verification will launch if
 the user hasn't verified their identity yet
 
+`LucraUiProvider.LucraFlow.PublicFeed`
+Launch to view the public feed of sports matchups.
+
+
+`LucraUiProvider.LucraFlow.MyMatchup`
+Launch to view the current user's matchups
+
 ```kotlin
+val lucraFlow = LucraUiProvider.LucraFlow.Profile
 supportFragmentManager.beginTransaction()
-    .add(
-        R.id.lucraFragment,
-        LucraClient().getLucraFragment(LucraUiProvider.LucraFlow.Profile),
-        "LucraFragmentTag"
-    )
-    .commit()
+  .add(
+    R.id.lucraFragment,
+    LucraClient().getLucraFragment(LucraUiProvider.LucraFlow.Profile),
+    lucraFlow.toString()
+  )
+  .commit()
 ```
 
 ```kotlin
 // Or use the LucraDialogFragment to show the flow in a dialog
 val lucraDialog = LucraClient().getLucraDialogFragment(lucraFlow)
-lucraDialog.show(supportFragmentManager, LUCRA_FRAGMENT_TAG)
+lucraDialog.show(supportFragmentManager, lucraFlow.toString())
 ```
-
-

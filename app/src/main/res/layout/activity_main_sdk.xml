@@ -19,12 +19,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
+
+    <com.google.android.flexbox.FlexboxLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
+        app:alignItems="center"
+        app:flexWrap="wrap"
+        app:justifyContent="center"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <com.google.android.material.button.MaterialButton
@@ -32,8 +33,9 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⚡️  $0.00"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
+            android:text="⚡️  $0.00"
             app:backgroundTint="#006ee6" />
 
         <com.google.android.material.button.MaterialButton
@@ -41,6 +43,7 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="Add Funds"
             app:backgroundTint="#006ee6"
@@ -53,6 +56,7 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="Public Feed"
             app:backgroundTint="#006ee6"
@@ -65,6 +69,7 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="Withdraw Funds"
             app:backgroundTint="#006ee6"
@@ -77,6 +82,7 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="Create Games"
             app:backgroundTint="#006ee6" />
@@ -86,6 +92,7 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="Veryify Identity"
             app:backgroundTint="#006ee6" />
@@ -95,6 +102,7 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="My Matchups"
             app:backgroundTint="#006ee6" />
@@ -104,10 +112,21 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
             android:text="Public Sports Contest Feed"
             app:backgroundTint="#006ee6" />
-    </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/updateUsernameButton"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:text="Update Username"
+            app:backgroundTint="#006ee6" />
+    </com.google.android.flexbox.FlexboxLayout>
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/lucraFragment"

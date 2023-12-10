@@ -3,7 +3,9 @@ package com.lucrasports.sdk.app
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.fragment.app.DialogFragment
@@ -18,6 +20,7 @@ import com.lucrasports.sdk.core.style_guide.FontFamily
 import com.lucrasports.sdk.core.style_guide.FontWeight
 import com.lucrasports.sdk.core.ui.LucraFlowListener
 import com.lucrasports.sdk.core.ui.LucraUiProvider
+import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
 
 class MainActivitySdk : AppCompatActivity() {
@@ -49,11 +52,14 @@ class MainActivitySdk : AppCompatActivity() {
 
     private val publicFeedButton: AppCompatButton by lazy {
         findViewById(R.id.publicFeedButton)
-
     }
 
     private val myContestsButton: AppCompatButton by lazy {
         findViewById(R.id.myContestsButton)
+    }
+
+    private val updateUsernameButton: AppCompatButton by lazy {
+        findViewById(R.id.updateUsernameButton)
     }
 
     private val allButtons: List<AppCompatButton> by lazy {
@@ -136,6 +142,10 @@ class MainActivitySdk : AppCompatActivity() {
             launchFlow(LucraUiProvider.LucraFlow.PublicFeed)
         }
 
+        updateUsernameButton.setOnClickListener {
+            updateUsernameDialog()
+        }
+
         verifyIdentityButton.setOnClickListener {
             LucraClient().checkUsersKYCStatus(
                 "user-id",
@@ -155,6 +165,129 @@ class MainActivitySdk : AppCompatActivity() {
                 })
 
             launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
+        }
+    }
+
+    private fun updateUsernameDialog() {
+
+        // Step 1: Fetch the current SDK user
+        LucraClient().getSDKUser {
+            when (it) {
+                is SDKUserResult.Error -> {
+                    Log.e("Lucra SDK Sample", "Unable to get username ${it.error}")
+                    Toast.makeText(
+                        this@MainActivitySdk,
+                        "Unable to get user name",
+                        Toast.LENGTH_LONG
+                    )
+                        .show()
+                }
+
+                SDKUserResult.InvalidUsername -> {
+                    // Shouldn't happen here
+                }
+
+                SDKUserResult.NotLoggedIn -> {
+                    Log.e(
+                        "Lucra SDK Sample",
+                        "User not logged in yet! Close this dialog and try again"
+                    )
+                    Toast.makeText(
+                        this@MainActivitySdk,
+                        "Not logged in yet!",
+                        Toast.LENGTH_LONG
+                    )
+                        .show()
+                }
+
+                is SDKUserResult.Success -> {
+                    val sdkUser = it.sdkUser
+
+                    val builder = AlertDialog.Builder(this)
+
+                    // Create the EditText for the dialog.
+                    val input = EditText(this).apply {
+                        if (sdkUser?.username.isNullOrEmpty()) {
+                            hint = "No username set yet"
+                        } else {
+                            hint = "Current username: ${sdkUser.username}"
+                            setText(sdkUser.username!!)
+                        }
+
+                    }
+
+                    builder.setTitle("Update Username")
+                        .setView(input)
+                        .setPositiveButton("OK") { dialog, id ->
+                            val newUsername = input.text.toString()
+                            if (newUsername.isEmpty()) {
+                                Toast.makeText(
+                                    this@MainActivitySdk,
+                                    "Username cannot be empty",
+                                    Toast.LENGTH_LONG
+                                )
+                                    .show()
+                                return@setPositiveButton
+                            } else {
+
+                                // Step 2: Update the sdk user's username
+                                LucraClient().configure(sdkUser.copy(username = newUsername)) {
+                                    when (it) {
+                                        is SDKUserResult.Error -> {
+                                            Log.e(
+                                                "Lucra SDK Sample",
+                                                "Unable to update username ${it.error}"
+                                            )
+                                            Toast.makeText(
+                                                this@MainActivitySdk,
+                                                "Unable to update username",
+                                                Toast.LENGTH_LONG
+                                            )
+                                                .show()
+                                        }
+
+                                        SDKUserResult.InvalidUsername -> {
+                                            Toast.makeText(
+                                                this@MainActivitySdk,
+                                                "Invalid username, try a different one",
+                                                Toast.LENGTH_LONG
+                                            )
+                                                .show()
+                                        }
+
+                                        SDKUserResult.NotLoggedIn -> {
+                                            Log.e(
+                                                "Lucra SDK Sample",
+                                                "User not logged in yet! Close this dialog and try again"
+                                            )
+                                            Toast.makeText(
+                                                this@MainActivitySdk,
+                                                "Not logged in yet!",
+                                                Toast.LENGTH_LONG
+                                            )
+                                                .show()
+                                        }
+
+                                        is SDKUserResult.Success -> {
+                                            Toast.makeText(
+                                                this@MainActivitySdk,
+                                                "Username updated to ${it.sdkUser.username}",
+                                                Toast.LENGTH_LONG
+                                            )
+                                                .show()
+                                            dialog.dismiss()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .setNegativeButton("Cancel") { dialog, id ->
+                            dialog.dismiss()
+                        }
+
+                    builder.show()
+                }
+            }
         }
     }
 
