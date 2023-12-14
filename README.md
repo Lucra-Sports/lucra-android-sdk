@@ -534,6 +534,9 @@ their identity yet
 Launch the create games matchup flow, identity verification will launch if the user hasn't verified
 their identity yet
 
+`LucraUiProvider.LucraFlow.CreateSportsMatchup`
+Launch the Create Sport Matchup flow to create a new sports matchup
+
 `LucraUiProvider.LucraFlow.Profile`
 Launch the profile view for users to add and withdrawal funds, identity verification will launch if
 the user hasn't verified their identity yet

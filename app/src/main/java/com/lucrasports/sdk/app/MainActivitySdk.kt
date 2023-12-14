@@ -45,6 +45,10 @@ class MainActivitySdk : AppCompatActivity() {
         findViewById(R.id.createGamesButton)
     }
 
+    private val createSportsButton: AppCompatButton by lazy {
+        findViewById(R.id.createSportsButton)
+    }
+
     private val contestFeedButton: AppCompatButton by lazy {
         findViewById(R.id.contestFeedButton)
     }
@@ -118,6 +122,10 @@ class MainActivitySdk : AppCompatActivity() {
 
         loginButton.setOnClickListener {
             launchFlow(LucraUiProvider.LucraFlow.Login)
+        }
+
+        createSportsButton.setOnClickListener {
+            launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup)
         }
 
         logoutButton.setOnClickListener {
