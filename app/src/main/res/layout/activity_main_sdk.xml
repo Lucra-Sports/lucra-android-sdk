@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="⚡️  $0.00"
+            android:text="Profile Flow"
             app:backgroundTint="#006ee6" />
 
         <com.google.android.material.button.MaterialButton
@@ -45,7 +45,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="Add Funds"
+            android:text="Add Funds Flow"
             app:backgroundTint="#006ee6"
             app:layout_constraintBottom_toTopOf="@id/withdrawFundsButton"
             app:layout_constraintEnd_toEndOf="parent"
@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="Withdraw Funds"
+            android:text="Withdraw Funds Flow"
             app:backgroundTint="#006ee6"
             app:layout_constraintBottom_toTopOf="@id/createGamesButton"
             app:layout_constraintEnd_toEndOf="parent"
@@ -71,7 +71,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="Create Games"
+            android:text="Create Games Flow"
             app:backgroundTint="#006ee6" />
 
         <com.google.android.material.button.MaterialButton
@@ -81,7 +81,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="Veryify Identity"
+            android:text="Veryify Identity Flow"
             app:backgroundTint="#006ee6" />
 
         <com.google.android.material.button.MaterialButton
@@ -91,7 +91,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="My Matchups"
+            android:text="My Matchups Flow"
             app:backgroundTint="#006ee6" />
 
         <com.google.android.material.button.MaterialButton
@@ -101,7 +101,27 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="Public Sports Contest Feed"
+            android:text="Contest Feed Flow"
+            app:backgroundTint="#006ee6" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/loginButton"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:text="Login Flow"
+            app:backgroundTint="#006ee6" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/logoutButton"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="16dp"
+            android:text="Logout API"
             app:backgroundTint="#006ee6" />
 
         <com.google.android.material.button.MaterialButton
@@ -111,7 +131,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:layout_marginBottom="16dp"
-            android:text="Update Username"
+            android:text="Update Username API"
             app:backgroundTint="#006ee6" />
     </com.google.android.flexbox.FlexboxLayout>
 

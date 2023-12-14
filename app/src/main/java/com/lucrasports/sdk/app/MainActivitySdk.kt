@@ -25,6 +25,13 @@ import com.lucrasports.sdk.ui.LucraUi
 
 class MainActivitySdk : AppCompatActivity() {
 
+    private val logoutButton: AppCompatButton by lazy {
+        findViewById(R.id.logoutButton)
+    }
+
+    private val loginButton: AppCompatButton by lazy {
+        findViewById(R.id.loginButton)
+    }
 
     private val profileButton: AppCompatButton by lazy {
         findViewById(R.id.profileButton)
@@ -108,6 +115,15 @@ class MainActivitySdk : AppCompatActivity() {
                 )
             )
         )
+
+        loginButton.setOnClickListener {
+            launchFlow(LucraUiProvider.LucraFlow.Login)
+        }
+
+        logoutButton.setOnClickListener {
+            LucraClient().logout(this)
+            Toast.makeText(this, "Successfully logged out", Toast.LENGTH_LONG).show()
+        }
 
         addFundsButton.setOnClickListener {
             launchFlow(LucraUiProvider.LucraFlow.AddFunds)

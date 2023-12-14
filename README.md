@@ -197,7 +197,7 @@ Get and update the current user's properties
 
 Returns the `SDKUser` for the current logged in user.
 > [!IMPORTANT]
-> At the moment, users can only log in after attempting to interact with a `LucraFlow`
+> `LucraFlow.Login` can be used to login prior, SDKUser won't return a user until this flow is launched or another flow is launched to trigger a login
 
 
 - **Parameters:**
@@ -277,6 +277,17 @@ LucraClient().configure(sdkUser.copy(username = newUsername)) {
             }
         }
     }
+```
+
+`logout`
+
+Logs out the current user, if any
+
+
+- **Example usage:**
+
+```kotlin
+ LucraClient().logout(context)
 ```
 
 ### GamesMatchup API
@@ -533,6 +544,9 @@ Launch to view the public feed of sports matchups.
 
 `LucraUiProvider.LucraFlow.MyMatchup`
 Launch to view the current user's matchups
+
+`LucraUiProvider.LucraFlow.Login`
+Launch to view the login flow
 
 ```kotlin
 val lucraFlow = LucraUiProvider.LucraFlow.Profile

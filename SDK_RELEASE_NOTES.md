@@ -4,6 +4,9 @@
 * Introduced `LucraClient().configure(sdkUser)` to update the current logged in user
 * Fixed UserService state to listen to user authed status
 * Now showing username in SDK profile view
+* Fixed Public Feed refresh state
+* Introduced `LucraClient().logout(context)`
+* Introduced new flow `LucraFlow.Login`
 
 ## 2.0.0-beta
 
