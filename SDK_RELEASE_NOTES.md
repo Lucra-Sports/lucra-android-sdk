@@ -1,4 +1,15 @@
 # Release Notes
+## Upcoming Release Changes
+
+## 2.1.0-beta
+* Introduced `LucraClient().getSDKUser {...}` to retrieve the current logged in user
+* Introduced `LucraClient().configure(sdkUser)` to update the current logged in user
+* Fixed UserService state to listen to user authed status
+* Now showing username in SDK profile view
+* Fixed Public Feed refresh state
+* Introduced `LucraClient().logout(context)`
+* Introduced new flow `LucraFlow.Login`
+
 ## 2.0.0-beta
 
 * [Breaking Change] Introduced required `LucraFlowListener` as a property of `LucraUi` to consume permitted flow launch points. See README for more details
