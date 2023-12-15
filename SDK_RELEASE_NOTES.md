@@ -1,5 +1,7 @@
 # Release Notes
 ## Upcoming Release Changes
+
+## 2.1.0-beta
 * Introduced `LucraClient().getSDKUser {...}` to retrieve the current logged in user
 * Introduced `LucraClient().configure(sdkUser)` to update the current logged in user
 * Fixed UserService state to listen to user authed status
