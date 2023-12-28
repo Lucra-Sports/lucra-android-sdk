@@ -1,6 +1,7 @@
 # Release Notes
 ## Upcoming Release Changes
 
+## 2.2.0-beta
 * Removed "Send Reminders" card from the public feed
 * Updated "Created Contest" popup to notify user where to find their contest
 * Added notifications to profile screen
