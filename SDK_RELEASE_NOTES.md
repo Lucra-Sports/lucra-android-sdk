@@ -1,6 +1,13 @@
 # Release Notes
 ## Upcoming Release Changes
 
+## 2.2.0-beta
+* Removed "Send Reminders" card from the public feed
+* Updated "Created Contest" popup to notify user where to find their contest
+* Added notifications to profile screen
+* Moved continue button up on sms auth screen
+* Fixed DatePicker UI
+
 ## 2.1.0-beta
 * Introduced `LucraClient().getSDKUser {...}` to retrieve the current logged in user
 * Introduced `LucraClient().configure(sdkUser)` to update the current logged in user
