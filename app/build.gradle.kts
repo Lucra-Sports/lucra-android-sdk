@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.lucrasports.sdk.app"
-    compileSdk = 33
+    compileSdk = 34
 
     buildFeatures {
         buildConfig = true
@@ -13,8 +13,8 @@ android {
 
     defaultConfig {
         applicationId = "com.lucrasports.sdk.app"
-        minSdk = 23
-        targetSdk = 33
+        minSdk = 24
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -62,7 +62,7 @@ android {
 
 
 dependencies {
-    implementation("com.lucrasports.sdk:sdk-ui:2.1.0-beta")
+    implementation("com.lucrasports.sdk:sdk-ui:2.3.0-beta")
 
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
