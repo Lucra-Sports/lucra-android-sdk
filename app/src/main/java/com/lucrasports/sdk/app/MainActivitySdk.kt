@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +25,10 @@ import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
 
 class MainActivitySdk : AppCompatActivity() {
+
+    private val header: TextView by lazy {
+        findViewById(R.id.header)
+    }
 
     private val logoutButton: AppCompatButton by lazy {
         findViewById(R.id.logoutButton)
@@ -86,7 +91,7 @@ class MainActivitySdk : AppCompatActivity() {
             // This must be updated to the correct auth0 client id per environment
             // Logins won't work if there's a mismatch
             authClientId = BuildConfig.TESTING_AUTH_ID,
-            environment = Environment.STAGING,
+            environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             clientTheme = ClientTheme(
                 colorStyle = ColorStyle(
@@ -119,6 +124,8 @@ class MainActivitySdk : AppCompatActivity() {
                 )
             )
         )
+
+        header.text = "Lucra SDK (${BuildConfig.BUILD_TYPE})"
 
         loginButton.setOnClickListener {
             launchFlow(LucraUiProvider.LucraFlow.Login)
@@ -163,7 +170,7 @@ class MainActivitySdk : AppCompatActivity() {
 
         verifyIdentityButton.setOnClickListener {
             LucraClient().checkUsersKYCStatus(
-                "user-id",
+                "<insert user id>", // TODO use LucraClient().getSDKUser {  }
                 object : LucraClient.LucraKYCStatusListener {
                     override fun onKYCStatusCheckFailed(exception: Exception) {
                         Toast.makeText(
@@ -180,6 +187,16 @@ class MainActivitySdk : AppCompatActivity() {
                 })
 
             launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
+        }
+    }
+
+    private fun getEnvironmentFromBuildType(): Environment {
+        return when (BuildConfig.BUILD_TYPE) {
+            "debug" -> Environment.DEVELOPMENT
+            "staging" -> Environment.STAGING
+            "sandbox" -> Environment.SANDBOX
+            "release" -> Environment.PRODUCTION
+            else -> Environment.STAGING
         }
     }
 
