@@ -27,11 +27,11 @@ android {
             )
         )
 
-        // TODO Add your auth0 auth id here
+        // TODO Add your auth0 client id here
         buildConfigField(
             "String",
             "TESTING_AUTH_ID",
-            "\"ADD YOUR AUTH0 AUTH ID HERE\""
+            "\"ADD YOUR AUTH0 CLIENT ID HERE\""
         )
     }
 
@@ -61,8 +61,10 @@ android {
 }
 
 
+val mavenVersion = project.findProperty("publishVersion") as String
+
 dependencies {
-    implementation("com.lucrasports.sdk:sdk-ui:2.3.0-beta")
+    implementation("com.lucrasports.sdk:sdk-ui:$mavenVersion")
 
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
