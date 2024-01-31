@@ -333,6 +333,8 @@ class MainActivitySdk : AppCompatActivity() {
 
             override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
                 Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
+                Log.d("Sample", "fragments: ${supportFragmentManager.fragments}")
+                Log.d("Sample", "backstack count: ${supportFragmentManager.backStackEntryCount}")
                 supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
                     Log.d("Sample", "Found $entryLucraFlow as $it")
 
