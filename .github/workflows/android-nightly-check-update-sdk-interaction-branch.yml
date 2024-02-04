@@ -1,8 +1,8 @@
-name: Nightly PR Creation from update/sdk-interaction to develop
+name: Create PR for update/sdk-interaction after package release
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Run every day at midnight
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
