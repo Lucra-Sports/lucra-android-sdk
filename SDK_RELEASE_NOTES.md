@@ -1,3 +1,7 @@
+## 2.3.1-beta
+* This version is largely a test to verify release automation
+* Various bug fixes and UI updates
+
 ## 2.3.0-beta
 * Fixed issues around missing matchups
 * Fixed user balance emission updates
