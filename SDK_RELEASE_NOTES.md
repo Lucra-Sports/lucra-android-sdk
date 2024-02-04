@@ -1,5 +1,3 @@
-# Release Notes
-## Upcoming Release Changes
 ## 2.3.0-beta
 * Fixed issues around missing matchups
 * Fixed user balance emission updates
