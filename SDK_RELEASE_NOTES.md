@@ -1,10 +1,9 @@
-# Release Notes
-## Upcoming Release Changes
 ## 2.3.0-beta
 * Fixed issues around missing matchups
 * Fixed user balance emission updates
 * Included Aeropay functionality
 * Fixed deposit flow bugs
+* Aeropay deeplinks back to add funds page after bank link.
 
 ## 2.2.0-beta
 * Removed "Send Reminders" card from the public feed
