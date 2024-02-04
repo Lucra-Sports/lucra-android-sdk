@@ -7,9 +7,6 @@ on:
     paths:
       - 'SDK_RELEASE_NOTES.md'
   workflow_dispatch:
-  # TODO remove this before merging
-  pull_request:
-    branches: [ "develop" ]
 
 env:
   GITHUB_TOKEN: ${{ secrets.TOKEN_TO_PUBLISH_RELEASE_LUCRA_SDK }}
@@ -29,7 +26,7 @@ jobs:
           OUTPUT=$(awk '/^## / { if(found) exit; if(!found) { version=$2; found=1; next } } found && !/^## / { notes = notes (notes ? ORS : "") $0 } END { print version; print notes }' SDK_RELEASE_NOTES.md)
           VERSION=$(echo "$OUTPUT" | head -1)
           RELEASE_NOTES=$(echo "$OUTPUT" | tail -n +2)
-          RELEASE_NOTES_JSON=$(jq -R -s '.' <<< "$RELEASE_NOTES")
+          RELEASE_NOTES_JSON=$(jq -R -s '.' <<< "$RELEASE_NOTES") # to escape new lines
   
           curl -L -v \
             -X POST \
