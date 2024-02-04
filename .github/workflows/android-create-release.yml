@@ -11,6 +11,8 @@ on:
   pull_request:
     branches: [ "develop" ]
 
+env:
+  GITHUB_TOKEN: ${{ secrets.TOKEN_TO_PUBLISH_RELEASE_LUCRA_SDK }}
 
 jobs:
   fetch_latest_release_notes_publish_release:
