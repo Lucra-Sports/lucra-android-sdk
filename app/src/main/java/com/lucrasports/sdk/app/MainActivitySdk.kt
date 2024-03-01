@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
+import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentContainerView
@@ -28,6 +29,10 @@ class MainActivitySdk : AppCompatActivity() {
 
     private val header: TextView by lazy {
         findViewById(R.id.header)
+    }
+
+    private val fullScreenSwitch: SwitchCompat by lazy {
+        findViewById(R.id.fullScreenSwitch)
     }
 
     private val logoutButton: AppCompatButton by lazy {
@@ -90,7 +95,9 @@ class MainActivitySdk : AppCompatActivity() {
             lucraUiProvider = buildLucraUiInstance(),
             // This must be updated to the correct auth0 client id per environment
             // Logins won't work if there's a mismatch
-            authClientId = BuildConfig.TESTING_AUTH_ID,
+            apiKey = BuildConfig.TESTING_API_KEY,
+            // This must be updated to the correct api url per environment
+            apiUrl = BuildConfig.TESTING_API_URL,
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             clientTheme = ClientTheme(
@@ -263,7 +270,7 @@ class MainActivitySdk : AppCompatActivity() {
                             } else {
 
                                 // Step 2: Update the sdk user's username
-                                LucraClient().configure(sdkUser.copy(username = newUsername)) {
+                                LucraClient().updateUsername(sdkUser, newUsername) {
                                     when (it) {
                                         is SDKUserResult.Error -> {
                                             Log.e(
@@ -327,8 +334,12 @@ class MainActivitySdk : AppCompatActivity() {
         lucraFlowListener = object : LucraFlowListener {
             override fun launchNewLucraFlowEntryPoint(entryLucraFlow: LucraUiProvider.LucraFlow): Boolean {
                 Log.d("Sample", "launchNewLucraFlowEntryPoint: $entryLucraFlow")
-                showLucraDialogFragment(entryLucraFlow)
-                return true
+                return if (fullScreenSwitch.isChecked) {
+                    showLucraDialogFragment(entryLucraFlow)
+                    true
+                } else {
+                    false
+                }
             }
 
             override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {

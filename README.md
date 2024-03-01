@@ -138,7 +138,9 @@ In your application class, initialize the Lucra instance in `onCreate`.
 ```kotlin
 LucraClient.initialize(
   // Required - provide Auth0 client ID to use for authorization
-  authClientId = "your client id",
+  apiKey = "your api key",
+  //Required - provide URL that will work along side apiKey
+  apiUrl = "your api url",
   // Optionally provide LucraUiProvider implementation from "com.lucrasports.sdk:sdk-ui:*"
   lucraUiProvider = LucraUi(
     lucraFlowListener = object : LucraFlowListener {

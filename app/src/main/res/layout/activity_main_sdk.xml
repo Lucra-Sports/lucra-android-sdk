@@ -20,8 +20,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/fullScreenSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Launch Fullscreen Entry Points"
+        app:layout_constraintBottom_toTopOf="@id/flowButtons"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <com.google.android.flexbox.FlexboxLayout
+        android:id="@+id/flowButtons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:alignItems="center"
