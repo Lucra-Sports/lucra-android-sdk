@@ -30,8 +30,14 @@ android {
         // TODO Add your auth0 client id here
         buildConfigField(
             "String",
-            "TESTING_AUTH_ID",
-            "\"ADD YOUR AUTH0 CLIENT ID HERE\""
+            "TESTING_API_KEY",
+            "\"ADD YOUR API KEY HERE\""
+        )
+        // TODO Add your auth0 domain url her
+        buildConfigField(
+            "String",
+            "TESTING_API_URL",
+            "\"ADD YOUR API URL HERE\""
         )
     }
 

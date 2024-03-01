@@ -1,6 +1,17 @@
+## 3.0.0-beta
+* Added required `apiUrl` to `LucraClient` constructor
+* Updated `authClientId` to `apiKey`
+* Added support for unauthed viewing of the public feed. Any proceeding actions will now launch the auth flow
+* Improvements to `LucraFlow` experience
+* Added update username API for scenarios where only the username needs updates
+
 ## 2.3.1-beta
 * This version is largely a test to verify release automation
 * Various bug fixes and UI updates
+* Allow user info of a same user to be updated when username has not changed
+* Update Aerosync sdk to 1.0.8
+* Refactor Aerosync response handling per breaking change coming in March 
+* Update deeplink handling back to the SDK
 
 ## 2.3.0-beta
 * Fixed issues around missing matchups
