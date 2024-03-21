@@ -1,0 +1,36 @@
+name: Create Release from latest release notes
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'SDK_RELEASE_NOTES.md'
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.TOKEN_TO_PUBLISH_RELEASE_LUCRA_SDK }}
+  OWNER: Lucra-Sports
+  REPO: lucra-android-sdk
+
+
+jobs:
+  fetch_latest_release_notes_publish_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Parse out latest release notes
+        id: latest_release_notes
+        # This looks for the last version added, takes the version and collects the notes below it
+        run: |
+          OUTPUT=$(awk '/^## / { if(found) exit; if(!found) { version=$2; found=1; next } } found && !/^## / { notes = notes (notes ? ORS : "") $0 } END { print version; print notes }' SDK_RELEASE_NOTES.md)
+          VERSION=$(echo "$OUTPUT" | head -1)
+          RELEASE_NOTES=$(echo "$OUTPUT" | tail -n +2)
+          RELEASE_NOTES_JSON=$(jq -R -s '.' <<< "$RELEASE_NOTES") # to escape new lines
+  
+          curl -L -v \
+            -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            https://api.github.com/repos/${OWNER}/${REPO}/releases \
+            -d "{\"tag_name\":\"${VERSION}\",\"name\":\"${VERSION}\",\"body\":${RELEASE_NOTES_JSON},\"draft\":false,\"prerelease\":false}"

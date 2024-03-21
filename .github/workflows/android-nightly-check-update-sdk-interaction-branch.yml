@@ -1,0 +1,54 @@
+name: Create PR for update/sdk-interaction after package release
+
+on:
+  registry_package:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  create-pr-for-update-sdk-interaction-if-updated:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history so we can check for changes
+
+    - name: Check for Changes & Existence of Branch
+      run: |
+        git fetch origin
+        if git show-ref --quiet refs/remotes/origin/update/sdk-interaction; then
+          echo "Branch exists!";
+          CHANGES=$(git rev-list origin/develop..origin/update/sdk-interaction --count)
+          if [ "$CHANGES" -ne 0 ]; then
+            echo "There are changes!";
+            echo "CREATE_PR=true" >> $GITHUB_ENV
+          else
+            echo "No changes between branches.";
+          fi
+        else
+          echo "Branch doesn't exist.";
+        fi
+
+    - name: Check for Existing PR
+      if: env.CREATE_PR == 'true'
+      run: |
+        PR_COUNT=$(gh pr list --base develop --head update/sdk-interaction --limit 100 | wc -l)
+        if [ "$PR_COUNT" -eq "0" ]; then
+          echo "No PR exists!";
+          echo "CREATE_PR=true" >> $GITHUB_ENV
+        else
+          echo "PR already exists!";
+          echo "CREATE_PR=false" >> $GITHUB_ENV
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    - name: Create PR
+      if: env.CREATE_PR == 'true'
+      run: |
+        gh pr create --base develop --head update/sdk-interaction --title "Update from internal app-sdk-development" --body "Automated PR from update/sdk-interaction to develop. Branch update/sdk-interaction is automatically updated when there are core changes to lucra-android:app-sdk-development or lucra-android:sdk/SDK_README.md. See https://github.com/Lucra-Sports/lucra-android/blob/develop/.github/workflows/android-update-public-sdk-app-and-documentation.yml for more details." --repo Lucra-Sports/lucra-android-sdk
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
