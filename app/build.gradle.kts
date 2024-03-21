@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+val mavenVersion = project.findProperty("publishVersion") as String
 
 android {
     namespace = "com.lucrasports.sdk.app"
@@ -16,7 +17,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = mavenVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // These are required for auth0 to run even though it won't use the web auth callback flow
@@ -65,9 +66,6 @@ android {
         jvmTarget = "1.8"
     }
 }
-
-
-val mavenVersion = project.findProperty("publishVersion") as String
 
 dependencies {
     implementation("com.lucrasports.sdk:sdk-ui:$mavenVersion")
