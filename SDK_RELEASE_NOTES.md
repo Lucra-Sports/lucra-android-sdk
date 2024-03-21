@@ -1,4 +1,14 @@
-## 3.0.0-beta
+## 3.1.0
+* Allow public feed (`LucraFlow.PublicFeed`) to be filtered by league IDs through `SdkIdFilter`. It can be accessed through `LucraClient().getPublicFeedLeagueIdFilter()`.
+* Deprecated `LucraClient().getSDKUser`
+* Introduced `LucraClient().observeSDKUserFlow()` and `LucraClient().observeSDKUser { sdkUser -> }`, these will emit the active user logged in and returns null upon logging out
+* `SDKUser` now includes `avatarUrl`
+* Added `LucraComponent.ProfilePill` (View) for embedded Profile Pills
+* Added `LucraComponent.MiniPublicFeed` (View) to embed the public feed within the host app
+* Added `LucraClient().getGamesMatchup()` API call to retrieve games matchups
+* Bug fixes to public feed and profile flows
+
+## 3.0.0
 * Added required `apiUrl` to `LucraClient` constructor
 * Updated `authClientId` to `apiKey`
 * Added support for unauthed viewing of the public feed. Any proceeding actions will now launch the auth flow

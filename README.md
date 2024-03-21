@@ -195,39 +195,45 @@ Get and update the current user's properties
 
 **Methods**
 
-`getSDKUser`
+`observeSDKUserFlow`, `observeSDKUser`
 
-Returns the `SDKUser` for the current logged in user.
-> [!IMPORTANT]
-> `LucraFlow.Login` can be used to login prior, SDKUser won't return a user until this flow is launched or another flow is launched to trigger a login
-
-
-- **Parameters:**
-  - `onResult`: `SDKUserResult` callback
+Observe the active `SDKUser` based on authed status.
 
 - **Example usage:**
 
 ```kotlin
- LucraClient().getSDKUser {
-            when (it) {
-                is SDKUserResult.Error -> {
-                    Log.e("Lucra SDK Sample", "Unable to get username ${it.error}")
-                }
+private fun observeLoggedInUser() {
+  // Or use observeSDKUser { result -> ... }
+  LucraClient().observeSDKUserFlow().onEach { sdkUserResult ->
+    when (sdkUserResult) {
+      is SDKUserResult.Success -> {
+        Log.d("Lucra SDK Sample", "Fetched latest user")
+        lucraSDKUser = sdkUserResult.sdkUser
+      }
 
-                SDKUserResult.NotLoggedIn -> {
-                    Log.e(
-                        "Lucra SDK Sample",
-                        "User not logged in yet! Close this dialog and try again"
-                    )
-                }
+      is SDKUserResult.Error -> {
+        Log.e("Lucra SDK Sample", "Unable to get username ${sdkUserResult.error}")
+        lucraSDKUser = null
+      }
 
-                is SDKUserResult.Success -> {
-                    val sdkUser = it.sdkUser
-                    // Show user details
-                }
-                else -> {}
-            }
-        }
+      SDKUserResult.InvalidUsername -> {
+        // Shouldn't happen here
+      }
+
+      SDKUserResult.NotLoggedIn -> {
+        Log.e(
+          "Lucra SDK Sample",
+          "User not logged in yet!"
+        )
+        lucraSDKUser = null
+      }
+
+      SDKUserResult.Loading -> {
+
+      }
+    }
+  }.launchIn(lifecycleScope)
+}
 ```
 
 `configure`
@@ -348,6 +354,31 @@ LucraClient().acceptGamesYouPlayContest(
             // Handle failure scenario
         }
         MatchupActionResult.Success -> {
+            // Handle success scenario
+        }
+    }
+}
+```
+
+`retrieveGamesMatchup`
+
+Retrieve a contest with the given ID.
+
+- **Parameters:**
+  - `matchupId`: ID of the contest.
+  - `onResult`: Callback with a result of type `RetrieveGamesMatchupResult`.
+
+- **Example usage:**
+
+```kotlin
+LucraClient().getGamesMatchup(
+    matchupId = "matchupId",
+) { result ->
+    when (result) {
+        is RetrieveGamesMatchupResult.Failure -> {
+            // Handle failure scenario
+        }
+        RetrieveGamesMatchupResult.GYPMatchupDetailsOutput -> {
             // Handle success scenario
         }
     }
@@ -546,6 +577,10 @@ the user hasn't verified their identity yet
 `LucraUiProvider.LucraFlow.PublicFeed`
 Launch to view the public feed of sports matchups.
 
+> [!NOTE]
+> Use `LucraClient().[add/remove/clear]publicFeedLeagueIdFilter(...)` to filter the public feed by league.
+
+
 
 `LucraUiProvider.LucraFlow.MyMatchup`
 Launch to view the current user's matchups
@@ -569,3 +604,37 @@ supportFragmentManager.beginTransaction()
 val lucraDialog = LucraClient().getLucraDialogFragment(lucraFlow)
 lucraDialog.show(supportFragmentManager, lucraFlow.toString())
 ```
+
+### Showing partial Lucra elements
+
+**Requires `:sdk-ui`***
+
+`LucraComponents` Components are provided via a Via and are designed to be embedded in experiences unique to the host. Each component requires a callback to launch Lucra Flows from a new fragment. From there, the Flow operates as normal.
+
+`LucraUiProvider.LucraComponent.MiniPublicFeed`
+Show the public feed within your native app.
+(optional) Pass in Player ids to filter the feed to only show matchups associated with the provided players
+```kotlin
+val view = LucraClient().getLucraComponent(
+    this,
+    LucraUiProvider.LucraComponent.MiniPublicFeed(
+        playerOneId = "playerOneId", // optional
+        playerTwoId = "playerTwoId" // optional
+    ) {
+        launchFlow(it) // Launch the flow as you would normally
+    })
+viewGroup.addView(view)
+```
+
+`LucraUiProvider.LucraComponent.ProfilePill`
+Show the Profile Pill anywhere within your app. 
+```kotlin
+val view = LucraClient().getLucraComponent(
+  this,
+  LucraUiProvider.LucraComponent.ProfilePill {
+    launchFlow(it) // Launch the flow as you would normally
+  })
+viewGroup.addView(view)
+```
+
+

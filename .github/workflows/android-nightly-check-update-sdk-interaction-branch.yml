@@ -1,8 +1,10 @@
 name: Create PR for update/sdk-interaction after package release
 
 on:
-  registry_package:
-    types: [published]
+
+  push:
+    branches:
+      - update/sdk-interaction
   workflow_dispatch:
 
 jobs:
