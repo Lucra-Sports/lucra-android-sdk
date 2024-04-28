@@ -36,7 +36,6 @@ import com.lucrasports.sdk.ui.LucraUi
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
-
 class MainActivitySdk : AppCompatActivity() {
 
     private val header: TextView by lazy {
@@ -102,22 +101,12 @@ class MainActivitySdk : AppCompatActivity() {
                     onBackground = "#000000",
                 ),
                 fontFamily = FontFamily(
-                    listOf(
-                        Font(
-                            fontName = "merriweather_bold",
-                            weight = FontWeight.Bold
-                        ),
-                        Font(
-                            fontName = "merriweather_regular",
-                            weight = FontWeight.Normal
-                        ),
-                        Font(
-                            fontName = "merriweather_medium",
-                            weight = FontWeight.Medium
-                        )
-                    )
+                    mediumFont = Font("merriweather_medium.ttf"),
+                    normalFont = Font("merriweather_regular.ttf"),
+                    semiBoldFont = Font("merriweather_bold.ttf"),
+                    boldFont = Font("merriweather_black.ttf"),
                 )
-            )
+            ),
         )
 
         observeLoggedInUser()
@@ -160,8 +149,26 @@ class MainActivitySdk : AppCompatActivity() {
         }
 
         appendOption(
+            "Floating Action Button",
+            "Show the floating action button to create a sports contest.",
+            componentsSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
+        ) { viewGroup ->
+            if (viewGroup.childCount > 0) {
+                viewGroup.removeAllViews()
+            } else {
+                val view = LucraClient().getLucraComponent(
+                    this,
+                    LucraUiProvider.LucraComponent.FloatingActionButton {
+                        launchFlow(it)
+                    })
+                viewGroup.addView(view)
+            }
+        }
+
+        appendOption(
             "Mini Public Feed",
-            "Show the mini public feed, showing contest cards in an non-scroll list. No authentication required. Any proceeding actions with prompt the user to authenticate first",
+            "Show the mini public feed, showing contest cards in an non-scroll list. This will prompt for two player Ids but it can accept an array. No authentication required. Any proceeding actions with prompt the user to authenticate first",
             componentsSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
@@ -194,8 +201,7 @@ class MainActivitySdk : AppCompatActivity() {
                     val view = LucraClient().getLucraComponent(
                         this,
                         LucraUiProvider.LucraComponent.MiniPublicFeed(
-                            playerOneId = playerOneId,
-                            playerTwoId = playerTwoId
+                            listOf(playerOneId, playerTwoId)
                         ) {
                             launchFlow(it)
                         })
@@ -318,6 +324,15 @@ class MainActivitySdk : AppCompatActivity() {
                             .show()
                     }
                 })
+        }
+
+        appendOption(
+            "Set CAC QR deeplink transformer",
+            "A prompt will show to set the transformer to QR deeplinks we show in CAC share screen.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            updateQRDeeplinkTransformerDialog()
         }
     }
 
@@ -505,6 +520,41 @@ class MainActivitySdk : AppCompatActivity() {
         }
 
         appendOption(
+            "Deeplink to Matchup Details",
+            "Navigate to specific matchup via deeplink uri. Authentication required",
+            flowsSection
+        ) {
+            val builder = MaterialAlertDialogBuilder(this)
+
+            // Create the EditText for the dialog.
+            val input = EditText(this).apply {
+                hint = "deeplink uri, Ex: lucra://referral/com.tennis..."
+            }
+
+            builder.setTitle("Provide Deeplink URI")
+                .setView(input)
+                .setPositiveButton("OK") { _, _ ->
+                    LucraClient().getLucraFlowForDeeplinkUri(input.text.toString()).let { lucraFlow ->
+
+                        if (lucraFlow != null) {
+                            launchFlow(lucraFlow)
+                        } else {
+                            Toast.makeText(
+                                /* context = */ this@MainActivitySdk,
+                                /* text = */ "Invalid URI - could not parse!",
+                                /* duration = */ Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+            builder.show()
+        }
+
+        appendOption(
             "Verify User Identity",
             "Navigate user identity verification screen. Authentication required",
             flowsSection
@@ -655,6 +705,28 @@ class MainActivitySdk : AppCompatActivity() {
         builder.show()
     }
 
+    private fun updateQRDeeplinkTransformerDialog() {
+
+        val builder = MaterialAlertDialogBuilder(this)
+
+        // Create the EditText for the dialog.
+        val input = EditText(this).apply { hint = "Text to be appended to the original deeplink url." }
+
+        builder.setTitle("Update QR Deeplink")
+            .setView(input)
+            .setPositiveButton("OK") { _, _ ->
+                val textToAppend = input.text.toString()
+
+                LucraClient().setDeeplinkTransformer {
+                    it.plus(textToAppend)
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+
+        builder.show()
+    }
 
     private fun updateUsernameDialog() {
 
@@ -763,7 +835,6 @@ class MainActivitySdk : AppCompatActivity() {
             it.show(supportFragmentManager, lucraFlow.toString())
         }
     }
-
 
     private fun launchFlow(lucraFlow: LucraUiProvider.LucraFlow) {
 //        showLucraFragment(lucraFlow)

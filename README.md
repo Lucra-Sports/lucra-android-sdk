@@ -408,6 +408,40 @@ LucraClient().cancelGamesYouPlayContest(matchupId = "matchupId") { result ->
 }
 ```
 
+`setDeeplinkTransformer`
+
+Sets lambda function that will be used to transform original lucra URI to client specific URI. Make sure to keep the original URI in the process to allow conversion into `LucraFlow` later.
+
+- **Parameters:**
+  - `suspend (String) -> String`: suspended string transformer lambda 
+
+- **Example usage:**
+
+```kotlin
+LucraClient().setDeeplinkTransformer { originalUri ->
+    transformUriToAppLink(originalUri)
+}
+```
+
+`getLucraFlowForDeeplinkUri`
+
+Convert lucra URI (ex: `lucra://...`) into `LucraFlow` that can be launched to show a UI component.
+
+- **Parameters:**
+  - `uri`: uri string to convert into a LucraFlow
+
+- **Example usage:**
+
+```kotlin
+LucraClient().apply {
+  getLucraFlowForDeeplinkUri("uriString")?.let { lucraFlow ->
+    getLucraDialogFragment(lucraFlow).also { fragment ->
+      fragment.show(supportFragmentManager, lucraFlow.toString())
+    }
+  }
+}
+```
+
 **Result Types**
 
 `MatchupActionResult`
@@ -495,21 +529,17 @@ are `Primary`, `Secondary`, `Tertiary`, `Surface`, `Background`, `OnPrimary`, `O
 
 `FontFamily`
 
-Represents a list of custom text styles you can apply to the SDK. Each text style is represented by
-a `Font` object.
+Represents a collection of the 4 different font styles that the SDK uses(`mediumFont`, `normalFont`, `semiBoldFont`, `boldFont`). 
+The name of the font style field corresponds with the font weight associated with the imported font file.
+Each text style is represented by a `Font` object.
 
 `Font`
 
-Each `Font` object requires you to specify the `fontName` and `weight`.
+Each `Font` object requires you to specify the `fontAssetFilePath`.
 
-The `fontName` is the exact file name of your custom font excluding the file extension (so the
-correct `fontName` would be `wingding` and not `wingding.ttf`).
+The `fontAssetFilePath` is the exact file path of your custom font(ex: `/fonts/wingding.ttf`). The root directory is your assets
+directory (`main/assets/`). All font files must be included in `assets`.
 These fonts are imported through Reach Native.
-
-The `weight` is a enum representing the font weight associated with the imported font.
-Lucra provides 4 FontWeight options, `FontWeight.Bold`, `FontWeight.SemiBold`, `FontWeight.Normal`,
-and `FontWeight.Medium`.
-It is recommended that you include all 4 font weights.
 
 ```kotlin
 
@@ -529,16 +559,10 @@ LucraClient.initialize(
       onBackground = "#000000"
     ),
     fontFamily = FontFamily(
-      listOf(
-        Font(
-          fontName = "my_font_bold",
-          weight = FontWeight.Bold
-        ),
-        Font(
-          fontName = "my_font",
-          weight = FontWeight.Normal
-        )
-      )
+      mediumFont = Font("my_medium_font.ttf"),
+      normalFont = Font("my_regular_font.ttf"),
+      semiBoldFont = Font("my_semi_bold_font.ttf"),
+      boldFont = Font("my_bold_font.ttf"),
     )
   )
 )
@@ -576,6 +600,9 @@ the user hasn't verified their identity yet
 
 `LucraUiProvider.LucraFlow.PublicFeed`
 Launch to view the public feed of sports matchups.
+
+`LucraUiProvider.LucraFlow.Dynamic`
+Launch specific destinations, proprietary to the host app.
 
 > [!NOTE]
 > Use `LucraClient().[add/remove/clear]publicFeedLeagueIdFilter(...)` to filter the public feed by league.
@@ -618,8 +645,7 @@ Show the public feed within your native app.
 val view = LucraClient().getLucraComponent(
     this,
     LucraUiProvider.LucraComponent.MiniPublicFeed(
-        playerOneId = "playerOneId", // optional
-        playerTwoId = "playerTwoId" // optional
+      playerIds = listOf("playerId1", "playerId2", ...) // optional
     ) {
         launchFlow(it) // Launch the flow as you would normally
     })
@@ -632,6 +658,17 @@ Show the Profile Pill anywhere within your app.
 val view = LucraClient().getLucraComponent(
   this,
   LucraUiProvider.LucraComponent.ProfilePill {
+    launchFlow(it) // Launch the flow as you would normally
+  })
+viewGroup.addView(view)
+```
+
+`LucraUiProvider.LucraComponent.FloatingActionButton`
+Show a Floating Action Button anywhere within your app to launch the sports you watch contest creation flow.
+```kotlin
+val view = LucraClient().getLucraComponent(
+  this,
+  LucraUiProvider.LucraComponent.FloatingActionButton {
     launchFlow(it) // Launch the flow as you would normally
   })
 viewGroup.addView(view)
