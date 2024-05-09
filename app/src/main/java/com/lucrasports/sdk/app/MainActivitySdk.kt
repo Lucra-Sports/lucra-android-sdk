@@ -10,7 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.webkit.URLUtil
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -24,20 +24,20 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputLayout
-import com.jaredrummler.android.colorpicker.ColorPickerDialog
-import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks
 import com.google.firebase.dynamiclinks.androidParameters
 import com.google.firebase.dynamiclinks.iosParameters
 import com.google.firebase.dynamiclinks.ktx.dynamicLinks
 import com.google.firebase.dynamiclinks.navigationInfoParameters
 import com.google.firebase.ktx.Firebase
+import com.jaredrummler.android.colorpicker.ColorPickerDialog
+import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
+import com.lucrasports.sdk.core.contest.SportsMatchup
 import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
-import com.lucrasports.sdk.core.contest.SportsMatchup
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.ColorStyle
 import com.lucrasports.sdk.core.style_guide.Font
@@ -119,6 +119,18 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     private fun initializeLucraClient() {
+        // TODO don't forget to update API_URL and API_KEY
+        if (BuildConfig.TESTING_API_URL == "ADD YOUR API URL HERE" || BuildConfig.TESTING_API_KEY == "ADD YOUR API KEY HERE") {
+            Log.e("Lucra SDK Sample", "Be sure to use a valid API Url prior to initialization!")
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Woah, hold up!")
+                .setMessage("This sample only works if you've been given a valid API URL and API Key. Please reach out to your Lucra contact to get started.")
+                .setPositiveButton("Close") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
+
         LucraClient.initialize(
             application = application,
             lucraUiProvider = buildLucraUiInstance(),
@@ -183,16 +195,24 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private fun consumeSampleDeepLink() {
         intent?.let {
             lifecycleScope.launch {
-                val dynamicLink = Firebase.dynamicLinks.getDynamicLink(intent).await()
-                dynamicLink?.link?.toString()?.let { linkString ->
-                    LucraClient().getLucraFlowForDeeplinkUri(linkString)
-                        .let { lucraFlow ->
-                            if (lucraFlow != null) {
-                                launchFlow(lucraFlow)
+                try {
+                    val dynamicLink = Firebase.dynamicLinks.getDynamicLink(intent).await()
+                    dynamicLink?.link?.toString()?.let { linkString ->
+                        LucraClient().getLucraFlowForDeeplinkUri(linkString)
+                            .let { lucraFlow ->
+                                if (lucraFlow != null) {
+                                    launchFlow(lucraFlow)
+                                }
                             }
-                        }
-                    intent?.replaceExtras(Bundle())
-                    intent?.data = null
+                        intent?.replaceExtras(Bundle())
+                        intent?.data = null
+                    }
+                } catch (e: Exception) {
+                    Log.e(
+                        "Lucra SDK Sample",
+                        "Firebase is not setup for this sample project, and this deeplink example will not work...",
+                        e
+                    )
                 }
             }
         }
@@ -363,7 +383,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
                 Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
                 Log.d("Sample", "fragments: ${supportFragmentManager.fragments}")
-                Log.d("Sample", "backstack count: ${supportFragmentManager.backStackEntryCount}")
+                Log.d(
+                    "Sample",
+                    "backstack count: ${supportFragmentManager.backStackEntryCount}"
+                )
                 supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
                     Log.d("Sample", "Found $entryLucraFlow as $it")
 
@@ -484,7 +507,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     when (which) {
                         0 -> {
                             val editText =
-                                layoutInflater.inflate(R.layout.main_option_setting_edit_text, null)
+                                layoutInflater.inflate(
+                                    R.layout.main_option_setting_edit_text,
+                                    null
+                                )
                             val leagueFilter = LucraClient().getPublicFeedLeagueIdFilter()
                             editText.findViewById<TextInputLayout>(R.id.option_setting_edit_text_layout)
                                 .setHint("Add a league filter id")
@@ -523,10 +549,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 .setPositiveButton("Close", null)
                                 .show()
                         }
-                        2 ->{
+
+                        2 -> {
 
                             val colorLayout =
-                                layoutInflater.inflate(R.layout.main_theming_options_layout, null)
+                                layoutInflater.inflate(
+                                    R.layout.main_theming_options_layout,
+                                    null
+                                )
 
 
                             appendThemingOptions(colorLayout.findViewById<LinearLayout>(R.id.ll_theming_section))
@@ -711,9 +741,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
         }
     }
-    
+
     private fun appendThemingOptions(root: ViewGroup) {
-        ThemeColorOption.entries.forEach { option ->
+        ThemeColorOption.values().forEach { option ->
             appendThemingOption(
                 title = option.descriptor,
                 colorHex = ThemeColors.getColorHexById(option.id),
@@ -745,7 +775,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
         root.addView(optionView)
     }
-    
+
     private fun appendThemingOption(
         title: String,
         colorHex: String,
@@ -753,22 +783,23 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         defaultColor: Int,
         root: ViewGroup,
     ): View {
-        val optionView = layoutInflater.inflate(R.layout.theme_color_selector, root, false).apply { 
-            findViewById<TextView>(R.id.colorDescriptorTv).text = title
-            findViewById<TextView>(R.id.colorHexTv).text = colorHex
-            findViewById<View>(R.id.colorPreview).setBackgroundColor(defaultColor)
-            setOnClickListener { 
-                showColorPickerDialog(
-                    id = id,
-                    defaultColor = defaultColor
-                )
+        val optionView =
+            layoutInflater.inflate(R.layout.theme_color_selector, root, false).apply {
+                findViewById<TextView>(R.id.colorDescriptorTv).text = title
+                findViewById<TextView>(R.id.colorHexTv).text = colorHex
+                findViewById<View>(R.id.colorPreview).setBackgroundColor(defaultColor)
+                setOnClickListener {
+                    showColorPickerDialog(
+                        id = id,
+                        defaultColor = defaultColor
+                    )
+                }
             }
-        }
 
         root.addView(optionView)
         return optionView
     }
-    
+
     private fun showColorPickerDialog(
         id: Int,
         defaultColor: Int
@@ -1079,7 +1110,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     override fun onDestroy() {
         super.onDestroy()
         // NOTE: Don't release on rotation with a dialog fragment open, this will break the instance
-        // e.g. DialogFragment will recover before a flow has been set again. 
+        // e.g. DialogFragment will recover before a flow has been set again.
 //        LucraClient.release()
     }
 

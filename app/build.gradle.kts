@@ -34,11 +34,18 @@ android {
             "TESTING_API_KEY",
             "\"ADD YOUR API KEY HERE\""
         )
-        // TODO Add your auth0 domain url her
+        // TODO Add your auth0 domain url here
         buildConfigField(
             "String",
             "TESTING_API_URL",
             "\"ADD YOUR API URL HERE\""
+        )
+
+        // TODO this is just for our example, not required for your app!
+        buildConfigField(
+            "String",
+            "FIREBASE_DEEPLINK_URL",
+            "\"https://lucrasdk.page.link\""
         )
     }
 
@@ -76,12 +83,17 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.3")
     implementation("com.google.android.flexbox:flexbox:3.0.0")
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.jaredrummler:colorpicker:1.1.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
     testImplementation("org.reflections:reflections:0.9.12")
     testImplementation("io.mockk:mockk:1.12.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    implementation("com.google.firebase:firebase-dynamic-links:21.1.0")
 }
