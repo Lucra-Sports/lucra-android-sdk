@@ -9,4 +9,5 @@ import com.lucrasports.apphost.LucraCoilImageLoader
 class ApplicationSdk : Application(), ImageLoaderFactory {
 
     override fun newImageLoader() = LucraCoilImageLoader.get(this)
+
 }

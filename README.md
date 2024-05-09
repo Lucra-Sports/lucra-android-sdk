@@ -33,6 +33,17 @@ In `app/build.gradle`
 implementation("com.lucrasports.sdk:sdk-core:2.0.0-beta") //TODO reference latest github release #
 // Optional for UI functionality
 implementation("com.lucrasports.sdk:sdk-ui:2.0.0-beta") //TODO reference latest github release #
+
+// Required desugaring library, which allows the project to be built with embedded jdks, it's not 
+// what is ran on the device (java 11). See more here https://github.com/android/nowinandroid/pull/731
+```
+compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+}
+
+dependencies {
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+}
 ```
 
 #### Auth0 compliance (if not already using Auth0)
@@ -408,6 +419,31 @@ LucraClient().cancelGamesYouPlayContest(matchupId = "matchupId") { result ->
 }
 ```
 
+`retrieveSportsMatchup`
+
+Retrieve a sports contest with the given ID.
+
+- **Parameters:**
+  - `matchupId`: ID of the contest.
+  - `onResult`: Callback with a result of type `RetrieveGamesMatchupResult`.
+
+- **Example usage:**
+
+```kotlin
+LucraClient().getSportsMatchup(
+    matchupId = "matchupId",
+) { result ->
+    when (result) {
+        is RetrieveSportsMatchupResult.Failure -> {
+            // Handle failure scenario
+        }
+        RetrieveSportsMatchupResult.SportsMatchupDetailsOutput -> {
+            // Handle success scenario
+        }
+    }
+}
+```
+
 `setDeeplinkTransformer`
 
 Sets lambda function that will be used to transform original lucra URI to client specific URI. Make sure to keep the original URI in the process to allow conversion into `LucraFlow` later.
@@ -509,6 +545,27 @@ Returns the status of the current logged in user.
             }
         })
 ```
+### Event listeners
+
+`setEventListener`
+
+Sets a event listener so you can listen for Lucra specific events that occur with the SDK. A `LucraEvent` may hold data associated with the event (ex: `LucraEvent.SportsContest.Create` holds a `contestId`).
+
+- **Parameters:**
+  - `LucraEventListener`: listener used to receive a `LucraEvent`
+
+- **Example usage:**
+
+```kotlin
+LucraClient().setEventListener(object : LucraEventListener {
+  override fun onEvent(event: LucraEvent) {
+    //Handle Events
+  }
+})
+```
+
+
+
 
 ### UI styling
 
@@ -663,6 +720,21 @@ val view = LucraClient().getLucraComponent(
 viewGroup.addView(view)
 ```
 
+`LucraUiProvider.LucraComponent.ContestCard`
+Show a sports contest card within your native app.
+Pass in the sports contest unique UUID to display the contest card.
+```kotlin
+val view = LucraClient().getLucraComponent(
+  this,
+  LucraUiProvider.LucraComponent.ContestCard(
+    contestId = contestId //The unique,
+  ) {
+    launchFlow(it)
+  }
+)
+viewGroup.addView(view)
+```
+
 `LucraUiProvider.LucraComponent.FloatingActionButton`
 Show a Floating Action Button anywhere within your app to launch the sports you watch contest creation flow.
 ```kotlin
@@ -674,4 +746,13 @@ val view = LucraClient().getLucraComponent(
 viewGroup.addView(view)
 ```
 
-
+`LucraUiProvider.LucraComponent.RecommendedMatchups`
+Show a carousel of recommended matchups within your app
+```kotlin
+val view = LucraClient().getLucraComponent(
+  this,
+  LucraUiProvider.LucraComponent.RecommendedMatchups {
+    launchFlow(it) // Launch the flow as you would normally
+  })
+viewGroup.addView(view)
+```

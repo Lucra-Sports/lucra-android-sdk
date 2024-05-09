@@ -42,11 +42,8 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with "lucra://referral/applicationId...” -->
-                <data
-                    android:host="referral"
-                    android:pathPattern="/${applicationId}/.*"
-                    android:scheme="lucra" />
+
+                <data android:scheme="https" android:host="lucrasdk.page.link"  />
             </intent-filter>
         </activity>
 
