@@ -32,6 +32,37 @@
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="@color/white" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_theme_default"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="Default" />
+
+                <Button
+                    android:id="@+id/btn_theme_dupr"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_weight="1"
+                    android:text="DUPR" />
+
+                <Button
+                    android:id="@+id/btn_theme_chaos"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:text="Chaos" />
+
+            </LinearLayout>
+
         </LinearLayout>
     </ScrollView>
 
