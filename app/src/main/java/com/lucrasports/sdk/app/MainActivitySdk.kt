@@ -1,16 +1,20 @@
 package com.lucrasports.sdk.app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.URLUtil
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -20,9 +24,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.SwitchCompat
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks
 import com.google.firebase.dynamiclinks.androidParameters
@@ -30,8 +37,10 @@ import com.google.firebase.dynamiclinks.iosParameters
 import com.google.firebase.dynamiclinks.ktx.dynamicLinks
 import com.google.firebase.dynamiclinks.navigationInfoParameters
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
+import com.lucrasports.sdk.app.notifications.FCMService
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
@@ -47,6 +56,7 @@ import com.lucrasports.sdk.core.ui.LucraUiProvider
 import com.lucrasports.sdk.core.user.SDKUser
 import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
+import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -96,6 +106,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         setContentView(R.layout.activity_main_sdk)
 
         initializeLucraClient()
+
+        setupPushNotifications()
+
+        val flow = LucraPushNotificationService.handleNotificationIntent(intent)
+        flow?.let { launchFlow(it) }
+
+        setupNotificationChannel()
 
         consumeSampleDeepLink()
 
@@ -189,6 +206,32 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         LucraClient().setDeeplinkTransformer {
             generateNavigateLink(it)
+        }
+    }
+
+    private fun setupPushNotifications() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
+        }
+
+        try {
+            FirebaseMessaging.getInstance().token
+                .addOnCompleteListener { task ->
+                    if (!task.isSuccessful) {
+                        return@addOnCompleteListener
+                    }
+
+                    val token = task.result
+                    LucraPushNotificationService.refreshFirebaseToken(token)
+                }
+        } catch (e: Exception) {
+            Log.e(
+                "Lucra SDK Sample",
+                "Firebase is not setup for this sample project, and this Firebase token example will not work...",
+                e
+            )
         }
     }
 
@@ -435,6 +478,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
+            "Configure User",
+            "A prompt will show to update or preconfigure the SDK User. Authentication not required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            configureUserDialog()
+        }
+
+        appendOption(
             "Retrieve Games Matchup",
             "A prompt will show to set the games matchup_id. Authentication required.",
             apiSection,
@@ -552,20 +604,25 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
                         2 -> {
 
-                            val colorLayout =
-                                layoutInflater.inflate(
-                                    R.layout.main_theming_options_layout,
-                                    null
-                                )
+                            val colorLayout = layoutInflater.inflate(
+                                /* resource = */ R.layout.main_theming_options_layout,
+                                /* root = */ null
+                            )
+                            val btnThemeDefault: Button = colorLayout.findViewById(R.id.btn_theme_default)
+                            val btnThemeDupr: Button = colorLayout.findViewById(R.id.btn_theme_dupr)
+                            val btnThemeChaos: Button = colorLayout.findViewById(R.id.btn_theme_chaos)
 
+                            btnThemeDefault.setOnClickListener { applyDefaultTheme() }
+                            btnThemeDupr.setOnClickListener { applyDuprTheme() }
+                            btnThemeChaos.setOnClickListener { applyChaosTheme() }
 
                             appendThemingOptions(colorLayout.findViewById<LinearLayout>(R.id.ll_theming_section))
                             MaterialAlertDialogBuilder(this)
                                 .setTitle("Lucra Theming")
                                 .setView(colorLayout)
                                 .setNegativeButton("Cancel", null)
-                                .setPositiveButton("Apply") { dialog, id ->
-                                    dialog.dismiss()
+                                .setPositiveButton("Apply") { themingDialog, _ ->
+                                    themingDialog.dismiss()
                                     restartActivity()
                                 }
                                 .show()
@@ -574,6 +631,66 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     dialog.dismiss()
                 }
                 .show()
+        }
+    }
+
+    private fun applyDefaultTheme() {
+        listOf(
+            "#09E35F", // primary
+            "#5E5BD0", // secondary
+            "#9C99FC", // tertiary
+            "#1C2575", // surface
+            "#001448", // background
+            "#001448", // onPrimary
+            "#FFFFFF", // onSecondary
+            "#FFFFFF", // onTertiary
+            "#FFFFFF", // onSurface
+            "#FFFFFF"  // onBackground
+        ).forEachIndexed { index, colorHex ->
+            onColorSelected(
+                index,
+                ThemeColorOption.hexToIntColor(colorHex)
+            )
+        }
+    }
+
+    private fun applyDuprTheme() {
+        listOf(
+            "#3A79E0", // primary
+            "#EBECF2", // secondary
+            "#CDD0DF", // tertiary
+            "#F5F6F9", // surface
+            "#FFFFFF", // background
+            "#FFFFFF", // onPrimary
+            "#05155E", // onSecondary
+            "#05155E", // onTertiary
+            "#05155E", // onSurface
+            "#05155E"  // onBackground
+        ).forEachIndexed { index, colorHex ->
+            onColorSelected(
+                dialogId = index,
+                color = ThemeColorOption.hexToIntColor(colorHex)
+            )
+        }
+    }
+
+    private fun applyChaosTheme() {
+        listOf(
+            "#A3D16E", // primary
+            "#285FF5", // secondary
+            "#CDD0DF", // tertiary
+            "#541107", // surface
+            "#FFFFFF", // background
+            "#000000", // onPrimary
+            "#FFFFFF", // onSecondary
+            "#05155E", // onTertiary
+            "#FFFFFF", // onSurface
+            "#000000"  // onBackground
+        ).forEachIndexed { index, colorHex ->
+            onColorSelected(
+                dialogId = index,
+                color = ThemeColorOption.hexToIntColor(colorHex)
+            )
         }
     }
 
@@ -619,7 +736,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                             dialog.dismiss()
                         }
                     }
-                    setNegativeButton("Close") { dialog, id ->
+                    setNegativeButton("Configure") { dialog, id ->
+                        configureUserDialog()
                         dialog.dismiss()
                     }
                 }
@@ -743,7 +861,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     private fun appendThemingOptions(root: ViewGroup) {
-        ThemeColorOption.values().forEach { option ->
+        ThemeColorOption.entries.forEach { option ->
             appendThemingOption(
                 title = option.descriptor,
                 colorHex = ThemeColors.getColorHexById(option.id),
@@ -840,7 +958,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     // Shouldn't happen here
                 }
 
-                SDKUserResult.NotLoggedIn -> {
+                SDKUserResult.NotLoggedIn, SDKUserResult.WaitingForLogin -> {
                     Log.e(
                         "Lucra SDK Sample",
                         "User not logged in yet!"
@@ -977,6 +1095,117 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         builder.show()
     }
 
+    private fun configureUserDialog() {
+
+        val builder = MaterialAlertDialogBuilder(this)
+
+        // Create the EditText for the dialog.
+        val userForm = layoutInflater.inflate(R.layout.main_configure_user_options, null).apply {
+            findViewById<TextInputEditText>(R.id.username).setText(lucraSDKUser?.username.orEmpty())
+            findViewById<TextInputEditText>(R.id.email).setText(lucraSDKUser?.email.orEmpty())
+            findViewById<TextInputEditText>(R.id.avatar).setText(lucraSDKUser?.avatarUrl.orEmpty())
+            findViewById<TextInputEditText>(R.id.phone).setText(lucraSDKUser?.phoneNumber.orEmpty())
+            findViewById<TextInputEditText>(R.id.firstName).setText(lucraSDKUser?.firstName.orEmpty())
+            findViewById<TextInputEditText>(R.id.lastName).setText(lucraSDKUser?.lastName.orEmpty())
+            findViewById<TextInputEditText>(R.id.address).setText(lucraSDKUser?.address.orEmpty())
+            findViewById<TextInputEditText>(R.id.addresCont).setText(lucraSDKUser?.addressCont.orEmpty())
+            findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
+            findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
+            findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
+        }
+
+
+        builder.setTitle("Configure the user")
+            .setView(userForm)
+            .setPositiveButton("Configure") { dialog, id ->
+                val newSdkUser = SDKUser(
+                    username = userForm.findViewById<TextInputEditText>(R.id.username).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    email = userForm.findViewById<TextInputEditText>(R.id.email).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    avatarUrl = userForm.findViewById<TextInputEditText>(R.id.avatar).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    phoneNumber = userForm.findViewById<TextInputEditText>(R.id.phone).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    firstName = userForm.findViewById<TextInputEditText>(R.id.firstName).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    lastName = userForm.findViewById<TextInputEditText>(R.id.lastName).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    address = userForm.findViewById<TextInputEditText>(R.id.address).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    addressCont = userForm.findViewById<TextInputEditText>(R.id.addresCont)
+                        .getText().toString().takeIf { it.isNotBlank() },
+                    city = userForm.findViewById<TextInputEditText>(R.id.city).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    state = userForm.findViewById<TextInputEditText>(R.id.state).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                    zip = userForm.findViewById<TextInputEditText>(R.id.zip).getText()
+                        .toString().takeIf { it.isNotBlank() },
+                )
+
+                // set details here so information is not lost
+                lucraSDKUser = newSdkUser
+                LucraClient().configure(
+                    newSdkUser
+                ) { result ->
+                    when (result) {
+                        is SDKUserResult.Error -> {
+                            Log.e("Lucra SDK Sample", "Unable to configure user ${result.error}")
+                            Toast.makeText(
+                                this@MainActivitySdk,
+                                "Error!: " + result.error.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+
+                        SDKUserResult.InvalidUsername -> {
+
+                            Toast.makeText(
+                                this@MainActivitySdk,
+                                "Invalid Username!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        SDKUserResult.Loading -> {
+                            // no loading here...
+                            dialog.dismiss()
+                        }
+
+                        SDKUserResult.NotLoggedIn -> {
+                            // shouldn't happen here!
+                        }
+
+                        is SDKUserResult.Success -> {
+                            dialog.dismiss()
+                            Toast.makeText(
+                                this@MainActivitySdk,
+                                "User configured!",
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
+                        }
+
+                        SDKUserResult.WaitingForLogin -> {
+                            dialog.dismiss()
+
+                            Toast.makeText(
+                                this@MainActivitySdk,
+                                "Waiting for login prior to configuration",
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, id ->
+                dialog.dismiss()
+            }
+
+        builder.show()
+    }
+
     private fun updateUsernameDialog() {
 
         if (lucraSDKUser == null) {
@@ -1016,8 +1245,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     return@setPositiveButton
                 } else {
 
-                    // Step 2: Update the sdk user's username
-                    LucraClient().updateUsername(lucraSDKUser!!, newUsername) {
+                    // User configure to update the username!
+                    val newSdkUser = lucraSDKUser!!.copy(username = newUsername)
+                    LucraClient().configure(newSdkUser) {
                         when (it) {
                             is SDKUserResult.Error -> {
                                 Log.e(
@@ -1067,6 +1297,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
                             SDKUserResult.Loading -> {
                                 // Show loading affordance
+                            }
+
+                            SDKUserResult.WaitingForLogin -> {
+                                // not used in this scenario
                             }
                         }
                     }
@@ -1123,10 +1357,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             colorHex = ThemeColorOption.intToColorHex(color)
         )
 
-        val v = themeOptionRowViewMap[dialogId]!!
-
-        v.findViewById<TextView>(R.id.colorHexTv).text = ThemeColorOption.intToColorHex(color)
-        v.findViewById<View>(R.id.colorPreview).setBackgroundColor(color)
+        themeOptionRowViewMap[dialogId]?.run {
+            findViewById<TextView>(R.id.colorHexTv).text = ThemeColorOption.intToColorHex(color)
+            findViewById<View>(R.id.colorPreview).setBackgroundColor(color)
+        }
     }
 
     override fun onDialogDismissed(dialogId: Int) {
@@ -1174,5 +1408,23 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         return link
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val flow = LucraPushNotificationService.handleNotificationIntent(intent)
+        flow?.let { launchFlow(it) }
+    }
+
+    private fun setupNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                FCMService.DEFAULT_NOTIFICATION_CHANNEL_ID,
+                FCMService.DEFAULT_NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+            }
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
     }
 }

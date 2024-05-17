@@ -1,3 +1,11 @@
+## 3.4.0
+* Added `SDKUserResult.WaitingForLogin` to depict scenarios where the User action is awaiting completion of user login prior to completing the user action. E.g. `LucraClient().configure(sdkUser)`
+  * After successful configuration and login, the user info will be automatically updated
+* If `configure(sdkUser)` is called prior to login, the (valid) phone number will be used to prepopulated the login screen.
+* Lucra specific push notifications are now supported
+* Fixed user auth subscription issue when user logs out
+* Fixed SDKUser balance
+
 ## 3.3.1
 * Created Contest Flows now respect the configuration of the client. e.g. Games you play vs games you watch
 * Fixed insufficient funds logic
