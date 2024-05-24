@@ -1,3 +1,10 @@
+## 3.4.1
+* Added update username feature from profile
+* Fixed SDK state when application restarts from configuration changes
+* Withdrawal and add funds actions will invoke device security.
+* Bug fix with suspension screens
+* Added responsible gaming screens
+
 ## 3.4.0
 * Added `SDKUserResult.WaitingForLogin` to depict scenarios where the User action is awaiting completion of user login prior to completing the user action. E.g. `LucraClient().configure(sdkUser)`
   * After successful configuration and login, the user info will be automatically updated
