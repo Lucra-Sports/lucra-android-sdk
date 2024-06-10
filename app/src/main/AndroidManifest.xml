@@ -38,6 +38,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+<!--            Client specific deeplink setup, required for GYP!-->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 

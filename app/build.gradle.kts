@@ -28,6 +28,9 @@ android {
             )
         )
 
+        // TODO add your deeplink host config here as needed
+        manifestPlaceholders["deepLinkHostName"] = "todo-replace-me.com"
+
         // TODO Add your auth0 client id here
         buildConfigField(
             "String",
