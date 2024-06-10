@@ -1,4 +1,15 @@
+## 3.5.0
+* Fixed invalid login auth state
+* Added TOS bottom sheet
+* Fixed add funds logic around accepting GYP flow
+* Fixed various deposit flow bugs
+* Improved CC expiration date input
+* Added additional address line for CC entry
+* Added unsupported CC type error
+* Migrated user stats query from v3 to v4
+
 ## 3.4.1
+* [Deprecated Release] Use version >=3.5.0
 * Added update username feature from profile
 * Fixed SDK state when application restarts from configuration changes
 * Withdrawal and add funds actions will invoke device security.
@@ -6,6 +17,7 @@
 * Added responsible gaming screens
 
 ## 3.4.0
+* [Deprecated Release] Use version >=3.5.0
 * Added `SDKUserResult.WaitingForLogin` to depict scenarios where the User action is awaiting completion of user login prior to completing the user action. E.g. `LucraClient().configure(sdkUser)`
   * After successful configuration and login, the user info will be automatically updated
 * If `configure(sdkUser)` is called prior to login, the (valid) phone number will be used to prepopulated the login screen.
@@ -14,6 +26,7 @@
 * Fixed SDKUser balance
 
 ## 3.3.1
+* [Deprecated Release] Use version >=3.5.0
 * Created Contest Flows now respect the configuration of the client. e.g. Games you play vs games you watch
 * Fixed insufficient funds logic
 * Multiple Games You Play bug fixes
@@ -30,12 +43,14 @@
     ```
 
 ## 3.3.0
+* [Deprecated Release] Use version >=3.5.0
 * Added `LucraComponent.RecommendedMatchups` LucraComponent
 * Fixed unauthed flow user experience
 * Added `LucraClient().getSportsMatchup()` API call to retrieve sports matchups
 * Added support for unauthed API call for GYP and SYW contest details
 
 ## 3.2.0
+* [Deprecated Release] Use version >=3.5.0
 * Added `LucraComponent.ContestCard` (View) to embed a sports contest card within the host app
 * Added Floating Action Button to User Profile
 * Updated MiniPublicFeed to allow a list of player ids instead of only two
@@ -53,6 +68,7 @@
 * Added `LucraClient().setEventListener` to allow a way for clients to listen to events and transmit data from event occurring within the SDK.
 
 ## 3.1.0
+* [Deprecated Release] Use version >=3.5.0
 * Allow public feed (`LucraFlow.PublicFeed`) to be filtered by league IDs through `SdkIdFilter`. It can be accessed through `LucraClient().getPublicFeedLeagueIdFilter()`.
 * Deprecated `LucraClient().getSDKUser`
 * Introduced `LucraClient().observeSDKUserFlow()` and `LucraClient().observeSDKUser { sdkUser -> }`, these will emit the active user logged in and returns null upon logging out
@@ -63,6 +79,7 @@
 * Bug fixes to public feed and profile flows
 
 ## 3.0.0
+* [Deprecated Release] Use version >=3.5.0
 * Added required `apiUrl` to `LucraClient` constructor
 * Updated `authClientId` to `apiKey`
 * Added support for unauthed viewing of the public feed. Any proceeding actions will now launch the auth flow
@@ -70,6 +87,7 @@
 * Added update username API for scenarios where only the username needs updates
 
 ## 2.3.1-beta
+* [Deprecated Release] Use version >=3.5.0
 * This version is largely a test to verify release automation
 * Various bug fixes and UI updates
 * Allow user info of a same user to be updated when username has not changed
@@ -78,6 +96,7 @@
 * Update deeplink handling back to the SDK
 
 ## 2.3.0-beta
+* [Deprecated Release] Use version >=3.5.0
 * Fixed issues around missing matchups
 * Fixed user balance emission updates
 * Included Aeropay functionality
@@ -85,6 +104,7 @@
 * Aeropay deeplinks back to add funds page after bank link.
 
 ## 2.2.0-beta
+* [Deprecated Release] Use version >=3.5.0
 * Removed "Send Reminders" card from the public feed
 * Updated "Created Contest" popup to notify user where to find their contest
 * Added notifications to profile screen
@@ -92,6 +112,7 @@
 * Fixed DatePicker UI
 
 ## 2.1.0-beta
+* [Deprecated Release] Use version >=3.5.0
 * Introduced `LucraClient().getSDKUser {...}` to retrieve the current logged in user
 * Introduced `LucraClient().configure(sdkUser)` to update the current logged in user
 * Fixed UserService state to listen to user authed status
@@ -101,7 +122,7 @@
 * Introduced new flow `LucraFlow.Login`
 
 ## 2.0.0-beta
-
+* [Deprecated Release] Use version >=3.5.0
 * [Breaking Change] Introduced required `LucraFlowListener` as a property of `LucraUi` to consume permitted flow launch points. See README for more details
   * Implement `launchNewLucraFlowEntryPoint` to accept full screen launch points
   * Implement `onFlowDismissRequested` to dismiss any full screen launch points, including the original launch point.
@@ -109,14 +130,16 @@
 * Fixed duplicate logs upon client recreation
 
 ## 1.1.2-beta
+* [Deprecated Release] Use version >=3.5.0
 * Introduced SANDBOX Environment, `environment = Environment.SANDBOX`
 * Updated maven artifact location from `https://maven.pkg.github.com/Lucra-Sports/lucra-android` to `https://maven.pkg.github.com/Lucra-Sports/lucra-android-sdk`
 
 ## 1.1.1-beta
+* [Deprecated Release] Use version >=3.5.0
 * Testing release process, no changes
 
 ## 1.1.0-beta
-
+* [Deprecated Release] Use version >=3.5.0
 * API Create and Cancel Contests
 * LucraUI introduced to support lucra flows
   `LucraUiProvider.LucraFlow.VerifyIdentity`

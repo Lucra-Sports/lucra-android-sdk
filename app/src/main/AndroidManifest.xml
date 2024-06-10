@@ -44,7 +44,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="https" android:host="lucrasdk.page.link"  />
+                <data android:scheme="https" android:host="${deepLinkHostName}"  />
             </intent-filter>
         </activity>
 
