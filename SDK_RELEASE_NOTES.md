@@ -1,3 +1,6 @@
+## 3.5.1
+* Upon logging out in the middle of a Flow, LoginFlow will reset the Flow stack and launch
+
 ## 3.5.0
 * Fixed invalid login auth state
 * Added TOS bottom sheet

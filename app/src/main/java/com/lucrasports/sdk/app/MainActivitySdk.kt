@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
@@ -98,6 +99,26 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
     private val themeOptionRowViewMap = mutableMapOf<Int, View>()
 
+    companion object {
+        private const val API_URL_OVERRIDE = "API_URL_OVERRIDE"
+        private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
+    }
+
+    private val preferences by lazy {
+        getSharedPreferences("LucraSamplePrefs", Context.MODE_PRIVATE)
+    }
+    private var apiUrlOverride: String?
+        get() = preferences.getString(API_URL_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
+        set(value) {
+            preferences.edit().putString(API_URL_OVERRIDE, value).apply()
+        }
+
+    private var apiKeyOverride: String?
+        get() = preferences.getString(API_KEY_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
+        set(value) {
+            preferences.edit().putString(API_KEY_OVERRIDE, value).apply()
+        }
+
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
 
@@ -135,17 +156,27 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         appendComponentOptions()
     }
 
+    private fun buildApiUrlSet() = BuildConfig.TESTING_API_URL != "ADD YOUR API URL HERE"
+    private fun buildApiKeySet() = BuildConfig.TESTING_API_KEY != "ADD YOUR API KEY HERE"
+
     private fun initializeLucraClient() {
-        // TODO don't forget to update API_URL and API_KEY
-        if (BuildConfig.TESTING_API_URL == "ADD YOUR API URL HERE" || BuildConfig.TESTING_API_KEY == "ADD YOUR API KEY HERE") {
+        val apiUrlSet = buildApiUrlSet() || apiUrlOverride != null
+        val apiKeySet = buildApiKeySet() || apiKeyOverride != null
+        if (!apiUrlSet || !apiKeySet) {
             Log.e("Lucra SDK Sample", "Be sure to use a valid API Url prior to initialization!")
             MaterialAlertDialogBuilder(this)
                 .setTitle("Woah, hold up!")
-                .setMessage("This sample only works if you've been given a valid API URL and API Key. Please reach out to your Lucra contact to get started.")
+                .setMessage("This sample only works if you've been given a valid API URL and API Key. Press configure to manually enter these values or reach out to your Lucra contact to get started.")
+                .setNeutralButton("Configure") { dialog, _ ->
+                    overrideApiUrlAndKey()
+                }
                 .setPositiveButton("Close") { dialog, _ ->
                     dialog.dismiss()
                 }
                 .show()
+
+            // TODO lucra client does NOT gracefully handle empty or invalid apikey/url
+            //  https://lucrasports.atlassian.net/browse/LF-3596
         }
 
         LucraClient.initialize(
@@ -153,9 +184,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             lucraUiProvider = buildLucraUiInstance(),
             // This must be updated to the correct auth0 client id per environment
             // Logins won't work if there's a mismatch
-            apiKey = BuildConfig.TESTING_API_KEY,
+            apiKey = apiKeyOverride ?: BuildConfig.TESTING_API_KEY,
             // This must be updated to the correct api url per environment
-            apiUrl = BuildConfig.TESTING_API_URL,
+            apiUrl = apiUrlOverride ?: BuildConfig.TESTING_API_URL,
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             clientTheme = ClientTheme(
@@ -211,8 +242,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
     private fun setupPushNotifications() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    1
+                )
             }
         }
 
@@ -551,6 +590,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 .setPositiveButton("Close", null)
                 .setItems(
                     arrayOf<CharSequence>(
+                        "Override API URL and key",
                         "Set League Filter",
                         "View Recent IDs of games, leagues and players",
                         "Update Style Colors"
@@ -558,6 +598,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 ) { dialog, which ->
                     when (which) {
                         0 -> {
+                            overrideApiUrlAndKey()
+                        }
+
+                        1 -> {
                             val editText =
                                 layoutInflater.inflate(
                                     R.layout.main_option_setting_edit_text,
@@ -608,9 +652,11 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 /* resource = */ R.layout.main_theming_options_layout,
                                 /* root = */ null
                             )
-                            val btnThemeDefault: Button = colorLayout.findViewById(R.id.btn_theme_default)
+                            val btnThemeDefault: Button =
+                                colorLayout.findViewById(R.id.btn_theme_default)
                             val btnThemeDupr: Button = colorLayout.findViewById(R.id.btn_theme_dupr)
-                            val btnThemeChaos: Button = colorLayout.findViewById(R.id.btn_theme_chaos)
+                            val btnThemeChaos: Button =
+                                colorLayout.findViewById(R.id.btn_theme_chaos)
 
                             btnThemeDefault.setOnClickListener { applyDefaultTheme() }
                             btnThemeDupr.setOnClickListener { applyDuprTheme() }
@@ -632,6 +678,92 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 }
                 .show()
         }
+    }
+
+    private fun overrideApiUrlAndKey() {
+        val layout =
+            layoutInflater.inflate(
+                R.layout.main_option_configure_api,
+                null
+            )
+        val apiUrlEt = layout.findViewById<TextInputEditText>(R.id.et_api_url)
+        val apiUrlTil = layout.findViewById<TextInputLayout>(R.id.til_api_url)
+        apiUrlOverride?.let {
+            apiUrlTil.hint = "API URL (overrode)"
+            apiUrlEt.setText(it)
+        } ?: run {
+            apiUrlEt.setText(
+                if (buildApiUrlSet()) {
+                    apiUrlTil.hint = "API URL (default)"
+                    BuildConfig.TESTING_API_URL
+                } else {
+                    "Add an API Url!"
+                }
+            )
+        }
+        val apiKeyEt = layout.findViewById<TextInputEditText>(R.id.et_api_key)
+        val apiKeyTil = layout.findViewById<TextInputLayout>(R.id.til_api_key)
+        apiKeyOverride?.let {
+            apiKeyTil.hint = "API Key (overrode)"
+            apiKeyEt.setText(it)
+        } ?: run {
+            apiKeyEt.setText(
+                if (buildApiKeySet()) {
+                    apiKeyTil.hint = "API Key (default)"
+                    BuildConfig.TESTING_API_KEY
+                } else {
+                    "Add an API Key!"
+                }
+            )
+        }
+
+        val configureApiDialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Update Api Url ")
+            .setView(layout)
+            .setNeutralButton("Reset") { dialog, id ->
+                apiUrlOverride = null
+                apiKeyOverride = null
+                dialog.dismiss()
+                restartActivity()
+            }
+            .setNegativeButton("Close", null)
+            .setPositiveButton("Save", null)
+            .create()
+
+        configureApiDialog.setOnShowListener {
+
+            val positiveButton = configureApiDialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+
+                val enteredApiUrl = apiUrlEt.text.toString()
+                if (enteredApiUrl.isEmpty()) {
+                    apiUrlEt.error = "Cannot be blank"
+                    return@setOnClickListener
+                }
+
+                val enteredApiKey = apiKeyEt.text.toString()
+                if (enteredApiKey.isEmpty()) {
+                    apiKeyEt.error = "Cannot be blank"
+                    return@setOnClickListener
+                }
+
+                apiKeyOverride = if (enteredApiKey != BuildConfig.TESTING_API_KEY) {
+                    enteredApiKey
+                } else {
+                    null
+                }
+
+
+                apiUrlOverride = if (enteredApiUrl != BuildConfig.TESTING_API_URL) {
+                    enteredApiUrl
+                } else {
+                    null
+                }
+                configureApiDialog.dismiss()
+                restartActivity()
+            }
+        }
+        configureApiDialog.show()
     }
 
     private fun applyDefaultTheme() {
@@ -1100,19 +1232,20 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         val builder = MaterialAlertDialogBuilder(this)
 
         // Create the EditText for the dialog.
-        val userForm = layoutInflater.inflate(R.layout.main_configure_user_options, null).apply {
-            findViewById<TextInputEditText>(R.id.username).setText(lucraSDKUser?.username.orEmpty())
-            findViewById<TextInputEditText>(R.id.email).setText(lucraSDKUser?.email.orEmpty())
-            findViewById<TextInputEditText>(R.id.avatar).setText(lucraSDKUser?.avatarUrl.orEmpty())
-            findViewById<TextInputEditText>(R.id.phone).setText(lucraSDKUser?.phoneNumber.orEmpty())
-            findViewById<TextInputEditText>(R.id.firstName).setText(lucraSDKUser?.firstName.orEmpty())
-            findViewById<TextInputEditText>(R.id.lastName).setText(lucraSDKUser?.lastName.orEmpty())
-            findViewById<TextInputEditText>(R.id.address).setText(lucraSDKUser?.address.orEmpty())
-            findViewById<TextInputEditText>(R.id.addresCont).setText(lucraSDKUser?.addressCont.orEmpty())
-            findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
-            findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
-            findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
-        }
+        val userForm =
+            layoutInflater.inflate(R.layout.main_configure_user_options, null).apply {
+                findViewById<TextInputEditText>(R.id.username).setText(lucraSDKUser?.username.orEmpty())
+                findViewById<TextInputEditText>(R.id.email).setText(lucraSDKUser?.email.orEmpty())
+                findViewById<TextInputEditText>(R.id.avatar).setText(lucraSDKUser?.avatarUrl.orEmpty())
+                findViewById<TextInputEditText>(R.id.phone).setText(lucraSDKUser?.phoneNumber.orEmpty())
+                findViewById<TextInputEditText>(R.id.firstName).setText(lucraSDKUser?.firstName.orEmpty())
+                findViewById<TextInputEditText>(R.id.lastName).setText(lucraSDKUser?.lastName.orEmpty())
+                findViewById<TextInputEditText>(R.id.address).setText(lucraSDKUser?.address.orEmpty())
+                findViewById<TextInputEditText>(R.id.addresCont).setText(lucraSDKUser?.addressCont.orEmpty())
+                findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
+                findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
+                findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
+            }
 
 
         builder.setTitle("Configure the user")
@@ -1127,7 +1260,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         .toString().takeIf { it.isNotBlank() },
                     phoneNumber = userForm.findViewById<TextInputEditText>(R.id.phone).getText()
                         .toString().takeIf { it.isNotBlank() },
-                    firstName = userForm.findViewById<TextInputEditText>(R.id.firstName).getText()
+                    firstName = userForm.findViewById<TextInputEditText>(R.id.firstName)
+                        .getText()
                         .toString().takeIf { it.isNotBlank() },
                     lastName = userForm.findViewById<TextInputEditText>(R.id.lastName).getText()
                         .toString().takeIf { it.isNotBlank() },
@@ -1150,7 +1284,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 ) { result ->
                     when (result) {
                         is SDKUserResult.Error -> {
-                            Log.e("Lucra SDK Sample", "Unable to configure user ${result.error}")
+                            Log.e(
+                                "Lucra SDK Sample",
+                                "Unable to configure user ${result.error}"
+                            )
                             Toast.makeText(
                                 this@MainActivitySdk,
                                 "Error!: " + result.error.message,
