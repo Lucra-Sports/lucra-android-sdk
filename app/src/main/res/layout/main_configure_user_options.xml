@@ -53,9 +53,9 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/phone"
-                android:inputType="phone"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:inputType="phone" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -161,5 +161,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp"
+            android:text="Birthday" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_birthday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp"
+            android:text="(empty)" />
+
     </LinearLayout>
 </ScrollView>

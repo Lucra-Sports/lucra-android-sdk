@@ -187,7 +187,8 @@ LucraClient.initialize(
   outputLogs = true,
   // Optionally add your own color scheme and fonts, from "com.lucrasports.sdk:sdk-ui:*", defaults to the Lucra Defaults
   clientTheme = ClientTheme(
-    colorStyle = ColorStyle(),
+    lightColorStyle = ColorStyle(),
+    darkColorStyle = ColorStyle(),
     fontFamily = FontFamily()
   )
 )
@@ -330,9 +331,11 @@ private fun observeLoggedInUser() {
 
 `configure`
 
-Updates the `SDKUser` for the current logged in user
-> [!IMPORTANT]
-> At the moment, users can only log in after attempting to interact with a `LucraFlow`
+Updates the `SDKUser` for the current logged in user. If the user is not logged in yet, the configuration data will be submitted once they do log in. This is helpful to prepopulate information like username, date of birth and phone number.
+
+Passing in `phoneNumber` will prepopulate the phone number login field and lock it.
+
+Passing in `birthday` will prepopulate KYC and SSN forms, make sure to pass in a `Calendar` in UTC
 
 
 - **Parameters:**
@@ -348,6 +351,10 @@ LucraClient().configure(sdkUser.copy(username = newUsername)) {
                     "Lucra SDK Sample",
                     "Unable to update username ${it.error}"
                 )
+            }
+          
+            is SDKUserResult.WaitingForLogin -> {
+                Log.d("Sample", "Waiting for user to login prior to submitting configuration")
             }
 
             SDKUserResult.InvalidUsername -> {
@@ -655,7 +662,7 @@ LucraClient().setEventListener(object : LucraEventListener {
 Your can customize your Lucra implementation with your own color scheme and fonts by providing
 the `ClientTheme` object to `LucraClient`.
 
-The `ClientTheme` class has two nested classes, `ColorStyle` and `FontFamily`.
+The `ClientTheme` class has three nested classes, `lightColorStyle`, `darkColorStyle`, and `FontFamily`.
 
 `ColorStyle`
 
@@ -684,7 +691,7 @@ These fonts are imported through Reach Native.
 LucraClient.initialize(
   /*...*/
   clientTheme = ClientTheme(
-    colorStyle = ColorStyle(
+    lightColorStyle = ColorStyle(
       primary = "#1976D2",
       secondary = "#F57C00",
       tertiary = "#388E3C",
@@ -695,6 +702,18 @@ LucraClient.initialize(
       onTertiary = "#FFFFFF",
       onSurface = "#000000",
       onBackground = "#000000"
+    ),
+    darkColorStyle = ColorStyle(
+      primary = "#09E35F",
+      secondary = "#5E5BD0",
+      tertiary = "#9C99FC",
+      surface = "#1C2575",
+      background = "#001448",
+      onPrimary = "#001448",
+      onSecondary = "#FFFFFF",
+      onTertiary = "#FFFFFF",
+      onSurface = "#FFFFFF",
+      onBackground = "#FFFFFF"
     ),
     fontFamily = FontFamily(
       mediumFont = Font("my_medium_font.ttf"),
