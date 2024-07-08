@@ -29,6 +29,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.DateValidatorPointBackward
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -42,6 +46,10 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lucrasports.sdk.app.notifications.FCMService
+import com.lucrasports.sdk.app.theming.ApplyThemeHelper
+import com.lucrasports.sdk.app.theming.DarkThemeColorOption
+import com.lucrasports.sdk.app.theming.LightThemeColorOption
+import com.lucrasports.sdk.app.theming.ThemeColors
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
@@ -49,7 +57,6 @@ import com.lucrasports.sdk.core.contest.SportsMatchup
 import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
 import com.lucrasports.sdk.core.style_guide.ClientTheme
-import com.lucrasports.sdk.core.style_guide.ColorStyle
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
 import com.lucrasports.sdk.core.ui.LucraFlowListener
@@ -62,6 +69,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Calendar
+import java.util.TimeZone
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
@@ -97,6 +106,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         findViewById(R.id.ll_api_section)
     }
 
+    private val applyThemeHelper = ApplyThemeHelper(this::onColorSelected)
     private val themeOptionRowViewMap = mutableMapOf<Int, View>()
 
     companion object {
@@ -190,18 +200,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             clientTheme = ClientTheme(
-                colorStyle = ColorStyle(
-                    primary = ThemeColors.getColorHexById(ThemeColorOption.PRIMARY.id),
-                    secondary = ThemeColors.getColorHexById(ThemeColorOption.SECONDARY.id),
-                    tertiary = ThemeColors.getColorHexById(ThemeColorOption.TERTIARY.id),
-                    surface = ThemeColors.getColorHexById(ThemeColorOption.SURFACE.id),
-                    background = ThemeColors.getColorHexById(ThemeColorOption.BACKGROUND.id),
-                    onPrimary = ThemeColors.getColorHexById(ThemeColorOption.ON_PRIMARY.id),
-                    onSecondary = ThemeColors.getColorHexById(ThemeColorOption.ON_SECONDARY.id),
-                    onTertiary = ThemeColors.getColorHexById(ThemeColorOption.ON_TERTIARY.id),
-                    onSurface = ThemeColors.getColorHexById(ThemeColorOption.ON_SURFACE.id),
-                    onBackground = ThemeColors.getColorHexById(ThemeColorOption.ON_BACKGROUND.id)
-                ),
+                lightColorStyle = applyThemeHelper.getLightColorStyle(),
+                darkColorStyle = applyThemeHelper.getDarkColorStyle(),
                 fontFamily = FontFamily(
                     mediumFont = Font("merriweather_medium.ttf"),
                     normalFont = Font("merriweather_regular.ttf"),
@@ -635,7 +635,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 .show()
                         }
 
-                        1 -> {
+                        2 -> {
                             // TODO expose an internal list which contains list of recent
                             //  Games Ids, League Ids, and Player Ids
                             //  It should be a capped list and for testing purposes only
@@ -646,7 +646,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 .show()
                         }
 
-                        2 -> {
+                        3 -> {
 
                             val colorLayout = layoutInflater.inflate(
                                 /* resource = */ R.layout.main_theming_options_layout,
@@ -654,13 +654,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                             )
                             val btnThemeDefault: Button =
                                 colorLayout.findViewById(R.id.btn_theme_default)
-                            val btnThemeDupr: Button = colorLayout.findViewById(R.id.btn_theme_dupr)
+                            val btnThemeDupr: Button =
+                                colorLayout.findViewById(R.id.btn_theme_dupr)
                             val btnThemeChaos: Button =
                                 colorLayout.findViewById(R.id.btn_theme_chaos)
 
-                            btnThemeDefault.setOnClickListener { applyDefaultTheme() }
-                            btnThemeDupr.setOnClickListener { applyDuprTheme() }
-                            btnThemeChaos.setOnClickListener { applyChaosTheme() }
+                            btnThemeDefault.setOnClickListener { applyThemeHelper.applyDefaultTheme() }
+                            btnThemeDupr.setOnClickListener { applyThemeHelper.applyDuprTheme() }
+                            btnThemeChaos.setOnClickListener { applyThemeHelper.applyChaosTheme() }
 
                             appendThemingOptions(colorLayout.findViewById<LinearLayout>(R.id.ll_theming_section))
                             MaterialAlertDialogBuilder(this)
@@ -764,66 +765,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
         }
         configureApiDialog.show()
-    }
-
-    private fun applyDefaultTheme() {
-        listOf(
-            "#09E35F", // primary
-            "#5E5BD0", // secondary
-            "#9C99FC", // tertiary
-            "#1C2575", // surface
-            "#001448", // background
-            "#001448", // onPrimary
-            "#FFFFFF", // onSecondary
-            "#FFFFFF", // onTertiary
-            "#FFFFFF", // onSurface
-            "#FFFFFF"  // onBackground
-        ).forEachIndexed { index, colorHex ->
-            onColorSelected(
-                index,
-                ThemeColorOption.hexToIntColor(colorHex)
-            )
-        }
-    }
-
-    private fun applyDuprTheme() {
-        listOf(
-            "#3A79E0", // primary
-            "#EBECF2", // secondary
-            "#CDD0DF", // tertiary
-            "#F5F6F9", // surface
-            "#FFFFFF", // background
-            "#FFFFFF", // onPrimary
-            "#05155E", // onSecondary
-            "#05155E", // onTertiary
-            "#05155E", // onSurface
-            "#05155E"  // onBackground
-        ).forEachIndexed { index, colorHex ->
-            onColorSelected(
-                dialogId = index,
-                color = ThemeColorOption.hexToIntColor(colorHex)
-            )
-        }
-    }
-
-    private fun applyChaosTheme() {
-        listOf(
-            "#A3D16E", // primary
-            "#285FF5", // secondary
-            "#CDD0DF", // tertiary
-            "#541107", // surface
-            "#FFFFFF", // background
-            "#000000", // onPrimary
-            "#FFFFFF", // onSecondary
-            "#05155E", // onTertiary
-            "#FFFFFF", // onSurface
-            "#000000"  // onBackground
-        ).forEachIndexed { index, colorHex ->
-            onColorSelected(
-                dialogId = index,
-                color = ThemeColorOption.hexToIntColor(colorHex)
-            )
-        }
     }
 
     private fun setupAuthHeaderButton() {
@@ -993,17 +934,59 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     private fun appendThemingOptions(root: ViewGroup) {
-        ThemeColorOption.entries.forEach { option ->
+        layoutInflater.inflate(R.layout.theme_color_selector, root, false)
+            .apply {
+                findViewById<TextView>(R.id.colorDescriptorTv).text = "LightTheme options"
+                findViewById<TextView>(R.id.colorHexTv).visibility = View.GONE
+                findViewById<View>(R.id.colorPreview).visibility = View.GONE
+            }
+            .also { root.addView(it) }
+
+        LightThemeColorOption.entries.forEach { option ->
             appendThemingOption(
                 title = option.descriptor,
                 colorHex = ThemeColors.getColorHexById(option.id),
                 id = option.id,
-                defaultColor = ThemeColorOption.hexToIntColor(ThemeColors.getColorHexById(option.id)),
+                defaultColor = applyThemeHelper.hexToIntColor(ThemeColors.getColorHexById(option.id)),
                 root = root
-            ).also {
-                themeOptionRowViewMap[option.id] = it
-            }
+            ).also { themeOptionRowViewMap[option.id] = it }
         }
+
+        layoutInflater.inflate(R.layout.theme_color_selector, root, false)
+            .apply {
+                findViewById<TextView>(R.id.colorDescriptorTv).text = "DarkTheme options"
+                findViewById<TextView>(R.id.colorHexTv).visibility = View.GONE
+                findViewById<View>(R.id.colorPreview).visibility = View.GONE
+            }
+            .also { root.addView(it) }
+
+        DarkThemeColorOption.entries.forEach { option ->
+            appendThemingOption(
+                title = option.descriptor,
+                colorHex = ThemeColors.getColorHexById(option.id),
+                id = option.id,
+                defaultColor = applyThemeHelper.hexToIntColor(ThemeColors.getColorHexById(option.id)),
+                root = root
+            ).also { themeOptionRowViewMap[option.id] = it }
+        }
+    }
+
+    override fun onColorSelected(
+        dialogId: Int,
+        color: Int
+    ) {
+        ThemeColors.setNewColor(
+            forId = dialogId,
+            colorHex = applyThemeHelper.intToColorHex(color)
+        )
+
+        themeOptionRowViewMap[dialogId]?.run {
+            findViewById<TextView>(R.id.colorHexTv).text = applyThemeHelper.intToColorHex(color)
+            findViewById<View>(R.id.colorPreview).setBackgroundColor(color)
+        }
+    }
+
+    override fun onDialogDismissed(dialogId: Int) { /* no-op */
     }
 
     private fun appendOption(
@@ -1124,19 +1107,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     val builderDisplay = MaterialAlertDialogBuilder(this)
                     if (it is SportsMatchup.RetrieveSportsMatchupResult.SportsMatchupDetailsOutput) {
                         var displayString = ""
-                        displayString += "Amount > ${it.wagerAmount}\n" +
-                                "Status > ${it.status}\n" +
-                                "Created At > ${it.createdAt}\n" +
-                                "Updated At > ${it.updatedAt}\n" +
-                                "Winner Id > ${it.winnerId}\n" +
-                                "Owner Id > ${it.ownerId}\n" +
-                                "Owner Player Id > ${it.ownerPlayerId}\n" +
-                                "Owner Metric Id > ${it.ownerMetricId}\n" +
-                                "Owner Spread > ${it.ownerSpread}\n" +
-                                "Opponent Id > ${it.opponentId}\n" +
-                                "Opponent Player Id > ${it.opponentPlayerId}\n" +
-                                "Opponent Metric Id > ${it.opponentMetricId}\n" +
-                                "Opponent Spread > ${it.opponentSpread}\n"
+                        displayString += "${it.sportsMatchup}"
 
                         val textView = TextView(this).apply {
                             setText(displayString)
@@ -1227,6 +1198,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         builder.show()
     }
 
+    private var userSelectedBirthdate: Calendar? = null
+
     private fun configureUserDialog() {
 
         val builder = MaterialAlertDialogBuilder(this)
@@ -1245,6 +1218,39 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
                 findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
                 findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
+                findViewById<MaterialButton>(R.id.btn_birthday).apply {
+                    setText(
+                        lucraSDKUser?.birthday?.toMonthDayYear() ?: "Birthday (empty)"
+                    )
+                    setOnClickListener {
+                        val openAt = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                            add(Calendar.YEAR, -21)
+                        }.timeInMillis
+
+                        val datePickerBuilder = MaterialDatePicker.Builder.datePicker()
+                            .setTitleText("Select a Date")
+                            .setCalendarConstraints(
+                                CalendarConstraints.Builder()
+                                    .setOpenAt(
+                                        userSelectedBirthdate?.timeInMillis
+                                            ?: lucraSDKUser?.birthday?.timeInMillis
+                                            ?: openAt
+                                    )
+                                    .setValidator(DateValidatorPointBackward.now())
+                                    .build()
+                            )
+                        val datePicker = datePickerBuilder.build()
+                        datePicker.show(supportFragmentManager, "DATE_PICKER")
+                        datePicker.addOnPositiveButtonClickListener { selectedTime ->
+                            userSelectedBirthdate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = selectedTime
+                            }
+                            setText(
+                                userSelectedBirthdate?.toMonthDayYear() ?: "(empty)"
+                            )
+                        }
+                    }
+                }
             }
 
 
@@ -1275,6 +1281,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         .toString().takeIf { it.isNotBlank() },
                     zip = userForm.findViewById<TextInputEditText>(R.id.zip).getText()
                         .toString().takeIf { it.isNotBlank() },
+                    birthday = userSelectedBirthdate
                 )
 
                 // set details here so information is not lost
@@ -1485,25 +1492,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 //        LucraClient.release()
     }
 
-    override fun onColorSelected(
-        dialogId: Int,
-        color: Int
-    ) {
-        ThemeColors.setNewColor(
-            forId = dialogId,
-            colorHex = ThemeColorOption.intToColorHex(color)
-        )
-
-        themeOptionRowViewMap[dialogId]?.run {
-            findViewById<TextView>(R.id.colorHexTv).text = ThemeColorOption.intToColorHex(color)
-            findViewById<View>(R.id.colorPreview).setBackgroundColor(color)
-        }
-    }
-
-    override fun onDialogDismissed(dialogId: Int) {
-        // no-op
-    }
-
     suspend fun generateNavigateLink(url: String): String {
         val link = try {
             val dynamicLinksDomainURIPrefix = BuildConfig.FIREBASE_DEEPLINK_URL
@@ -1564,4 +1552,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
+
+    private fun Calendar.toMonthDayYear(): String =
+        "${get(Calendar.MONTH) + 1}/${get(Calendar.DAY_OF_MONTH)}/${get(Calendar.YEAR)}"
+
 }

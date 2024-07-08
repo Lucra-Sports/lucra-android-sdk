@@ -1,5 +1,16 @@
-## 3.5.1
+## 3.6.0
+* [Breaking Change] Updated `getSportsMatchup(matchupId)` to return new `SportsMatchupType` model
 * Upon logging out in the middle of a Flow, LoginFlow will reset the Flow stack and launch
+* A "No network" screen will show if network drops for any reason.
+* Added Head to Head Stats
+* Client theme now supports light and dark mode. `ClientTheme`'s `colorStyle` constructor field is deprecated. Use new `ClientTheme(lightColorStyle: ..., darkColorStyle:...)` instead.
+* Fixed View All player and opponent stats
+* `Login` flow can now be entered even if user is already logged in. They'll be met with "User is already onboarded"
+* `SDKUser` will now accept a birthday `Calendar` object to prefill KYC and SSN flows. This birthday will continue to emit with user updates.
+* Updated money transaction notifications to navigate user to Transaction history
+* Added ability to edit a user's profile image
+* Added support to see all submitted support request and add additional comments to them
+* Various bug fixes around Verification status, sports public feeds and styling.
 
 ## 3.5.0
 * Fixed invalid login auth state
