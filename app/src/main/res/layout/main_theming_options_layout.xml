@@ -32,36 +32,59 @@
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="@color/white" />
 
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_theme_default"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="Default" />
+
+                    <Button
+                        android:id="@+id/btn_theme_dupr"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="DUPR" />
+
+                    <Button
+                        android:id="@+id/btn_theme_t1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="T1" />
+
+                    <Button
+                        android:id="@+id/btn_theme_psf"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="PSF" />
+
+                    <Button
+                        android:id="@+id/btn_theme_chaos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="Chaos" />
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+
             <LinearLayout
+                android:id="@+id/ll_theming_options_section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_theme_default"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:text="Default" />
-
-                <Button
-                    android:id="@+id/btn_theme_dupr"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="12dp"
-                    android:layout_weight="1"
-                    android:text="DUPR" />
-
-                <Button
-                    android:id="@+id/btn_theme_chaos"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp"
-                    android:layout_weight="1"
-                    android:text="Chaos" />
-
-            </LinearLayout>
+                android:orientation="vertical"/>
 
         </LinearLayout>
     </ScrollView>
