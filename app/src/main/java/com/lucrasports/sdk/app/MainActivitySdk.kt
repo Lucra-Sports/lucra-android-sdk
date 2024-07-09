@@ -46,10 +46,8 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lucrasports.sdk.app.notifications.FCMService
-import com.lucrasports.sdk.app.theming.ApplyThemeHelper
-import com.lucrasports.sdk.app.theming.DarkThemeColorOption
-import com.lucrasports.sdk.app.theming.LightThemeColorOption
-import com.lucrasports.sdk.app.theming.ThemeColors
+import com.lucrasports.sdk.app.theming.SampleColorStore
+import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
@@ -106,7 +104,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         findViewById(R.id.ll_api_section)
     }
 
-    private val applyThemeHelper = ApplyThemeHelper(this::onColorSelected)
     private val themeOptionRowViewMap = mutableMapOf<Int, View>()
 
     companion object {
@@ -200,8 +197,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             clientTheme = ClientTheme(
-                lightColorStyle = applyThemeHelper.getLightColorStyle(),
-                darkColorStyle = applyThemeHelper.getDarkColorStyle(),
+                lightColorStyle = SampleColorStore.getLightColorStyle(),
+                darkColorStyle = SampleColorStore.getDarkColorStyle(),
                 fontFamily = FontFamily(
                     mediumFont = Font("merriweather_medium.ttf"),
                     normalFont = Font("merriweather_regular.ttf"),
@@ -652,18 +649,52 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 /* resource = */ R.layout.main_theming_options_layout,
                                 /* root = */ null
                             )
+                            val themingOptionsSection =
+                                colorLayout.findViewById<LinearLayout>(R.id.ll_theming_options_section)
                             val btnThemeDefault: Button =
                                 colorLayout.findViewById(R.id.btn_theme_default)
                             val btnThemeDupr: Button =
                                 colorLayout.findViewById(R.id.btn_theme_dupr)
                             val btnThemeChaos: Button =
                                 colorLayout.findViewById(R.id.btn_theme_chaos)
+                            val btnThemePsf: Button =
+                                colorLayout.findViewById(R.id.btn_theme_psf)
+                            val btnThemeT1: Button =
+                                colorLayout.findViewById(R.id.btn_theme_t1)
 
-                            btnThemeDefault.setOnClickListener { applyThemeHelper.applyDefaultTheme() }
-                            btnThemeDupr.setOnClickListener { applyThemeHelper.applyDuprTheme() }
-                            btnThemeChaos.setOnClickListener { applyThemeHelper.applyChaosTheme() }
+                            btnThemeDefault.setOnClickListener {
+                                SampleColorStore.applyTheme(
+                                    SampleColorStore.defaultLightModeTheme,
+                                    SampleColorStore.defaultDarkModeTheme
+                                )
+                                resetThemingOptions(themingOptionsSection)
+                            }
+                            btnThemeDupr.setOnClickListener {
+                                SampleColorStore.applyTheme(
+                                    SampleColorStore.duprTheme
+                                )
+                                resetThemingOptions(themingOptionsSection)
+                            }
+                            btnThemeChaos.setOnClickListener {
+                                SampleColorStore.applyTheme(
+                                    SampleColorStore.chaosTheme
+                                )
+                                resetThemingOptions(themingOptionsSection)
+                            }
+                            btnThemeT1.setOnClickListener {
+                                SampleColorStore.applyTheme(
+                                    SampleColorStore.t1Theme
+                                )
+                                resetThemingOptions(themingOptionsSection)
+                            }
+                            btnThemePsf.setOnClickListener {
+                                SampleColorStore.applyTheme(
+                                    SampleColorStore.psfTheme
+                                )
+                                resetThemingOptions(themingOptionsSection)
+                            }
 
-                            appendThemingOptions(colorLayout.findViewById<LinearLayout>(R.id.ll_theming_section))
+                            appendThemingOptions(themingOptionsSection)
                             MaterialAlertDialogBuilder(this)
                                 .setTitle("Lucra Theming")
                                 .setView(colorLayout)
@@ -933,6 +964,11 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
+    private fun resetThemingOptions(root: ViewGroup) {
+        root.removeAllViews()
+        appendThemingOptions(root)
+    }
+
     private fun appendThemingOptions(root: ViewGroup) {
         layoutInflater.inflate(R.layout.theme_color_selector, root, false)
             .apply {
@@ -942,14 +978,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
             .also { root.addView(it) }
 
-        LightThemeColorOption.entries.forEach { option ->
+
+        SampleColorStore.getColorIdHexIntForAllLightModeProperties { id, title, colorHex, colorInt ->
             appendThemingOption(
-                title = option.descriptor,
-                colorHex = ThemeColors.getColorHexById(option.id),
-                id = option.id,
-                defaultColor = applyThemeHelper.hexToIntColor(ThemeColors.getColorHexById(option.id)),
+                title = title,
+                colorHex = colorHex,
+                id = id,
+                defaultColor = colorInt,
                 root = root
-            ).also { themeOptionRowViewMap[option.id] = it }
+            ).also { themeOptionRowViewMap[id] = it }
         }
 
         layoutInflater.inflate(R.layout.theme_color_selector, root, false)
@@ -960,14 +997,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
             .also { root.addView(it) }
 
-        DarkThemeColorOption.entries.forEach { option ->
+        SampleColorStore.getColorIdHexIntForAllDarkModeProperties { id, title, colorHex, colorInt ->
             appendThemingOption(
-                title = option.descriptor,
-                colorHex = ThemeColors.getColorHexById(option.id),
-                id = option.id,
-                defaultColor = applyThemeHelper.hexToIntColor(ThemeColors.getColorHexById(option.id)),
+                title = title,
+                colorHex = colorHex,
+                id = id,
+                defaultColor = colorInt,
                 root = root
-            ).also { themeOptionRowViewMap[option.id] = it }
+            ).also { themeOptionRowViewMap[id] = it }
         }
     }
 
@@ -975,13 +1012,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         dialogId: Int,
         color: Int
     ) {
-        ThemeColors.setNewColor(
-            forId = dialogId,
-            colorHex = applyThemeHelper.intToColorHex(color)
-        )
+        SampleColorStore.ColorIdMap.updateColorBasedOnId(dialogId, color)
 
         themeOptionRowViewMap[dialogId]?.run {
-            findViewById<TextView>(R.id.colorHexTv).text = applyThemeHelper.intToColorHex(color)
+            findViewById<TextView>(R.id.colorHexTv).text = color.intToColorHex()
             findViewById<View>(R.id.colorPreview).setBackgroundColor(color)
         }
     }
@@ -1242,9 +1276,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         val datePicker = datePickerBuilder.build()
                         datePicker.show(supportFragmentManager, "DATE_PICKER")
                         datePicker.addOnPositiveButtonClickListener { selectedTime ->
-                            userSelectedBirthdate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                                timeInMillis = selectedTime
-                            }
+                            userSelectedBirthdate =
+                                Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                                    timeInMillis = selectedTime
+                                }
                             setText(
                                 userSelectedBirthdate?.toMonthDayYear() ?: "(empty)"
                             )

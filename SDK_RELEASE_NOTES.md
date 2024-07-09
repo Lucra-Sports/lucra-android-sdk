@@ -1,3 +1,6 @@
+## 3.6.1
+* Light & Dark mode styling updates
+
 ## 3.6.0
 * [Breaking Change] Updated `getSportsMatchup(matchupId)` to return new `SportsMatchupType` model
 * Upon logging out in the middle of a Flow, LoginFlow will reset the Flow stack and launch
