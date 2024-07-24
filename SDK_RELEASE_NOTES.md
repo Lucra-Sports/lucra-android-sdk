@@ -1,3 +1,8 @@
+## 3.7.0
+* Added "View All" to `MyMatchups` and `Profile` to view and search against specific categories of your Matchups
+* Added the ability to rematch a GYP contest and automatically invite teammates and opponents.
+* UX updates to Add Funds text field
+
 ## 3.6.1
 * Light & Dark mode styling updates
 
