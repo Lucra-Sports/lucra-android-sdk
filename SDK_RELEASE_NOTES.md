@@ -1,3 +1,14 @@
+## 3.8.0
+* Get Matchup API call now supports unauthed calls
+* Improvements to Sports Player selection screens
+* Introduced Paypal and Venmo support for deposit and Withdrawal
+
+## 3.7.0
+* Added "View All" to `MyMatchups` and `Profile` to view and search against specific categories of your Matchups
+* Added the ability to rematch a GYP contest and automatically invite teammates and opponents.
+* Added 'TakeEm' contests to the public feeds
+* UX updates to Add Funds text field
+
 ## 3.6.1
 * Light & Dark mode styling updates
 

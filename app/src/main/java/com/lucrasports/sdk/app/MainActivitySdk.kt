@@ -490,7 +490,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    // TODO add configure user API
     // TODO add create games you play API
     // TODO add accept games you play API
     // TODO add cancel games you play API
@@ -590,7 +589,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "Override API URL and key",
                         "Set League Filter",
                         "View Recent IDs of games, leagues and players",
-                        "Update Style Colors"
+                        "Update Style Colors",
+                        "View Configuration"
                     )
                 ) { dialog, which ->
                     when (which) {
@@ -703,6 +703,26 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                     themingDialog.dismiss()
                                     restartActivity()
                                 }
+                                .show()
+                        }
+
+                        4 -> {
+
+                            val formattedString =
+                                LucraClient().revealConfiguration()
+
+                            MaterialAlertDialogBuilder(this)
+                                .setTitle("Configuration")
+                                .setMessage(
+                                    android.text.Html.fromHtml(
+                                        formattedString ?: "Not initialized yet...",
+                                        android.text.Html.FROM_HTML_MODE_LEGACY
+                                    )
+                                )
+                                .setPositiveButton("Dismiss") { dialog, _ ->
+                                    dialog.dismiss()
+                                }
+                                // TODO allow edit experience...
                                 .show()
                         }
                     }
@@ -1537,12 +1557,19 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
             }
 
-            val iosBundleSuffix = if (BuildConfig.BUILD_TYPE == "debug") {
-                "-dev"
-            } else if (BuildConfig.BUILD_TYPE == "staging" || BuildConfig.BUILD_TYPE == "sandbox") {
-                "-stg"
-            } else {
-                ""
+            val iosBundleSuffix = when (BuildConfig.BUILD_TYPE) {
+                "debug" -> {
+                    "-dev"
+                }
+                "staging" -> {
+                    "-stg"
+                }
+                "sandbox" -> {
+                    "-sandbox"
+                }
+                else -> {
+                    ""
+                }
             }
 
             val iosBundle = "com.lucrasports.mobile-sample${iosBundleSuffix}"
