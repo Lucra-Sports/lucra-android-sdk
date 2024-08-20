@@ -1,18 +1,10 @@
 package com.lucrasports.sdk.app.notifications
 
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.graphics.BitmapFactory
-import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.lucrasports.sdk.app.MainActivitySdk
 import com.lucrasports.sdk.app.R
 import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
-import kotlin.random.Random
 
 class FCMService : FirebaseMessagingService() {
 
