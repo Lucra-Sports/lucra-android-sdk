@@ -1,3 +1,8 @@
+## 3.8.1
+* Improvements to add funds flow.
+* Paypal/Venmo is no longer auto-selected as a default deposit method.
+* Bug fixes around feature flags and theming.
+
 ## 3.8.0
 * Get Matchup API call now supports unauthed calls
 * Improvements to Sports Player selection screens
