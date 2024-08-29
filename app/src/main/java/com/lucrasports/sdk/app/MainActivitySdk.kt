@@ -15,10 +15,13 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -52,6 +55,9 @@ import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
 import com.lucrasports.sdk.core.contest.SportsMatchup
+import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
+import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
+import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
 import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
 import com.lucrasports.sdk.core.style_guide.ClientTheme
@@ -63,12 +69,15 @@ import com.lucrasports.sdk.core.user.SDKUser
 import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
 import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import org.json.JSONObject
 import java.util.Calendar
 import java.util.TimeZone
+import java.util.UUID
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
@@ -229,6 +238,30 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     "Event has been triggered --> ${event}",
                     Toast.LENGTH_LONG
                 ).show()
+            }
+        })
+
+        LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
+            override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
+                val convertedAmount = cashAmount + 10.0
+                delay(2000L)
+                return LucraConvertToCreditWithdrawMethod(
+                    id = UUID.randomUUID().toString(),
+                    type = "type",
+                    title = "Gift card",
+                    amount = cashAmount,
+                    convertedAmount = cashAmount + 10.0,
+                    convertedAmountDisplay = "$convertedAmount credits",
+                    shortDescription = "This is a short description",
+                    longDescription = "This is a long description. This is a long description. This is a long description",
+                    metaData = mapOf("testingKey" to "testingValue"),
+                    theme = LucraWithdrawCardTheme(
+                        cardColor = "#5A1668",
+                        cardTextColor = "#FFFFFF",
+                        pillColor = "#5A1668",
+                        pillTextColor = "#FFFFFF",
+                    )
+                )
             }
         })
 
@@ -590,6 +623,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "Set League Filter",
                         "View Recent IDs of games, leagues and players",
                         "Update Style Colors",
+                        "Update Convert to Credit Info",
                         "View Configuration"
                     )
                 ) { dialog, which ->
@@ -707,7 +741,117 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
 
                         4 -> {
+                            val convertToCredit = layoutInflater.inflate(
+                                R.layout.main_option_convert_to_credit,
+                                null
+                            )
 
+                            val onOffSwitch = convertToCredit.findViewById<SwitchCompat>(R.id.csc_enabled)
+                            onOffSwitch.isChecked = LucraClient().isConvertToCreditAvailable()
+
+                            val idEditText =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_id)
+                            idEditText.setText(UUID.randomUUID().toString())
+                            val convertedAmountEditText =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_converted_amount)
+                            convertedAmountEditText.setText("10.00")
+                            val convertedAmountDisplayEditText =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_converted_amount_display)
+                            convertedAmountDisplayEditText.setText("$10.00 Credits")
+                            val iconUrl =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_icon_url)
+                            iconUrl.setText("https://lucrasports.com/images/homepage/lucra-l.svg")
+                            val metaData =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_meta_data)
+                            val longDescription =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_long_description)
+                            longDescription.setText("This is a really really really really really really long description")
+                            val shortDescription =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_short_description)
+                            shortDescription.setText("Short description")
+                            val title =
+                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_title)
+                            shortDescription.setText("Awesome Credits")
+
+                            val spinner: Spinner = convertToCredit.findViewById(R.id.meta_spinner)
+                            val items = arrayOf(
+                                "{\"showError\":\"blank\"}",
+                                "{\"showError\":\"extraShort\"}",
+                                "{\"showError\":\"short\"}",
+                                "{\"showError\":\"medium\"}",
+                                "{\"showError\":\"long\"}",
+                                "{\"showError\":\"extraLong\"}",
+                                "{\"showError\":\"superLong\"}",
+                                "{\"showSuccess\":\"blank\"}",
+                                "{\"showSuccess\":\"extraShort\"}",
+                                "{\"showSuccess\":\"short\"}",
+                                "{\"showSuccess\":\"medium\"}",
+                                "{\"showSuccess\":\"long\"}",
+                                "{\"showSuccess\":\"extraLong\"}",
+                                "{\"showSuccess\":\"superLong\"}"
+                            )
+                            val adapter = ArrayAdapter(this, R.layout.meta_dropdown_list_item, items)
+                            spinner.adapter = adapter
+                            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                                    metaData.setText(items[position])
+                                }
+
+                                override fun onNothingSelected(parent: AdapterView<*>) {}
+                            }
+                            MaterialAlertDialogBuilder(this)
+                                .setTitle("Convert to Credit Options")
+                                .setView(convertToCredit)
+                                .setNegativeButton("Cancel", null)
+                                .setPositiveButton("Apply") { convertToCreditDialog, _ ->
+                                    if (onOffSwitch.isChecked) {
+
+                                        val metaMap = try {
+                                            val jsonObject = JSONObject(metaData.text.toString())
+                                            mutableMapOf<String, Any>().apply {
+                                                for (key in jsonObject.keys()) {
+                                                    this[key] = jsonObject.get(key)
+                                                }
+                                            }.mapValues { it.value.toString() }
+                                        } catch (e: Exception) {
+                                            null
+                                        }
+
+                                        LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
+                                            override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod? {
+                                                delay(2000L)
+
+                                                return LucraConvertToCreditWithdrawMethod(
+                                                    id = idEditText.text.toString(),
+                                                    type = "Placeholder Title",
+                                                    title = title.text.toString(),
+                                                    amount = cashAmount,
+                                                    convertedAmount = convertedAmountEditText.text.toString()
+                                                        .toDouble(),
+                                                    convertedAmountDisplay = convertedAmountDisplayEditText.text.toString(),
+                                                    shortDescription = shortDescription.text.toString(),
+                                                    longDescription = longDescription.text.toString(),
+                                                    iconUrl = if (iconUrl.text.isNullOrBlank()) null else iconUrl.text.toString(),
+                                                    metaData = metaMap,
+                                                    theme = LucraWithdrawCardTheme(
+                                                        cardColor = "#5A1668",
+                                                        cardTextColor = "#FFFFFF",
+                                                        pillColor = "#5A1668",
+                                                        pillTextColor = "#FFFFFF",
+                                                    )
+                                                )
+                                            }
+                                        }
+                                        )
+                                    } else {
+                                        LucraClient().setConvertToCreditProvider(null)
+                                    }
+
+                                    convertToCreditDialog.dismiss()
+                                }
+                                .show()
+                        }
+                        5 -> {
                             val formattedString =
                                 LucraClient().revealConfiguration()
 

@@ -856,3 +856,43 @@ val view = LucraClient().getLucraComponent(
   })
 viewGroup.addView(view)
 ```
+
+### Setting up Convert to Credit
+
+To allow users to withdraw money in credits relevant to your internal system, a `LucraConvertToCreditWithdrawMethod` object must be provided to the `LucraClient`.
+
+Anytime a user changes the the amount field on the Withdraw Screen, the function `getCreditAmount` will be called from the provided `LucraConvertToCreditProvider`.
+
+If `setConvertToCreditProvider` is never called or set to `null`, no Convert to Credit card will be displayed on the Withdraw Screen.
+
+```kotlin
+LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
+  override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
+    val convertedAmount = withdrawalDollarAmount * 3
+    return LucraConvertToCreditWithdrawMethod(
+      id = "Unique id",
+      type = "game-credits",
+      title = "Game Credits",
+      amount = withdrawalDollarAmount,
+      convertedAmount = convertedAmount,
+      iconUrl = "https://a-path-to-a-icon.com",
+      convertedAmountDisplay = "$convertedAmount credits",
+      shortDescription = "This is a short description for the end user.",
+      longDescription = "This is a longer, more descriptive version of a message you want the end user to see about.",
+      //You can provide metadata about the conversion to be saved on your server
+      metaData = mapOf("key" to "value"),
+      //See image below for UI Example
+      theme = WithdrawCardTheme(
+        cardColor = "#5A1668",
+        cardTextColor = "#FFFFFF",
+        pillColor = "#5A1668",
+        pillTextColor = "#FFFFFF",
+      )
+    )
+  }
+})
+```
+
+The info set in `ConvertToCreditWithdrawMethod` will be passed to Lucra's servers and then communicated to your servers through webhooks.
+
+<img src="..%2FdocAssets%2FConvertToCreditImage.png" alt="Convert to Credit Image" width="200"/>

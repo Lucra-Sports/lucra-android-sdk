@@ -1,3 +1,6 @@
+## 3.9.0
+* Added Convert to Credit Withdrawal option
+
 ## 3.8.1
 * Improvements to add funds flow.
 * Paypal/Venmo is no longer auto-selected as a default deposit method.
