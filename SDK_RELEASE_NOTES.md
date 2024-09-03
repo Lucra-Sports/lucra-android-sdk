@@ -1,3 +1,6 @@
+## 3.9.1
+* Various UI improvements to GYP flow
+
 ## 3.9.0
 * Added Convert to Credit Withdrawal option
 
