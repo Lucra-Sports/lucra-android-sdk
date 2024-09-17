@@ -37,7 +37,6 @@ import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks
@@ -61,8 +60,6 @@ import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMetho
 import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
 import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
-import com.lucrasports.sdk.core.reward.LucraReward
-import com.lucrasports.sdk.core.reward.LucraRewardProvider
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
@@ -137,21 +134,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         set(value) {
             preferences.edit().putString(API_KEY_OVERRIDE, value).apply()
         }
-
-    private var lucraRewardProviderEnabled = true
-    private var lucraReward =
-        LucraReward(
-            rewardId = "reward_001",
-            title = "Client Appetizer",
-            descriptor = "10% off",
-            iconUrl = "https://s3-alpha-sig.figma.com/img/edce/1506/2fa0cd794eec2d729b503497678ae340?Expires=1725235200&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=n2PhfpBOIgTuq3s~0LfJnhEogF6-FtSaAvlxMgmaDsfHW4h6EBuIxL75LIfxA8Y0OH8yqsj46RKXVHER8X7kk5TYQDOiKs2s412M4bgBbG-qP7TJI2UtQmiOPK2o6H4Nn9~ffLo0fC4IVDTwGUSZ0cpqPRwk~r6w39o6uiJWwxl2O0Pw9KG4HJlwQEGMrrA6flp77QuvYRsM3kEgAgO6aAfANQV3yKowkzSmVf63oMWf1u7VXX2TNhkfhocf1RE73sheWYkKxDAHx6vTZghJOBYiaZ7hoYg5AA-TkolNoI5NPICmn4Fh7qMqAlHb33gF5tW9muECFGlKBF86bulKXg__",
-            bannerIconUrl = "https://example.com/images/burger_banner.png",
-            disclaimer = "*Can only be redeemed once per week",
-            metadata = mapOf(
-                "custom_data" to "{\"type\":\"food\",\"expiry\":\"2024-12-31\"}",
-                "simple_data" to "primitive_type_to_string"
-            )
-        )
 
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
@@ -259,15 +241,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
         })
 
-        setupRewardProvider(if (lucraRewardProviderEnabled) lucraReward else null)
-
         LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
             override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
                 val convertedAmount = cashAmount + 10.0
                 delay(2000L)
                 return LucraConvertToCreditWithdrawMethod(
                     id = UUID.randomUUID().toString(),
-                    conversionTerms = "No Fee  |  Instant transfer",
+                    type = "type",
                     title = "Gift card",
                     amount = cashAmount,
                     convertedAmount = cashAmount + 10.0,
@@ -287,36 +267,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         LucraClient().setDeeplinkTransformer {
             generateNavigateLink(it)
-        }
-    }
-
-    private fun setupRewardProvider(newReward: LucraReward? = lucraReward) {
-        if (newReward != null) {
-            LucraClient().setRewardProvider(object : LucraRewardProvider {
-                override suspend fun availableRewards(): List<LucraReward> {
-                    // Emulating delay...
-                    delay((100..2000).random().toLong())
-                    return listOf(newReward)
-                }
-
-                override fun claimReward(reward: LucraReward) {
-                    // The idea is to "show" or "reveal" details of the client based Reward
-                    // In this case, we're simply dismissing the entire stack of Lucra Flows
-                    // NOTE: This will not work for all setups, it's important to keep track of all
-                    // instances of LucraFlows, whether they are DialogFragments or a specific Fragment.
-                    // You don't want to remove/dismiss fragments/dialogs that aren't related to Contest creation
-                    supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
-                        it.dismiss()
-                    }
-                    Toast.makeText(
-                        this@MainActivitySdk,
-                        "Claimed Reward: ${reward.title}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            })
-        } else {
-            LucraClient().setRewardProvider(null)
         }
     }
 
@@ -673,7 +623,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "Set League Filter",
                         "View Recent IDs of games, leagues and players",
                         "Update Style Colors",
-                        "Configure Reward Service",
                         "Update Convert to Credit Info",
                         "View Configuration"
                     )
@@ -792,63 +741,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
 
                         4 -> {
-
-                            val rewardProviderLayout = layoutInflater.inflate(
-                                /* resource = */ R.layout.main_option_reward_provider,
-                                /* root = */ null
-                            )
-                            val etRewardTitle =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_title)
-                                    .apply {
-                                        setText(lucraReward.title)
-                                    }
-                            val etRewardDescriptor =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_descriptor)
-                                    .apply {
-                                        setText(lucraReward.descriptor)
-                                    }
-                            val etRewardIconUrl =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_icon_url)
-                                    .apply {
-                                        setText(lucraReward.iconUrl)
-                                    }
-                            val etRewardBannerUrl =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_banner_url)
-                                    .apply {
-                                        setText(lucraReward.bannerIconUrl)
-                                    }
-                            val etRewardDisclaimer =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_disclaimer)
-                                    .apply {
-                                        setText(lucraReward.disclaimer)
-                                    }
-                            val rewardEnabledSwitch =
-                                rewardProviderLayout.findViewById<SwitchMaterial>(R.id.enable_provider)
-                                    .apply {
-                                        isChecked = lucraRewardProviderEnabled
-                                    }
-
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Lucra Reward Provider")
-                                .setView(rewardProviderLayout)
-                                .setNegativeButton("Cancel", null)
-                                .setPositiveButton("Apply") { themingDialog, _ ->
-                                    themingDialog.dismiss()
-                                    lucraRewardProviderEnabled = rewardEnabledSwitch.isChecked
-                                    lucraReward = lucraReward.copy(
-                                        title = etRewardTitle.text.toString(),
-                                        descriptor = etRewardDescriptor.text.toString(),
-                                        iconUrl = etRewardIconUrl.text.toString(),
-                                        bannerIconUrl = etRewardBannerUrl.text.toString(),
-                                        disclaimer = etRewardDisclaimer.text.toString()
-                                    )
-                                    setupRewardProvider(if (lucraRewardProviderEnabled) lucraReward else null)
-                                }
-                                .show()
-                        }
-
-                        5 -> {
-
                             val convertToCredit = layoutInflater.inflate(
                                 R.layout.main_option_convert_to_credit,
                                 null
@@ -931,7 +823,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
                                                 return LucraConvertToCreditWithdrawMethod(
                                                     id = idEditText.text.toString(),
-                                                    conversionTerms = "No Fee  |  Instant transfer",
+                                                    type = "Placeholder Title",
                                                     title = title.text.toString(),
                                                     amount = cashAmount,
                                                     convertedAmount = convertedAmountEditText.text.toString()
@@ -959,7 +851,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 }
                                 .show()
                         }
-                        6 -> {
+                        5 -> {
                             val formattedString =
                                 LucraClient().revealConfiguration()
 
@@ -1813,15 +1705,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 "debug" -> {
                     "-dev"
                 }
-
                 "staging" -> {
                     "-stg"
                 }
-
                 "sandbox" -> {
                     "-sandbox"
                 }
-
                 else -> {
                     ""
                 }

@@ -857,67 +857,6 @@ val view = LucraClient().getLucraComponent(
 viewGroup.addView(view)
 ```
 
-# LucraRewardProvider
-
-In order to support promotional/reward based payouts for Sports Matchups, a `LucraRewardProvider` instance must be provided to the LucraClient.
-
-## `availableRewards`
-This callback expects a list of available rewards to show to the current user upon creating and accepting Sports contests. This is a suspendable function allowing clients to hit an API or other I/O service to fetch the available rewards for the logged in user.
-
-## `claimReward`
-When the contest is completed, and the user has won. We allow the user to "claim reward" as a result of winning.
-
-The idea here is that the client can then navigate the user to the Reward details page of the client application.
-
-```kotlin
-LucraClient().setRewardProvider(object : LucraRewardProvider {
-            override suspend fun availableRewards(): List<LucraReward> {
-                return listOf(
-                    LucraReward(
-                        rewardId = "reward_001",
-                        title = "Free Burger",
-                        descriptor = "Get a free burger with any meal purchase",
-                        iconUrl = "https://images.unsplash.com/photo-1555992336-03a23c46183e",
-                        bannerIconUrl = "https://example.com/images/burger_banner.png",
-                        disclaimer = "*Can only be redeemed once per week",
-                        metadata = mapOf("custom_data" to "{\"type\":\"food\",\"expiry\":\"2024-12-31\"}",
-                            "simple_data" to "primitive_type_to_string")
-                    )
-                )
-            }
-
-            override fun claimReward(reward: LucraReward) {
-                // The idea is to "show" or "reveal" details of the client based Reward
-                // In this case, we're simply dismissing the entire stack of Lucra Flows
-                // NOTE: This will not work for all setups, it's important to keep track of all
-                // instances of LucraFlows, whether they are DialogFragments or a specific Fragment.
-                // You don't want to remove/dismiss fragments/dialogs that aren't related to Contest creation
-                supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
-                    it.dismiss()
-                }
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Claimed Reward: ${reward.title}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        })
-```
-
-```kotlin
-interface LucraRewardProvider {
-    /**
-     * Return a list of available [Reward]s for the current user (asynchronous)
-     */
-    suspend fun availableRewards(): List<LucraReward>
-
-    /**
-     * When a contest is won, the user can be linked back to the claim details on the client side.
-     */
-    fun claimReward(reward: LucraReward)
-}
-```
-
 ### Setting up Convert to Credit
 
 To allow users to withdraw money in credits relevant to your internal system, a `LucraConvertToCreditWithdrawMethod` object must be provided to the `LucraClient`.
@@ -928,12 +867,11 @@ If `setConvertToCreditProvider` is never called or set to `null`, no Convert to 
 
 ```kotlin
 LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
-  override suspend fun getCreditAmount(withdrawalDollarAmount: Double): LucraConvertToCreditWithdrawMethod { 
-    //cashAmount is the amount the end user is attempting to withdrawal through the Withdraw Screen 
+  override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
     val convertedAmount = withdrawalDollarAmount * 3
     return LucraConvertToCreditWithdrawMethod(
       id = "Unique id",
-      conversionTerms = "No Fee  |  Instant transfer",
+      type = "game-credits",
       title = "Game Credits",
       amount = withdrawalDollarAmount,
       convertedAmount = convertedAmount,
@@ -957,4 +895,4 @@ LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
 
 The info set in `ConvertToCreditWithdrawMethod` will be passed to Lucra's servers and then communicated to your servers through webhooks.
 
-<img src="../docAssets/ConvertToCreditImage.png" alt="Convert to Credit Image" width="200"/>
+<img src="..%2FdocAssets%2FConvertToCreditImage.png" alt="Convert to Credit Image" width="200"/>
