@@ -1,3 +1,6 @@
+## 3.9.2
+* UI improvements to Deposit & Withdraw funds flow
+
 ## 3.9.1
 * Various UI improvements to GYP flow
 
