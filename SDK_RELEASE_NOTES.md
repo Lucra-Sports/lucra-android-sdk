@@ -1,3 +1,6 @@
+## 3.10.0
+* [Breaking Change] The params for `LucraConvertToCreditWithdrawMethod` were updated. The param `type` was remove and `conversionTerms` was added.
+
 ## 3.9.2
 * UI improvements to Deposit & Withdraw funds flow
 
