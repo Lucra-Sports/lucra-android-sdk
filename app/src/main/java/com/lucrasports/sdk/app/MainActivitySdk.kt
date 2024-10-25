@@ -739,6 +739,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 colorLayout.findViewById<LinearLayout>(R.id.ll_theming_options_section)
                             val btnThemeDefault: Button =
                                 colorLayout.findViewById(R.id.btn_theme_default)
+                            val btnThemeDandb: Button =
+                                colorLayout.findViewById(R.id.btn_theme_dandb)
                             val btnThemeDupr: Button =
                                 colorLayout.findViewById(R.id.btn_theme_dupr)
                             val btnThemeChaos: Button =
@@ -752,6 +754,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 SampleColorStore.applyTheme(
                                     SampleColorStore.defaultLightModeTheme,
                                     SampleColorStore.defaultDarkModeTheme
+                                )
+                                resetThemingOptions(themingOptionsSection)
+                            }
+                            btnThemeDandb.setOnClickListener {
+                                SampleColorStore.applyTheme(
+                                    SampleColorStore.dandbLightTheme,
+                                    SampleColorStore.dandbDarkTheme
                                 )
                                 resetThemingOptions(themingOptionsSection)
                             }
@@ -855,7 +864,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 null
                             )
 
-                            val onOffSwitch = convertToCredit.findViewById<SwitchCompat>(R.id.csc_enabled)
+                            val onOffSwitch =
+                                convertToCredit.findViewById<SwitchCompat>(R.id.csc_enabled)
                             onOffSwitch.isChecked = LucraClient().isConvertToCreditAvailable()
 
                             val idEditText =
@@ -899,15 +909,22 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 "{\"showSuccess\":\"extraLong\"}",
                                 "{\"showSuccess\":\"superLong\"}"
                             )
-                            val adapter = ArrayAdapter(this, R.layout.meta_dropdown_list_item, items)
+                            val adapter =
+                                ArrayAdapter(this, R.layout.meta_dropdown_list_item, items)
                             spinner.adapter = adapter
-                            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                                    metaData.setText(items[position])
-                                }
+                            spinner.onItemSelectedListener =
+                                object : AdapterView.OnItemSelectedListener {
+                                    override fun onItemSelected(
+                                        parent: AdapterView<*>,
+                                        view: View?,
+                                        position: Int,
+                                        id: Long
+                                    ) {
+                                        metaData.setText(items[position])
+                                    }
 
-                                override fun onNothingSelected(parent: AdapterView<*>) {}
-                            }
+                                    override fun onNothingSelected(parent: AdapterView<*>) {}
+                                }
                             MaterialAlertDialogBuilder(this)
                                 .setTitle("Convert to Credit Options")
                                 .setView(convertToCredit)
@@ -926,7 +943,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                             null
                                         }
 
-                                        LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
+                                        LucraClient().setConvertToCreditProvider(object :
+                                            LucraConvertToCreditProvider {
                                             override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod? {
                                                 delay(2000L)
 
@@ -960,6 +978,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 }
                                 .show()
                         }
+
                         6 -> {
                             val formattedString =
                                 LucraClient().revealConfiguration()
@@ -1505,8 +1524,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         builder.show()
     }
 
-    private var userSelectedBirthdate: Calendar? = null
-
     private fun configureUserDialog() {
 
         val builder = MaterialAlertDialogBuilder(this)
@@ -1525,40 +1542,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
                 findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
                 findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
-                findViewById<MaterialButton>(R.id.btn_birthday).apply {
-                    setText(
-                        lucraSDKUser?.birthday?.toMonthDayYear() ?: "Birthday (empty)"
-                    )
-                    setOnClickListener {
-                        val openAt = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                            add(Calendar.YEAR, -21)
-                        }.timeInMillis
-
-                        val datePickerBuilder = MaterialDatePicker.Builder.datePicker()
-                            .setTitleText("Select a Date")
-                            .setCalendarConstraints(
-                                CalendarConstraints.Builder()
-                                    .setOpenAt(
-                                        userSelectedBirthdate?.timeInMillis
-                                            ?: lucraSDKUser?.birthday?.timeInMillis
-                                            ?: openAt
-                                    )
-                                    .setValidator(DateValidatorPointBackward.now())
-                                    .build()
-                            )
-                        val datePicker = datePickerBuilder.build()
-                        datePicker.show(supportFragmentManager, "DATE_PICKER")
-                        datePicker.addOnPositiveButtonClickListener { selectedTime ->
-                            userSelectedBirthdate =
-                                Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                                    timeInMillis = selectedTime
-                                }
-                            setText(
-                                userSelectedBirthdate?.toMonthDayYear() ?: "(empty)"
-                            )
-                        }
-                    }
-                }
             }
 
 
@@ -1588,8 +1571,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     state = userForm.findViewById<TextInputEditText>(R.id.state).getText()
                         .toString().takeIf { it.isNotBlank() },
                     zip = userForm.findViewById<TextInputEditText>(R.id.zip).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    birthday = userSelectedBirthdate
+                        .toString().takeIf { it.isNotBlank() }
                 )
 
                 // set details here so information is not lost
