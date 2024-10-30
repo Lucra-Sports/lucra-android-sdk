@@ -857,6 +857,108 @@ val view = LucraClient().getLucraComponent(
 viewGroup.addView(view)
 ```
 
+# Payment Integrations
+## Paypal / Venmo
+The Lucra Android SDK offers PayPal and Venmo as a payment option. This is automatically included with newer versions, and if you're configured to use PayPal with the Lucra SDK.
+We leverage [Braintree SDK for Android](https://github.com/braintree/braintree_android) version [4.49.1](https://github.com/braintree/braintree_android/releases/tag/4.49.1) to process Paypal/Venmo transacations. For full details on this SDK, you can read them from [the Braintree docs](https://developer.paypal.com/braintree/docs/guides/client-sdk/setup/android/v4/).
+
+By default, both Venmo and PayPal will appear as an option for both deposits and withdrawals. If it does not, make sure your app tenant is configured to allow Paypal/Venmo processing.
+
+### Proguard
+We made it as simple as possible for you to enable processing payments/withdrawals through Paypal and Venmo in your app. You do not need to worry about managing keys or tokens. ProGuard configuration is also already provided as part of our SDK, so there is no need to add any specific rules to your ProGuard configuration.
+
+### Paypal
+**Deposit**
+
+When the user chooses PayPal as a deposit method, this will prompt the Lucra SDK to open a secure in-app WebView to PayPal for the requested transaction.
+
+**Withdrawal**
+
+When the user chooses to withdrawal using PayPal, this will be handled within the application as opening PayPal is not required for this step. However, they must have previously made a deposit using PayPal before being allowed to use PayPal as a withdrawal option.
+
+*Keep in mind: A user cannot withdrawal to their PayPal/Venmo account without first having made a deposit from it.*
+
+### Venmo
+The user must have the Venmo app installed on their phone for Venmo payment to work.
+
+**Deposit**
+
+When the user chooses Venmo as a deposit method, this will prompt the Lucra SDK to open Venmo for the requested transaction, this experience will bring the user outside of the application to finalize the request. Once completed, they will be prompted to return to the deposit screen to finish the transaction.
+
+**Withdrawal**
+
+When the user chooses to withdrawal using Venmo, this will be handled within the application as opening the Venmo app is not required for this step. However, they must have previously made a deposit using Venmo before being allowed to use Venmo as a withdrawal option.
+
+*Keep in mind: A user cannot withdrawal to their PayPal/Venmo account without first having made a deposit from it.*
+
+### Usage
+Launch `LucraFlow.AddFunds` to access depositing funds via Paypal/Venmo and `LucraFlow.WithdrawFunds` to access withdraw funds via Paypal/Venmo. Identity verification will launch if the user hasn't verified their identity yet.
+
+| Add Funds | Withdraw Funds |
+|:---------:|:--------------:|
+| <img src="../docAssets/paypal_venmo_add_funds.png" alt="Add funds Image" width="300"/> | <img src="../docAssets/paypal_venmo_withdraw_funds.webp" alt="Withdraw funds Image" width="300"/> |
+
+# LucraRewardProvider
+
+In order to support promotional/reward based payouts for Sports Matchups, a `LucraRewardProvider` instance must be provided to the LucraClient.
+
+## `availableRewards`
+This callback expects a list of available rewards to show to the current user upon creating and accepting Sports contests. This is a suspendable function allowing clients to hit an API or other I/O service to fetch the available rewards for the logged in user.
+
+## `claimReward`
+When the contest is completed, and the user has won. We allow the user to "claim reward" as a result of winning.
+
+The idea here is that the client can then navigate the user to the Reward details page of the client application.
+
+```kotlin
+LucraClient().setRewardProvider(object : LucraRewardProvider {
+            override suspend fun availableRewards(): List<LucraReward> {
+                return listOf(
+                    LucraReward(
+                        rewardId = "reward_001",
+                        title = "Free Burger",
+                        descriptor = "Get a free burger with any meal purchase",
+                        iconUrl = "https://images.unsplash.com/photo-1555992336-03a23c46183e",
+                        bannerIconUrl = "https://example.com/images/burger_banner.png",
+                        disclaimer = "*Can only be redeemed once per week",
+                        metadata = mapOf("custom_data" to "{\"type\":\"food\",\"expiry\":\"2024-12-31\"}",
+                            "simple_data" to "primitive_type_to_string")
+                    )
+                )
+            }
+
+            override fun claimReward(reward: LucraReward) {
+                // The idea is to "show" or "reveal" details of the client based Reward
+                // In this case, we're simply dismissing the entire stack of Lucra Flows
+                // NOTE: This will not work for all setups, it's important to keep track of all
+                // instances of LucraFlows, whether they are DialogFragments or a specific Fragment.
+                // You don't want to remove/dismiss fragments/dialogs that aren't related to Contest creation
+                supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
+                    it.dismiss()
+                }
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Claimed Reward: ${reward.title}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
+```
+
+```kotlin
+interface LucraRewardProvider {
+    /**
+     * Return a list of available [Reward]s for the current user (asynchronous)
+     */
+    suspend fun availableRewards(): List<LucraReward>
+
+    /**
+     * When a contest is won, the user can be linked back to the claim details on the client side.
+     */
+    fun claimReward(reward: LucraReward)
+}
+```
+
 ### Setting up Convert to Credit
 
 To allow users to withdraw money in credits relevant to your internal system, a `LucraConvertToCreditWithdrawMethod` object must be provided to the `LucraClient`.
@@ -867,11 +969,12 @@ If `setConvertToCreditProvider` is never called or set to `null`, no Convert to 
 
 ```kotlin
 LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
-  override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
+  override suspend fun getCreditAmount(withdrawalDollarAmount: Double): LucraConvertToCreditWithdrawMethod { 
+    //cashAmount is the amount the end user is attempting to withdrawal through the Withdraw Screen 
     val convertedAmount = withdrawalDollarAmount * 3
     return LucraConvertToCreditWithdrawMethod(
       id = "Unique id",
-      type = "game-credits",
+      conversionTerms = "No Fee  |  Instant transfer",
       title = "Game Credits",
       amount = withdrawalDollarAmount,
       convertedAmount = convertedAmount,
@@ -895,4 +998,4 @@ LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
 
 The info set in `ConvertToCreditWithdrawMethod` will be passed to Lucra's servers and then communicated to your servers through webhooks.
 
-<img src="..%2FdocAssets%2FConvertToCreditImage.png" alt="Convert to Credit Image" width="200"/>
+<img src="../docAssets/ConvertToCreditImage.png" alt="Convert to Credit Image" width="200"/>

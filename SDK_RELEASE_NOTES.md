@@ -1,3 +1,12 @@
+## 3.10.1
+* Introduced Nuvei for ACH withdrawals
+* UI improvements to Games contests
+* Bug fix related to Android Material library versions
+
+## 3.10.0
+* [Breaking Change] The params for `LucraConvertToCreditWithdrawMethod` were updated. The param `type` was remove and `conversionTerms` was added.
+* [Deprecated] User's `birthday` field for configuration. It will now be ignored and return as null in `SDKUser`.
+
 ## 3.9.2
 * UI improvements to Deposit & Withdraw funds flow
 

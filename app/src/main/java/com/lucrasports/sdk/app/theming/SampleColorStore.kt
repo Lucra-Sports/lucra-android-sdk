@@ -5,6 +5,32 @@ import com.lucrasports.sdk.core.style_guide.ColorStyle
 
 internal object SampleColorStore {
 
+    val dandbLightTheme = ColorStyle(
+        background      = "#FFFFFF",
+        surface         = "#FFFFFF",
+        primary         = "#0D0441",
+        secondary       = "#FFFFFF",
+        tertiary        = "#FFFFFF",
+        onBackground    = "#0D0441",
+        onSurface       = "#131D94",
+        onPrimary       = "#FE5B00",
+        onSecondary     = "#2F26D3",
+        onTertiary      = "#4FABF7",
+    )
+
+    val dandbDarkTheme = ColorStyle(
+        background      = "#0D0441",
+        surface         = "#131D94",
+        primary         = "#FE5B00",
+        secondary       = "#2F26D3",
+        tertiary        = "#4FABF7",
+        onBackground    = "#FFFFFF",
+        onSurface       = "#FFFFFF",
+        onPrimary       = "#0D0441",
+        onSecondary     = "#FFFFFF",
+        onTertiary      = "#FFFFFF"
+    )
+
     val duprTheme = ColorStyle(
         background = "#FFFFFF",
         surface = "#F5F6F9",
