@@ -254,6 +254,9 @@ This function will return `true` if the incoming push notification is Lucra-spec
   - `activityClass`: `Class<*>` The Java class of the Activity that you want the push notification to open after a click.
   - `smallIcon`: `Int` The drawable resource id of the icon you want to display next to the Lucra notification
 
+The function also automatically creates a Lucra-specific default notification channel if one doesn't already exist. 
+This channel is created with high importance and is used for all Lucra SDK notifications.
+
 #### Handling Lucra push notification click events
 
 Within the `activityClass` Activity you specified above, handle the incoming `Intent` and parse the Lucra-specific notification to show a `LucraFlow`. Add `handleNotificationIntent` to the following locations.

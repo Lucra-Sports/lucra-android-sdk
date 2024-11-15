@@ -8,12 +8,6 @@ import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
 
 class FCMService : FirebaseMessagingService() {
 
-    companion object {
-        //TODO might need more channels per category of notifications
-        const val DEFAULT_NOTIFICATION_CHANNEL_NAME = "LucraNotifications"
-        const val DEFAULT_NOTIFICATION_CHANNEL_ID = "lucra_gcm_channel"
-    }
-
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         LucraPushNotificationService.refreshFirebaseToken(token)
