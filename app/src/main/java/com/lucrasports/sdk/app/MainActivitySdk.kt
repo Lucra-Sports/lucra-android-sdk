@@ -1,7 +1,5 @@
 package com.lucrasports.sdk.app
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -32,10 +30,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.datepicker.CalendarConstraints
-import com.google.android.material.datepicker.DateValidatorPointBackward
-import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
@@ -49,7 +43,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
-import com.lucrasports.sdk.app.notifications.FCMService
+import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.theming.SampleColorStore
 import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
 import com.lucrasports.sdk.core.LucraClient
@@ -78,8 +72,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
-import java.util.Calendar
-import java.util.TimeZone
 import java.util.UUID
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
@@ -139,19 +131,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
     private var lucraRewardProviderEnabled = true
-    private var lucraReward =
-        LucraReward(
-            rewardId = "reward_001",
-            title = "Client Appetizer",
-            descriptor = "10% off",
-            iconUrl = "https://s3-alpha-sig.figma.com/img/edce/1506/2fa0cd794eec2d729b503497678ae340?Expires=1725235200&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=n2PhfpBOIgTuq3s~0LfJnhEogF6-FtSaAvlxMgmaDsfHW4h6EBuIxL75LIfxA8Y0OH8yqsj46RKXVHER8X7kk5TYQDOiKs2s412M4bgBbG-qP7TJI2UtQmiOPK2o6H4Nn9~ffLo0fC4IVDTwGUSZ0cpqPRwk~r6w39o6uiJWwxl2O0Pw9KG4HJlwQEGMrrA6flp77QuvYRsM3kEgAgO6aAfANQV3yKowkzSmVf63oMWf1u7VXX2TNhkfhocf1RE73sheWYkKxDAHx6vTZghJOBYiaZ7hoYg5AA-TkolNoI5NPICmn4Fh7qMqAlHb33gF5tW9muECFGlKBF86bulKXg__",
-            bannerIconUrl = "https://example.com/images/burger_banner.png",
-            disclaimer = "*Can only be redeemed once per week",
-            metadata = mapOf(
-                "custom_data" to "{\"type\":\"food\",\"expiry\":\"2024-12-31\"}",
-                "simple_data" to "primitive_type_to_string"
-            )
-        )
 
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
@@ -166,8 +145,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         val flow = LucraPushNotificationService.handleNotificationIntent(intent)
         flow?.let { launchFlow(it) }
-
-        setupNotificationChannel()
 
         consumeSampleDeepLink()
 
@@ -227,10 +204,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 lightColorStyle = SampleColorStore.getLightColorStyle(),
                 darkColorStyle = SampleColorStore.getDarkColorStyle(),
                 fontFamily = FontFamily(
-                    mediumFont = Font("merriweather_medium.ttf"),
-                    normalFont = Font("merriweather_regular.ttf"),
-                    semiBoldFont = Font("merriweather_bold.ttf"),
-                    boldFont = Font("merriweather_black.ttf"),
+                    mediumFont = Font("bauziet_norm_medium.otf"),
+                    normalFont = Font("bauziet_norm_regular.otf"),
+                    semiBoldFont = Font("bauziet_norm_bold.otf"),
+                    boldFont = Font("bauziet_norm_extra_bold.otf"),
                 )
             ),
         )
@@ -250,16 +227,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         Log.d("Sample", "Other Event: $event")
                     }
                 }
-
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Event has been triggered --> ${event}",
-                    Toast.LENGTH_LONG
-                ).show()
             }
         })
 
-        setupRewardProvider(if (lucraRewardProviderEnabled) lucraReward else null)
+        setupRewardProvider(if (lucraRewardProviderEnabled) fakeLucraRewards else null)
 
         LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
             override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
@@ -290,13 +261,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    private fun setupRewardProvider(newReward: LucraReward? = lucraReward) {
-        if (newReward != null) {
+    private fun setupRewardProvider(newRewards: List<LucraReward>? = fakeLucraRewards) {
+        if (newRewards != null) {
             LucraClient().setRewardProvider(object : LucraRewardProvider {
                 override suspend fun availableRewards(): List<LucraReward> {
                     // Emulating delay...
-                    delay((100..2000).random().toLong())
-                    return listOf(newReward)
+                    delay((100..500).random().toLong())
+                    return newRewards
                 }
 
                 override fun claimReward(reward: LucraReward) {
@@ -807,6 +778,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 /* resource = */ R.layout.main_option_reward_provider,
                                 /* root = */ null
                             )
+                            val lucraReward = fakeLucraRewards.first()
                             val etRewardTitle =
                                 rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_title)
                                     .apply {
@@ -845,14 +817,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 .setPositiveButton("Apply") { themingDialog, _ ->
                                     themingDialog.dismiss()
                                     lucraRewardProviderEnabled = rewardEnabledSwitch.isChecked
-                                    lucraReward = lucraReward.copy(
-                                        title = etRewardTitle.text.toString(),
-                                        descriptor = etRewardDescriptor.text.toString(),
-                                        iconUrl = etRewardIconUrl.text.toString(),
-                                        bannerIconUrl = etRewardBannerUrl.text.toString(),
-                                        disclaimer = etRewardDisclaimer.text.toString()
-                                    )
-                                    setupRewardProvider(if (lucraRewardProviderEnabled) lucraReward else null)
+                                    fakeLucraRewards = listOf(
+                                        lucraReward.copy(
+                                            title = etRewardTitle.text.toString(),
+                                            descriptor = etRewardDescriptor.text.toString(),
+                                            iconUrl = etRewardIconUrl.text.toString(),
+                                            bannerIconUrl = etRewardBannerUrl.text.toString(),
+                                            disclaimer = etRewardDisclaimer.text.toString()
+                                        )
+                                    ) + fakeLucraRewards
+                                    setupRewardProvider(if (lucraRewardProviderEnabled) fakeLucraRewards else null)
                                 }
                                 .show()
                         }
@@ -1840,20 +1814,4 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         val flow = LucraPushNotificationService.handleNotificationIntent(intent)
         flow?.let { launchFlow(it) }
     }
-
-    private fun setupNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                FCMService.DEFAULT_NOTIFICATION_CHANNEL_ID,
-                FCMService.DEFAULT_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-            }
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        }
-    }
-
-    private fun Calendar.toMonthDayYear(): String =
-        "${get(Calendar.MONTH) + 1}/${get(Calendar.DAY_OF_MONTH)}/${get(Calendar.YEAR)}"
-
 }

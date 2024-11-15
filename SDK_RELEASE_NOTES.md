@@ -1,3 +1,7 @@
+## 3.11.0
+* NotificationChannel is now set up automatically by the SDK - no need to define it on the consumer side.
+* LucraRewardProvider is now available for FTP SYW usage. See release notes for details.
+
 ## 3.10.1
 * Introduced Nuvei for ACH withdrawals
 * UI improvements to Games contests
