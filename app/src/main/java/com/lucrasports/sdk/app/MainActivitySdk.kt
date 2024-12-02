@@ -43,6 +43,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
+import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDialogFragment
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.theming.SampleColorStore
 import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
@@ -57,6 +58,7 @@ import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
 import com.lucrasports.sdk.core.reward.LucraReward
 import com.lucrasports.sdk.core.reward.LucraRewardProvider
+import com.lucrasports.sdk.core.reward.toReward
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
@@ -113,10 +115,11 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     companion object {
         private const val API_URL_OVERRIDE = "API_URL_OVERRIDE"
         private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
+        private const val redeemDialogTag = "TAG_REDEEM_DIALOG"
     }
 
     private val preferences by lazy {
-        getSharedPreferences("LucraSamplePrefs", Context.MODE_PRIVATE)
+        getSharedPreferences("LucraSamplePrefs", MODE_PRIVATE)
     }
     private var apiUrlOverride: String?
         get() = preferences.getString(API_URL_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
@@ -279,11 +282,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
-                    Toast.makeText(
-                        this@MainActivitySdk,
-                        "Claimed Reward: ${reward.title}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    if (supportFragmentManager.findFragmentByTag(redeemDialogTag) == null)
+                        RedeemRewardDialogFragment.newInstance(reward.toReward())
+                            .show(supportFragmentManager, redeemDialogTag)
                 }
             })
         } else {
@@ -1455,7 +1456,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 "Created At > ${it.createdAt}\n" +
                                 "Updated At > ${it.updatedAt}\n" +
                                 "Owner Id > ${it.ownerId}\n" +
-                                "Game Type > ${it.gameType}\n\n"
+                                "Game Type > ${it.gameType}\n" +
+                                "Game Shape > ${it.game}\n\n"
 
                         displayString += "===Teams===\n"
 
