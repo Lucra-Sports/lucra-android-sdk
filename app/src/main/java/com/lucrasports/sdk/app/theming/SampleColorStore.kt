@@ -194,7 +194,7 @@ internal object SampleColorStore {
     private var activeLightModeTheme: ColorStyle = defaultLightModeTheme
     private var activeDarkModeTheme: ColorStyle = defaultDarkModeTheme
 
-    internal fun String.hexToIntColor(): Int {
+    private fun String.hexToIntColor(): Int {
         return removePrefix("#").toInt(16) or 0xFF000000.toInt()
     }
 
@@ -205,11 +205,6 @@ internal object SampleColorStore {
     internal fun applyTheme(lightMode: ColorStyle, darkMode: ColorStyle = lightMode) {
         activeLightModeTheme = lightMode
         activeDarkModeTheme = darkMode
-    }
-
-    internal fun applyDefaultTheme() {
-        activeLightModeTheme = defaultLightModeTheme
-        activeDarkModeTheme = defaultDarkModeTheme
     }
 
     internal fun updateLightProperty(update: ColorStyle.() -> ColorStyle) {

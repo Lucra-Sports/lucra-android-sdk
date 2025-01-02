@@ -1,3 +1,15 @@
+## 3.12.0 UPCOMING RELEASE
+* Introduced `LucraRewardProvider#viewRewards` to support the Profile  "View My Rewards" entry. **This will not be backwards compatible if `LucraRewardProvider` is implemented.**
+
+## 3.11.2
+* Introduced Nuvei for Deposits
+* Added `LucraUiProvider.LucraFlow.CreateGamesMatchupById` Lucra flow
+
+## 3.11.1
+* Upgraded `androidx.navigatio:nnavigation-compose` to 2.8.3, resolving backwards compatibility issues with 2.7.7
+* Patched authentication subscription issues when token would be dropped during an attempted request
+* RetrieveGamesMatchupResult now contains `game` param that contains the game details associated with the matchup
+
 ## 3.11.0
 * NotificationChannel is now set up automatically by the SDK - no need to define it on the consumer side.
 * LucraRewardProvider is now available for FTP SYW usage. See release notes for details.

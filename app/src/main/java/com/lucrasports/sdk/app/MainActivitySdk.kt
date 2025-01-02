@@ -43,6 +43,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
+import com.lucrasports.logger.impl.LucraFirebaseLogger
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.theming.SampleColorStore
 import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
@@ -57,6 +58,7 @@ import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
 import com.lucrasports.sdk.core.reward.LucraReward
 import com.lucrasports.sdk.core.reward.LucraRewardProvider
+import com.lucrasports.sdk.core.reward.toReward
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
@@ -113,10 +115,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     companion object {
         private const val API_URL_OVERRIDE = "API_URL_OVERRIDE"
         private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
+        private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
+        private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
     }
 
     private val preferences by lazy {
-        getSharedPreferences("LucraSamplePrefs", Context.MODE_PRIVATE)
+        getSharedPreferences("LucraSamplePrefs", MODE_PRIVATE)
     }
     private var apiUrlOverride: String?
         get() = preferences.getString(API_URL_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
@@ -134,6 +138,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
+
+    // Referencing internal logger implementation
+    private val customLogger = LucraFirebaseLogger(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -200,6 +207,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiUrl = apiUrlOverride ?: BuildConfig.TESTING_API_URL,
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
+            customLogger = customLogger,
             clientTheme = ClientTheme(
                 lightColorStyle = SampleColorStore.getLightColorStyle(),
                 darkColorStyle = SampleColorStore.getDarkColorStyle(),
@@ -279,11 +287,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
-                    Toast.makeText(
-                        this@MainActivitySdk,
-                        "Claimed Reward: ${reward.title}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                }
+
+                override fun viewRewards() {
+                    // Again, the idea here is to show the list of available rewards for the current user
+                    // This is just a dumby example
+                    
+                    supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
+                        it.dismiss()
+                    }
                 }
             })
         } else {
@@ -1084,15 +1096,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
                         setNeutralButton(
                             "Copy"
-                        ) { _, _ -> // Get a handle to the clipboard service.
+                        ) { _, _ ->
                             val clipboard: ClipboardManager =
                                 getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            // Create a clip with the message text.
                             val clip = ClipData.newPlainText(
                                 "Lucra SDK User Info",
                                 lucraSDKUser!!.toString()
                             )
-                            // Set the clip to the clipboard.
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(
                                 applicationContext,
@@ -1174,7 +1184,24 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             "Navigate to the create games match up flow. Authentication required",
             flowsSection
         ) {
-            launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+            val builder = MaterialAlertDialogBuilder(this)
+            val input = EditText(this).apply {
+                hint = "Game ID Ex: CORNHOLE"
+            }
+
+            builder.setTitle("Provide a Game ID")
+                .setView(input)
+                .setPositiveButton("Continue") { _, _ ->
+                    launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchupById(input.text.toString()))
+                }
+                .setNeutralButton("Skip ID") { dialog, _ ->
+                    launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+                }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+            builder.show()
         }
 
         appendOption(
@@ -1455,7 +1482,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 "Created At > ${it.createdAt}\n" +
                                 "Updated At > ${it.updatedAt}\n" +
                                 "Owner Id > ${it.ownerId}\n" +
-                                "Game Type > ${it.gameType}\n\n"
+                                "Game Type > ${it.gameType}\n" +
+                                "Game Shape > ${it.game}\n\n"
 
                         displayString += "===Teams===\n"
 
