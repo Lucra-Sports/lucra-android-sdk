@@ -1,9 +1,9 @@
 ## 3.12.0 UPCOMING RELEASE
 * Introduced `LucraRewardProvider#viewRewards` to support the Profile  "View My Rewards" entry. **This will not be backwards compatible if `LucraRewardProvider` is implemented.**
-* Added `LucraUiProvider.LucraFlow.CreateGamesMatchupById` Lucra flow
 
 ## 3.11.2
 * Introduced Nuvei for Deposits
+* Added `LucraUiProvider.LucraFlow.CreateGamesMatchupById` Lucra flow
 
 ## 3.11.1
 * Upgraded `androidx.navigatio:nnavigation-compose` to 2.8.3, resolving backwards compatibility issues with 2.7.7
