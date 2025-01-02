@@ -43,9 +43,6 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
-import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDialogFragment
-import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment
-import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment.ViewMyRewardsListener
 import com.lucrasports.logger.impl.LucraFirebaseLogger
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.theming.SampleColorStore
@@ -290,9 +287,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
-                    if (supportFragmentManager.findFragmentByTag(TAG_REDEEM_DIALOG) == null)
-                        RedeemRewardDialogFragment.newInstance(reward.toReward())
-                            .show(supportFragmentManager, TAG_REDEEM_DIALOG)
                 }
 
                 override fun viewRewards() {
@@ -302,17 +296,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
-                    if (supportFragmentManager.findFragmentByTag(TAG_VIEW_REWARDS) == null)
-                        ViewMyRewardsDialogFragment.newInstance(object : ViewMyRewardsListener {
-                            override fun navigateToCreateSYW() {
-                                launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup)
-                            }
-
-                            override fun navigateToCreateGYP() {
-                                launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
-                            }
-
-                        }).show(supportFragmentManager, TAG_VIEW_REWARDS)
                 }
             })
         } else {
