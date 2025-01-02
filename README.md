@@ -751,6 +751,9 @@ their identity yet
 Launch the create games matchup flow, identity verification will launch if the user hasn't verified
 their identity yet
 
+`LucraUiProvider.LucraFlow.CreateGamesMatchupById`
+Launch the create games matchup flow with a prepopulate game
+
 `LucraUiProvider.LucraFlow.CreateSportsMatchup`
 Launch the Create Sport Matchup flow to create a new sports matchup
 
@@ -911,6 +914,9 @@ This callback expects a list of available rewards to show to the current user up
 ## `claimReward`
 When the contest is completed, and the user has won. We allow the user to "claim reward" as a result of winning.
 
+## `viewRewards`
+This is a callback invoked in the profile, where a "View My Rewards" button is shown to the user if the RewardProvider is available
+
 The idea here is that the client can then navigate the user to the Reward details page of the client application.
 
 ```kotlin
@@ -944,6 +950,10 @@ LucraClient().setRewardProvider(object : LucraRewardProvider {
                     "Claimed Reward: ${reward.title}",
                     Toast.LENGTH_LONG
                 ).show()
+            }
+            
+            override fun viewRewards() {
+                // Navigate the user to client based rewards, allow them to view available and/or won Rewards
             }
         })
 ```
