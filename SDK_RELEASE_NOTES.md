@@ -1,8 +1,10 @@
-## 3.12.0 UPCOMING RELEASE
-* Introduced `LucraRewardProvider#viewRewards` to support the Profile  "View My Rewards" entry. **This will not be backwards compatible if `LucraRewardProvider` is implemented.**
+## 3.11.3
+* Introduced support for Tournaments
+* Introduced `LucraClient().joinTournament()`, `LucraClient().queryRecommendedTournaments()` and `LucraClient().retrieveTournament()`
 
 ## 3.11.2
 * Introduced Nuvei for Deposits
+* Introduced `LucraRewardProvider#viewRewards` to support the Profile  "View My Rewards" entry. **This will not be backwards compatible if `LucraRewardProvider` is implemented.**
 * Added `LucraUiProvider.LucraFlow.CreateGamesMatchupById` Lucra flow
 
 ## 3.11.1
