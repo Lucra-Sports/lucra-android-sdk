@@ -19,6 +19,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -43,6 +44,9 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
+import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDialogFragment
+import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment
+import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment.ViewMyRewardsListener
 import com.lucrasports.logger.impl.LucraFirebaseLogger
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.theming.SampleColorStore
@@ -50,6 +54,7 @@ import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
+import com.lucrasports.sdk.core.contest.PoolTournament
 import com.lucrasports.sdk.core.contest.SportsMatchup
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
@@ -287,6 +292,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
+                    if (supportFragmentManager.findFragmentByTag(TAG_REDEEM_DIALOG) == null)
+                        RedeemRewardDialogFragment.newInstance(reward.toReward())
+                            .show(supportFragmentManager, TAG_REDEEM_DIALOG)
                 }
 
                 override fun viewRewards() {
@@ -296,6 +304,17 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
+                    if (supportFragmentManager.findFragmentByTag(TAG_VIEW_REWARDS) == null)
+                        ViewMyRewardsDialogFragment.newInstance(object : ViewMyRewardsListener {
+                            override fun navigateToCreateSYW() {
+                                launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup)
+                            }
+
+                            override fun navigateToCreateGYP() {
+                                launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+                            }
+
+                        }).show(supportFragmentManager, TAG_VIEW_REWARDS)
                 }
             })
         } else {
@@ -642,6 +661,63 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                             .show()
                     }
                 })
+        }
+
+        appendOption(
+            "Retrieve Tournament",
+            "A prompt will show to set the tournament_id.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                return@appendOption
+            }
+
+            retrieveTournament()
+        }
+
+        appendOption(
+            "Join Tournament",
+            "A prompt will show to set the tournament_id. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                return@appendOption
+            }
+
+            joinTournament()
+        }
+
+        appendOption(
+            "Recommended Tournaments",
+            "Retrieve 20 recommended tournaments.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                return@appendOption
+            }
+
+            retrieveRecommendedTournaments()
         }
     }
 
@@ -1255,6 +1331,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         ) {
             launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
         }
+
+        appendOption(
+            "Tournaments",
+            "Navigate to the Tournaments screen.",
+            flowsSection
+        ) {
+            launchFlow(LucraUiProvider.LucraFlow.Tournaments)
+        }
     }
 
     private fun resetThemingOptions(root: ViewGroup) {
@@ -1463,6 +1547,148 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         builder.show()
     }
 
+    private fun retrieveTournament() {
+        val builder = MaterialAlertDialogBuilder(this)
+        val input = EditText(this).apply {
+            setText("eb77921c-aad1-4ac3-b64b-916c45c1373d")
+        }
+        builder.setTitle("Set Tournament Id")
+            .setView(input)
+            .setPositiveButton("OK") { dialog, id ->
+                val tournamentId = input.text.toString()
+                LucraClient().retrieveTournament(tournamentId) {
+                    val builderDisplay = MaterialAlertDialogBuilder(this)
+                    if (it is PoolTournament.RetrieveTournamentResult.RetrieveTournamentOutput) {
+                        var displayString = ""
+                        displayString += "Title > ${it.tournament.title}\n" +
+                                "Type > ${it.tournament.type}\n" +
+                                "Fee > ${it.tournament.fee}\n" +
+                                "Buy In Amount > ${it.tournament.buyInAmount}\n" +
+                                "Pool Amount > ${it.tournament.poolTotalAmount}\n\n" +
+                                "Expires at > ${it.tournament.expiresAt}\n\n"
+
+                        displayString += "===Participants===\n"
+
+                        it.tournament.participants.forEach { participant ->
+                            displayString += "UserId: ${participant.userId}\n"
+                            displayString += "Username: ${participant.username}\n"
+                            displayString += "Place: ${participant.place}\n"
+                            displayString += "Reward Value: ${participant.rewardValue}\n"
+                            displayString += "\n"
+                        }
+                        displayString += "\n"
+
+                        val textView = TextView(this).apply {
+                            setText(displayString)
+                            setPadding(50, 50, 50, 50)
+                        }
+
+                        val scrollView = ScrollView(this).apply {
+                            addView(textView)
+                        }
+
+                        builderDisplay.setTitle("Tournament Results")
+                            .setView(scrollView)
+                            .setPositiveButton("OK") { dialog, id ->
+                                dialog.dismiss()
+                            }.show()
+
+                    } else if (it is PoolTournament.RetrieveTournamentResult.Failure) {
+                        builderDisplay.setTitle("Failed to find tournament")
+                            .setMessage(it.failure.toString())
+                            .setPositiveButton("OK") { dialog, id ->
+                                dialog.dismiss()
+                            }.show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, id ->
+                dialog.dismiss()
+            }
+
+        builder.show()
+    }
+
+    private fun retrieveRecommendedTournaments() {
+        LucraClient().queryRecommendedTournaments(20, 0, true) {
+            val builderDisplay = MaterialAlertDialogBuilder(this)
+            if (it is PoolTournament.QueryRecommendedTournamentsResult.RecommendedTournamentsOutput) {
+                var displayString = ""
+
+                it.recommendedTournaments.forEach { tournament ->
+                    displayString += "Title: ${tournament.title}\n"
+                    displayString += "Status: ${tournament.status}\n"
+                    displayString += "Expires At: ${tournament.expiresAt}\n"
+                    displayString += "Buy In: ${tournament.buyInAmount}\n"
+                    displayString += "Pool Amount: ${tournament.poolTotalAmount}\n"
+                    displayString += "\n"
+                }
+                displayString += "\n"
+
+
+                val textView = TextView(this).apply {
+                    setText(displayString)
+                    setPadding(50, 50, 50, 50)
+                }
+
+                val scrollView = ScrollView(this).apply {
+                    addView(textView)
+                }
+
+                builderDisplay.setTitle("Recommended Tournaments Result")
+                    .setView(scrollView)
+                    .setPositiveButton("OK") { dialog, id ->
+                        dialog.dismiss()
+                    }.show()
+
+            } else if (it is PoolTournament.QueryRecommendedTournamentsResult.Failure) {
+                builderDisplay.setTitle("Failed to find tournament")
+                    .setMessage(it.failure.toString())
+                    .setPositiveButton("OK") { dialog, id ->
+                        dialog.dismiss()
+                    }.show()
+            }
+        }
+
+    }
+
+    private fun joinTournament() {
+        val builder = MaterialAlertDialogBuilder(this)
+        val input = EditText(this).apply {
+            setText("a35291cb-3f07-4515-8f1d-3fa512298b28")
+        }
+        builder.setTitle("Set Tournament Id")
+            .setView(input)
+            .setPositiveButton("OK") { dialog, id ->
+                val matchUpId = input.text.toString()
+                LucraClient().joinTournament(matchUpId) {
+                    val builderDisplay = MaterialAlertDialogBuilder(this)
+                    if (it is PoolTournament.JoinTournamentResult.JoinTournamentOutput) {
+                        var displayString = if (it.success)
+                            "Tournament Joined"
+                        else
+                            "Unable to join Tournament"
+                        builderDisplay.setTitle("Join Tournament Result")
+                            .setMessage(displayString)
+                            .setPositiveButton("OK") { dialog, id ->
+                                dialog.dismiss()
+                            }.show()
+
+                    } else if (it is PoolTournament.JoinTournamentResult.Failure) {
+                        builderDisplay.setTitle("Failed to join tournament")
+                            .setMessage(it.failure.toString())
+                            .setPositiveButton("OK") { dialog, id ->
+                                dialog.dismiss()
+                            }.show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, id ->
+                dialog.dismiss()
+            }
+
+        builder.show()
+    }
 
     private fun retrieveGamesMatch() {
         val builder = MaterialAlertDialogBuilder(this)

@@ -535,6 +535,87 @@ LucraClient().getSportsMatchup(
 }
 ```
 
+### Tournament API
+
+The Tournament interface provides methods to join and retrieve tournament matchups.
+Each method provides a callback mechanism to handle the result of the
+operation.
+
+`retrieveTournament`
+
+Retrieve a tournament with the given ID.
+
+- **Parameters:**
+  - `tournamentId`: ID of the tournament.
+  - `onResult`: Callback with a result of type `RetrieveTournamentResult`.
+
+- **Example usage:**
+
+```kotlin
+LucraClient().retrieveTournament(tournamentId = "tournamentId") { result ->
+    when (result) {
+        is RetrieveTournamentResult.Failure -> {
+            // Handle failure scenario
+        }
+        RetrieveTournamentResult.Success -> {
+            // Handle success scenario
+        }
+    }
+}
+```
+
+`queryRecommendedTournaments`
+
+Retrieve a list of recommended tournaments.
+
+- **Parameters:**
+  - `limit`: The max number tournaments that will be returned.
+  - `offset`: The starting index of the query.
+  - `includeCompletedTournaments`: Should completed tournaments be included in the query.
+  - `onResult`: Callback with a result of type `QueryRecommendedTournamentsResult`.
+
+- **Example usage:**
+
+```kotlin
+LucraClient().queryRecommendedTournaments(
+  limit = 50,
+  offset = 0,
+  includeCompletedTournaments = true,
+) { result ->
+    when (result) {
+        is QueryRecommendedTournamentsResult.Failure -> {
+            // Handle failure scenario
+        }
+        QueryRecommendedTournamentsResult.Success -> {
+            // Handle success scenario
+        }
+    }
+}
+```
+
+`joinTournament`
+
+Join a tournament with the given ID.
+
+- **Parameters:**
+  - `tournamentId`: ID of the tournament.
+  - `onResult`: Callback with a result of type `JoinTournamentResult`.
+
+- **Example usage:**
+
+```kotlin
+LucraClient().joinTournament(tournamentId = "tournamentId") { result ->
+    when (result) {
+        is JoinTournamentResult.Failure -> {
+            // Handle failure scenario
+        }
+        JoinTournamentResult.Success -> {
+            // Handle success scenario
+        }
+    }
+}
+```
+
 `setDeeplinkTransformer`
 
 Sets lambda function that will be used to transform original lucra URI to client specific URI. Make sure to keep the original URI in the process to allow conversion into `LucraFlow` later.

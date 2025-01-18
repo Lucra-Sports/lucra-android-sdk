@@ -82,6 +82,9 @@ android {
 dependencies {
     implementation("com.lucrasports.sdk:sdk-ui:$mavenVersion")
 
+    // For testing internal UI of the reward flow - not required for client integration
+    implementation("com.lucrasports.sdk:feature-reward-selection-flow:$mavenVersion")
+
     // Required for Lucra SDK
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
