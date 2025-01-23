@@ -1,3 +1,7 @@
+## 3.11.4
+* Renamed `Tournament` fields `tournamentId` and `poolTotalAmount`. Added `Tournament` fields `metadata` and `iconUrl`
+* Renamed `Partcipiant` field `userId`
+
 ## 3.11.3
 * Introduced support for Tournaments
 * Introduced `LucraClient().joinTournament()`, `LucraClient().queryRecommendedTournaments()` and `LucraClient().retrieveTournament()`
