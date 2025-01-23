@@ -1564,13 +1564,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 "Type > ${it.tournament.type}\n" +
                                 "Fee > ${it.tournament.fee}\n" +
                                 "Buy In Amount > ${it.tournament.buyInAmount}\n" +
-                                "Pool Amount > ${it.tournament.poolTotalAmount}\n\n" +
+                                "Pool Amount > ${it.tournament.potTotal}\n\n" +
                                 "Expires at > ${it.tournament.expiresAt}\n\n"
 
                         displayString += "===Participants===\n"
 
                         it.tournament.participants.forEach { participant ->
-                            displayString += "UserId: ${participant.userId}\n"
+                            displayString += "UserId: ${participant.id}\n"
                             displayString += "Username: ${participant.username}\n"
                             displayString += "Place: ${participant.place}\n"
                             displayString += "Reward Value: ${participant.rewardValue}\n"
@@ -1620,7 +1620,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     displayString += "Status: ${tournament.status}\n"
                     displayString += "Expires At: ${tournament.expiresAt}\n"
                     displayString += "Buy In: ${tournament.buyInAmount}\n"
-                    displayString += "Pool Amount: ${tournament.poolTotalAmount}\n"
+                    displayString += "Pool Amount: ${tournament.potTotal}\n"
                     displayString += "\n"
                 }
                 displayString += "\n"
