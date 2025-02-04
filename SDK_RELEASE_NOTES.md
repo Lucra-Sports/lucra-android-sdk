@@ -1,3 +1,13 @@
+## 3.12.0
+* [Breaking Change] The [RetrieveGamesMatchupResult] now returns [TopLevelMatchupType] instead of [SportsMatchupType] on success callback.
+* [Breaking Change] The [TopLevelMatchupType]'s field `ownerId` is now `creatorId` and `type` is now `subtype`
+* Bumped Aerosync version from `1.0.9` to `1.3.0`
+* Updated how bank deletion logic is handled per provider
+* Added `LucraUiProvider.LucraFlow.GamesMatchupDetails` Lucra flow
+* Updated Geocomply version to support TargetSDK 35
+* Added `LucraClient().closeFullScreenLucraFlows()` to close all open LucraFlows
+* Fixed network overlay from displaying too frequently
+
 ## 3.11.4
 * Renamed `Tournament` fields `tournamentId` and `poolTotalAmount`. Added `Tournament` fields `metadata` and `iconUrl`
 * Renamed `Partcipiant` field `userId`

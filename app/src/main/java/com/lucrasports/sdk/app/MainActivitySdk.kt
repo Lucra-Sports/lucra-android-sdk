@@ -55,7 +55,7 @@ import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 import com.lucrasports.sdk.core.contest.GamesMatchup
 import com.lucrasports.sdk.core.contest.PoolTournament
-import com.lucrasports.sdk.core.contest.SportsMatchup
+import com.lucrasports.sdk.core.contest.SportsMatchup.RetrieveSportsMatchupResult
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
 import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
@@ -73,6 +73,8 @@ import com.lucrasports.sdk.core.user.SDKUser
 import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
 import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -735,7 +737,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "Update Style Colors",
                         "Configure Reward Service",
                         "Update Convert to Credit Info",
-                        "View Configuration"
+                        "View Configuration",
+                        "Close all Lucra Flows in 10 seconds",
                     )
                 ) { dialog, which ->
                     when (which) {
@@ -1059,6 +1062,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 // TODO allow edit experience...
                                 .show()
                         }
+
+                        7 -> {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                delay(10000)
+                                LucraClient().closeFullScreenLucraFlows(supportFragmentManager)
+                            }
+                        }
                     }
                     dialog.dismiss()
                 }
@@ -1272,6 +1282,28 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 }
                 .setNeutralButton("Skip ID") { dialog, _ ->
                     launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+                }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+            builder.show()
+        }
+
+        appendOption(
+            "Show Games Matchup",
+            "Navigate to the games matchup details flow. Authentication required",
+            flowsSection
+        ) {
+            val builder = MaterialAlertDialogBuilder(this)
+            val input = EditText(this).apply {
+                hint = "ID of Games Matchup"
+            }
+
+            builder.setTitle("Provide a Matchup ID")
+                .setView(input)
+                .setPositiveButton("Continue") { _, _ ->
+                    launchFlow(LucraUiProvider.LucraFlow.GamesMatchupDetails(input.text.toString()))
                 }
                 .setNegativeButton("Cancel") { dialog, _ ->
                     dialog.dismiss()
@@ -1516,12 +1548,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 val matchUpId = input.text.toString()
                 LucraClient().getSportsMatchup(matchUpId) {
                     val builderDisplay = MaterialAlertDialogBuilder(this)
-                    if (it is SportsMatchup.RetrieveSportsMatchupResult.SportsMatchupDetailsOutput) {
+                    if (it is RetrieveSportsMatchupResult.MatchupDetailsOutput) {
                         var displayString = ""
-                        displayString += "${it.sportsMatchup}"
+                        displayString += "${it.topLevelMatchupType}"
 
                         val textView = TextView(this).apply {
-                            setText(displayString)
+                            text = displayString
                             setPadding(50, 50, 50, 50)
                         }
 
@@ -1531,7 +1563,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 dialog.dismiss()
                             }.show()
 
-                    } else if (it is SportsMatchup.RetrieveSportsMatchupResult.Failure) {
+                    } else if (it is RetrieveSportsMatchupResult.Failure) {
                         builderDisplay.setTitle("Failed to find matchup")
                             .setMessage(it.failure.toString())
                             .setPositiveButton("OK") { dialog, id ->
