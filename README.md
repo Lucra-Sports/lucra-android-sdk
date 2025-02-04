@@ -36,9 +36,13 @@ implementation("com.lucrasports.sdk:sdk-ui:2.0.0-beta") //TODO reference latest 
 
 // Required desugaring library, which allows the project to be built with embedded jdks, it's not 
 // what is ran on the device (java 11). See more here https://github.com/android/nowinandroid/pull/731
-```
+
+defaultConfig {
+  targetSdk = 35 //Target SDK must be 35 or lower
+}
+
 compileOptions {
-        isCoreLibraryDesugaringEnabled = true
+  isCoreLibraryDesugaringEnabled = true
 }
 
 dependencies {
@@ -389,6 +393,16 @@ LucraClient().configure(sdkUser.copy(username = newUsername)) {
     }
 ```
 
+`closeFullScreenLucraFlows`
+
+Closes all active `LucraFlows` shown within a `DialogFragment` returned from `LucraClient#getLucraDialogFragment`.
+
+- **Example usage:**
+
+```kotlin
+ LucraClient().closeFullScreenLucraFlows(fragmentManager)
+```
+
 `logout`
 
 Logs out the current user, if any
@@ -516,7 +530,7 @@ Retrieve a sports contest with the given ID.
 
 - **Parameters:**
   - `matchupId`: ID of the contest.
-  - `onResult`: Callback with a result of type `RetrieveGamesMatchupResult`.
+  - `onResult`: Callback with a result of type `RetrieveSportsMatchupResult`.
 
 - **Example usage:**
 
@@ -834,6 +848,9 @@ their identity yet
 
 `LucraUiProvider.LucraFlow.CreateGamesMatchupById`
 Launch the create games matchup flow with a prepopulate game
+
+`LucraUiProvider.LucraFlow.GamesMatchupDetails`
+Launch the games matchup details flow to show details about a created game
 
 `LucraUiProvider.LucraFlow.CreateSportsMatchup`
 Launch the Create Sport Matchup flow to create a new sports matchup
