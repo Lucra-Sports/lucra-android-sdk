@@ -764,11 +764,11 @@ The `ClientTheme` class has three nested classes, `lightColorStyle`, `darkColorS
 
 `ColorStyle`
 
-Represents the 10 different colors your can provide to the SDK. Each field in this class is an
+Represents the 6 different colors your can provide to the SDK. Each field in this class is an
 hexadecimal string value.
 
 The colors used
-are `Primary`, `Secondary`, `Tertiary`, `Surface`, `Background`, `OnPrimary`, `OnSecondary`, `OnTertiary`, `OnSurface`, `OnBackground`
+are `Primary`, `Secondary`, `Tertiary`, `OnPrimary`, `OnSecondary`, `OnTertiary`
 
 `FontFamily`
 
@@ -793,25 +793,17 @@ LucraClient.initialize(
       primary = "#1976D2",
       secondary = "#F57C00",
       tertiary = "#388E3C",
-      surface = "#FFFFFF",
-      background = "#F5F5F5",
       onPrimary = "#FFFFFF",
       onSecondary = "#FFFFFF",
       onTertiary = "#FFFFFF",
-      onSurface = "#000000",
-      onBackground = "#000000"
     ),
     darkColorStyle = ColorStyle(
       primary = "#09E35F",
       secondary = "#5E5BD0",
       tertiary = "#9C99FC",
-      surface = "#1C2575",
-      background = "#001448",
       onPrimary = "#001448",
       onSecondary = "#FFFFFF",
       onTertiary = "#FFFFFF",
-      onSurface = "#FFFFFF",
-      onBackground = "#FFFFFF"
     ),
     fontFamily = FontFamily(
       mediumFont = Font("my_medium_font.ttf"),
