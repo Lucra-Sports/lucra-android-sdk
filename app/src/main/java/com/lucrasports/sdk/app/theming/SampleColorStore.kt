@@ -6,78 +6,54 @@ import com.lucrasports.sdk.core.style_guide.ColorStyle
 internal object SampleColorStore {
 
     val dandbLightTheme = ColorStyle(
-        background      = "#FFFFFF",
-        surface         = "#FFFFFF",
         primary         = "#0D0441",
         secondary       = "#FFFFFF",
         tertiary        = "#FFFFFF",
-        onBackground    = "#0D0441",
-        onSurface       = "#131D94",
         onPrimary       = "#FE5B00",
         onSecondary     = "#2F26D3",
         onTertiary      = "#4FABF7",
     )
 
     val dandbDarkTheme = ColorStyle(
-        background      = "#0D0441",
-        surface         = "#131D94",
         primary         = "#FE5B00",
         secondary       = "#2F26D3",
         tertiary        = "#4FABF7",
-        onBackground    = "#FFFFFF",
-        onSurface       = "#FFFFFF",
         onPrimary       = "#0D0441",
         onSecondary     = "#FFFFFF",
         onTertiary      = "#FFFFFF"
     )
 
     val duprTheme = ColorStyle(
-        background = "#FFFFFF",
-        surface = "#F5F6F9",
         primary = "#3A79E0",
         secondary = "#EBECF2",
         tertiary = "#CDD0DF",
-        onBackground = "#05155E",
-        onSurface = "#05155E",
         onPrimary = "#FFFFFF",
         onSecondary = "#05155E",
         onTertiary = "#05155E"
     )
 
     val psfTheme = ColorStyle(
-        background = "#1E1E29",
-        surface = "#2C3042",
         primary = "#387FD1",
         secondary = "#121212",
         tertiary = "#FFFFFF",
-        onBackground = "#FFFFFF",
-        onSurface = "#FFFFFF",
         onPrimary = "#FFFFFF",
         onSecondary = "#FFFFFF",
         onTertiary = "#000000"
     )
 
     val t1Theme = ColorStyle(
-        background = "#2C2F74",
-        surface = "#474DD0",
         primary = "#DEE32A",
         secondary = "#5E5BD0",
         tertiary = "#9C99FC",
-        onBackground = "#FFFFFF",
-        onSurface = "#FFFFFF",
         onPrimary = "#001448",
         onSecondary = "#FFFFFF",
         onTertiary = "#FFFFFF"
     )
 
     val chaosTheme = ColorStyle(
-        background = "#FFFFFF",
-        surface = "#541107",
         primary = "#A3D16E",
         secondary = "#285FF5",
         tertiary = "#CDD0DF",
-        onBackground = "#000000",
-        onSurface = "#FFFFFF",
         onPrimary = "#000000",
         onSecondary = "#FFFFFF",
         onTertiary = "#05155E"
@@ -85,52 +61,36 @@ internal object SampleColorStore {
 
     val defaultLightModeTheme = when (BuildConfig.BUILD_TYPE) {
         "release" -> ColorStyle(
-            background = "#FDFDFD",
-            surface = "#1C2575",
             primary = "#09E35F",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#001448",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
         )
 
         "sandbox" -> ColorStyle(
-            background = "#FDFDFD",
-            surface = "#1C2575",
             primary = "#C2B280",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#001448",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
         )
 
         "staging" -> ColorStyle(
-            background = "#FDFDFD",
-            surface = "#1C2575",
             primary = "#FDE92B",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#001448",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
         )
         // debug and any other variant, which is important for the public sample
         else -> ColorStyle(
-            background = "#FDFDFD",
-            surface = "#1C2575",
             primary = "#FA5455",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#001448",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
@@ -139,52 +99,36 @@ internal object SampleColorStore {
 
     val defaultDarkModeTheme = when (BuildConfig.BUILD_TYPE) {
         "release" -> ColorStyle(
-            background = "#001448",
-            surface = "#1C2575",
             primary = "#09E35F",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#FFFFFF",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
         )
 
         "sandbox" -> ColorStyle(
-            background = "#001448",
-            surface = "#1C2575",
             primary = "#C2B280",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#FFFFFF",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
         )
 
         "staging" -> ColorStyle(
-            background = "#001448",
-            surface = "#1C2575",
             primary = "#FDE92B",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#FFFFFF",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
         )
         // debug and any other variant, which is important for the public sample
         else -> ColorStyle(
-            background = "#001448",
-            surface = "#1C2575",
             primary = "#FA5455",
             secondary = "#5E5BD0",
             tertiary = "#9C99FC",
-            onBackground = "#FFFFFF",
-            onSurface = "#FFFFFF",
             onPrimary = "#001448",
             onSecondary = "#FFFFFF",
             onTertiary = "#FFFFFF"
@@ -250,16 +194,6 @@ internal object SampleColorStore {
                 copy(tertiary = it.intToColorHex())
             }
         }),
-        LIGHT_ON_BACKGROUND(5, {
-            updateLightProperty {
-                copy(onBackground = it.intToColorHex())
-            }
-        }),
-        LIGHT_ON_SURFACE(6, {
-            updateLightProperty {
-                copy(onSurface = it.intToColorHex())
-            }
-        }),
         LIGHT_ON_PRIMARY(7, {
             updateLightProperty {
                 copy(onPrimary = it.intToColorHex())
@@ -275,17 +209,6 @@ internal object SampleColorStore {
                 copy(onTertiary = it.intToColorHex())
             }
         }),
-
-        DARK_BACKGROUND(10, {
-            updateDarkProperty {
-                copy(background = it.intToColorHex())
-            }
-        }),
-        DARK_SURFACE(11, {
-            updateDarkProperty {
-                copy(surface = it.intToColorHex())
-            }
-        }),
         DARK_PRIMARY(12, {
             updateDarkProperty {
                 copy(primary = it.intToColorHex())
@@ -299,16 +222,6 @@ internal object SampleColorStore {
         DARK_TERTIARY(14, {
             updateDarkProperty {
                 copy(tertiary = it.intToColorHex())
-            }
-        }),
-        DARK_ON_BACKGROUND(15, {
-            updateDarkProperty {
-                copy(onBackground = it.intToColorHex())
-            }
-        }),
-        DARK_ON_SURFACE(16, {
-            updateDarkProperty {
-                copy(onSurface = it.intToColorHex())
             }
         }),
         DARK_ON_PRIMARY(17, {
@@ -336,18 +249,6 @@ internal object SampleColorStore {
     internal fun getColorIdHexIntForAllLightModeProperties(details: (id: Int, title: String, colorHex: String, colorInt: Int) -> Unit) {
         val style = getLightColorStyle()
         details(
-            ColorIdMap.LIGHT_BACKGROUND.id,
-            "Background",
-            style.background!!,
-            style.background!!.hexToIntColor()
-        )
-        details(
-            ColorIdMap.LIGHT_SURFACE.id,
-            "Surface",
-            style.surface!!,
-            style.surface!!.hexToIntColor()
-        )
-        details(
             ColorIdMap.LIGHT_PRIMARY.id,
             "Primary",
             style.primary!!,
@@ -366,18 +267,6 @@ internal object SampleColorStore {
             style.tertiary!!.hexToIntColor()
         )
         //on
-        details(
-            ColorIdMap.LIGHT_ON_BACKGROUND.id,
-            "On Background",
-            style.onBackground!!,
-            style.onBackground!!.hexToIntColor()
-        )
-        details(
-            ColorIdMap.LIGHT_ON_SURFACE.id,
-            "On Surface",
-            style.onSurface!!,
-            style.onSurface!!.hexToIntColor()
-        )
         details(
             ColorIdMap.LIGHT_ON_PRIMARY.id,
             "On Primary",
@@ -401,18 +290,6 @@ internal object SampleColorStore {
     internal fun getColorIdHexIntForAllDarkModeProperties(details: (id: Int, title: String, colorHex: String, colorInt: Int) -> Unit) {
         val style = getDarkColorStyle()
         details(
-            ColorIdMap.DARK_BACKGROUND.id,
-            "Background",
-            style.background!!,
-            style.background!!.hexToIntColor()
-        )
-        details(
-            ColorIdMap.DARK_SURFACE.id,
-            "Surface",
-            style.surface!!,
-            style.surface!!.hexToIntColor()
-        )
-        details(
             ColorIdMap.DARK_PRIMARY.id,
             "Primary",
             style.primary!!,
@@ -431,18 +308,6 @@ internal object SampleColorStore {
             style.tertiary!!.hexToIntColor()
         )
         //on
-        details(
-            ColorIdMap.DARK_ON_BACKGROUND.id,
-            "On Background",
-            style.onBackground!!,
-            style.onBackground!!.hexToIntColor()
-        )
-        details(
-            ColorIdMap.DARK_ON_SURFACE.id,
-            "On Surface",
-            style.onSurface!!,
-            style.onSurface!!.hexToIntColor()
-        )
         details(
             ColorIdMap.DARK_ON_PRIMARY.id,
             "On Primary",

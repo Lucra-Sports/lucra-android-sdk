@@ -1,3 +1,11 @@
+## 3.13.0
+* Added `accountStatus` to `SDKUser` payload to indicate the user's account status
+* Fixed Games Creation and Acceptance flows to always show Loading dialogs after requesting location permission
+* Depreciated fields `background`, `onBackground`, `surface`, and `onSurface` in `ColorStyle`
+* Improved Games Create flow with a more streamlined UI
+* Improved Sports You Watch flow with a more streamlined UI
+* Sports You Watch now supports live games
+
 ## 3.12.0
 * [Breaking Change] The [RetrieveGamesMatchupResult] now returns [TopLevelMatchupType] instead of [SportsMatchupType] on success callback.
 * [Breaking Change] The [TopLevelMatchupType]'s field `ownerId` is now `creatorId` and `type` is now `subtype`
