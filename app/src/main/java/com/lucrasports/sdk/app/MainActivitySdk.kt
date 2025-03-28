@@ -1596,8 +1596,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 "Type > ${it.tournament.type}\n" +
                                 "Fee > ${it.tournament.fee}\n" +
                                 "Buy In Amount > ${it.tournament.buyInAmount}\n" +
-                                "Pot Total > ${it.tournament.potTotal}\n\n" +
-                                "Pot Net Amount > ${it.tournament.potNetAmount}\n\n" +
+                                "Pool Amount > ${it.tournament.potTotal}\n\n" +
                                 "Expires at > ${it.tournament.expiresAt}\n\n"
 
                         displayString += "===Participants===\n"
@@ -1653,8 +1652,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     displayString += "Status: ${tournament.status}\n"
                     displayString += "Expires At: ${tournament.expiresAt}\n"
                     displayString += "Buy In: ${tournament.buyInAmount}\n"
-                    displayString += "Pot Total: ${tournament.potTotal}\n"
-                    displayString += "Pot Net Amount: ${tournament.potNetAmount}\n"
+                    displayString += "Pool Amount: ${tournament.potTotal}\n"
                     displayString += "\n"
                 }
                 displayString += "\n"

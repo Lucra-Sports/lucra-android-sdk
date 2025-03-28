@@ -1,12 +1,3 @@
-## 3.13.2 UNRELEASED
-* Profile page performance enhancement. We now only pre-load 20 items for in progress, accepted and completed matchups.
-* Updated `com.braintreepayments.api` `paypal`, `venmo`, and `data-collector` SDKs to `5.8.0`
-* Improved geolocation related performance.
-* UI updates to Game Matchup Details screen.
-
-## 3.13.1
-* Updated `Tournament` data model to include `potNetAmount`.
-
 ## 3.13.0
 * Added `accountStatus` to `SDKUser` payload to indicate the user's account status
 * Fixed Games Creation and Acceptance flows to always show Loading dialogs after requesting location permission
