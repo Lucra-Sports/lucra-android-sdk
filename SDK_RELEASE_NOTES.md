@@ -1,3 +1,6 @@
+## 3.13.1
+* Updated `Tournament` data model to include `potNetAmount`.
+
 ## 3.13.0
 * Added `accountStatus` to `SDKUser` payload to indicate the user's account status
 * Fixed Games Creation and Acceptance flows to always show Loading dialogs after requesting location permission
