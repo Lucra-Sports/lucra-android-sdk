@@ -854,6 +854,9 @@ the user hasn't verified their identity yet
 `LucraUiProvider.LucraFlow.PublicFeed`
 Launch to view the public feed of sports matchups.
 
+`LucraUiProvider.LucraFlow.TournamentDetails`
+Launch the tournaments details flow to show details about a created tournament
+
 `LucraUiProvider.LucraFlow.Dynamic`
 Launch specific destinations, proprietary to the host app.
 
