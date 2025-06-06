@@ -1,3 +1,22 @@
+## 4.0.0
+* [Breaking Change] Methods to get(both sport and recreational matchups), create, accept, and cancel recreational games matchup has been migrated:
+  * `LucraClient.getMatchup`
+  * `LucraClient.createRecreationalGame`
+  * `LucraClient.acceptVersusRecreationalGame`
+  * `LucraClient.acceptFreeForAllRecreationalGame`
+  * `LucraClient.cancelRecreationalGame`
+* Profile page performance enhancement. We now only pre-load 20 items for in progress, accepted and completed matchups.
+* Updated `com.braintreepayments.api` `paypal`, `venmo`, and `data-collector` SDKs to `5.8.0`
+* Improved geolocation related performance.
+* UI updates to Game Matchup Details screen.
+* Updated compose dependencies: `androidxComposeBom` to `2025.03.00`, `androidxConstraintLayoutCompose` to `1.1.0`
+* Upgraded `androidx.navigatio:nnavigation-compose` to `2.8.3`, resolving backwards compatibility issues with `2.7.7`
+* Patched authentication subscription issues when token would be dropped during an attempted request
+* Migrated to `androidx.compose.material3:material3` removing dependency to the legacy `androidx.compose.material:material` library
+* Added `LucraUiProvider.LucraFlow.TournamentDetails` Lucra flow
+* Group play feature added. We now support teams versus (team vs team) and free for all matchups for games!
+* `CreateGamesMatchup` now supports optional `locationId` to specify a location for filtered tournaments
+
 ## 3.13.1
 * Updated `Tournament` data model to include `potNetAmount`.
 

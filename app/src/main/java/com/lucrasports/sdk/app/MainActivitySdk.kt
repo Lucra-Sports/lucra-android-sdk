@@ -53,9 +53,12 @@ import com.lucrasports.sdk.app.theming.SampleColorStore
 import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
-import com.lucrasports.sdk.core.contest.GamesMatchup
-import com.lucrasports.sdk.core.contest.PoolTournament
-import com.lucrasports.sdk.core.contest.SportsMatchup.RetrieveSportsMatchupResult
+import com.lucrasports.sdk.core.contest.GameInteractions.GetMatchupResult
+import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions
+import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.AcceptRecreationalGameResult
+import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.CancelGamesMatchupResult
+import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.CreateGamesMatchupResult
+import com.lucrasports.sdk.core.contest.tournament.PoolTournament
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
 import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
@@ -238,6 +241,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         Log.d("Sample", "Sports contest created: ${event.contestId}")
                     }
 
+                    is LucraEvent.Tournament.Joined -> {
+                        Log.d("Sample", "Tournament joined: ${event.tournamentId}")
+                    }
+
                     else -> {
                         Log.d("Sample", "Other Event: $event")
                     }
@@ -302,7 +309,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 override fun viewRewards() {
                     // Again, the idea here is to show the list of available rewards for the current user
                     // This is just a dumby example
-                    
+
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
                     }
@@ -313,7 +320,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                             }
 
                             override fun navigateToCreateGYP() {
-                                launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+                                launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup())
                             }
 
                         }).show(supportFragmentManager, TAG_VIEW_REWARDS)
@@ -578,8 +585,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    // TODO add create games you play API
-    // TODO add accept games you play API
     // TODO add cancel games you play API
     private fun appendApiOptions() {
         appendOption(
@@ -610,21 +615,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
-            "Retrieve Games Matchup",
-            "A prompt will show to set the games matchup_id. Authentication required.",
+            "Retrieve Matchup",
+            "A prompt will show to set the matchup_id.",
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            retrieveGamesMatch()
-        }
-
-        appendOption(
-            "Retrieve Sports Matchup",
-            "A prompt will show to set the sports matchup_id. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            retrieveSportsMatch()
+            retrieveGamesMatchup()
         }
 
         appendOption(
@@ -721,6 +717,387 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
             retrieveRecommendedTournaments()
         }
+
+        // Add the recreational games API options
+        appendRecreationalGamesApiOptions()
+    }
+
+    private fun appendRecreationalGamesApiOptions() {
+        appendOption(
+            "Create Recreational Game",
+            "Create a recreational game with specified parameters. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@appendOption
+            }
+            createRecreationalGameDialog()
+        }
+
+        appendOption(
+            "Accept Versus Recreational Game",
+            "Accept a Group vs Group recreational game. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@appendOption
+            }
+            acceptVersusRecreationalGameDialog()
+        }
+
+        appendOption(
+            "Accept Free-For-All Recreational Game",
+            "Accept a Free-For-All recreational game. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@appendOption
+            }
+            acceptFreeForAllRecreationalGameDialog()
+        }
+
+        appendOption(
+            "Cancel Recreational Game",
+            "Cancel a recreational game. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@appendOption
+            }
+            cancelRecreationalGameDialog()
+        }
+    }
+
+    private fun createRecreationalGameDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+
+        // Game Type ID
+        val gameTypeIdLayout = TextInputLayout(this).apply {
+            hint = "Game Type ID"
+        }
+        val gameTypeIdInput = TextInputEditText(this).apply {
+            setText("CORNHOLE") // Default example value
+        }
+        gameTypeIdLayout.addView(gameTypeIdInput)
+        layout.addView(gameTypeIdLayout)
+
+        // PlayStyle selection spinner
+        val playStyleLayout = TextInputLayout(this).apply {
+            hint = "Play Style"
+        }
+        val playStyleSpinner = Spinner(this)
+        val playStyles = arrayOf(
+            "GROUP_VS_GROUP",
+            "FREE_FOR_ALL"
+        )
+        val playStyleAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, playStyles)
+        playStyleSpinner.adapter = playStyleAdapter
+
+        // Add a container for the spinner
+        val playStyleContainer = LinearLayout(this).apply {
+            addView(TextView(context).apply {
+                text = "Play Style:"
+                setPadding(0, 30, 20, 0)
+            })
+            addView(playStyleSpinner)
+            setPadding(0, 20, 0, 20)
+        }
+        layout.addView(playStyleContainer)
+
+        // RewardType selection spinner
+        val rewardTypeLayout = TextInputLayout(this).apply {
+            hint = "Reward Type"
+        }
+        val rewardTypeSpinner = Spinner(this)
+        val rewardTypes = arrayOf(
+            "CASH",
+//            "FREE"
+        )
+        val rewardTypeAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, rewardTypes)
+        rewardTypeSpinner.adapter = rewardTypeAdapter
+
+        // Add a container for the spinner
+        val rewardTypeContainer = LinearLayout(this).apply {
+            addView(TextView(context).apply {
+                text = "Reward Type:"
+                setPadding(0, 30, 20, 0)
+            })
+            addView(rewardTypeSpinner)
+            setPadding(0, 20, 0, 20)
+        }
+        layout.addView(rewardTypeContainer)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Create Recreational Game")
+            .setView(layout)
+            .setPositiveButton("Create", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                val gameTypeId = gameTypeIdInput.text.toString()
+                val playStyleValue = when (playStyleSpinner.selectedItem.toString()) {
+                    "GROUP_VS_GROUP" -> RecreationalGameInteractions.PlayStyle.GroupVsGroup
+                    "FREE_FOR_ALL" -> RecreationalGameInteractions.PlayStyle.FreeForAll
+                    else -> RecreationalGameInteractions.PlayStyle.GroupVsGroup
+                }
+//                val rewardTypeValue = when (rewardTypeSpinner.selectedItem.toString()) {
+//                    "CASH" -> RecreationalGameInteractions.RewardType.Cash(5.00)
+//                }
+
+                if (gameTypeId.isBlank()) {
+                    Toast.makeText(this, "Game Type ID is required", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                LucraClient().createRecreationalGame(
+                    gameTypeId = gameTypeId,
+                    atStake = RecreationalGameInteractions.RewardType.Cash(5.00),
+                    playStyle = playStyleValue
+                ) { result ->
+                    runOnUiThread {
+                        displayRecreationalGameResult("Create Game Result", result)
+                        dialog.dismiss()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun acceptVersusRecreationalGameDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+
+        // Matchup ID
+        val matchupIdLayout = TextInputLayout(this).apply {
+            hint = "Matchup ID"
+        }
+        val matchupIdInput = TextInputEditText(this)
+        matchupIdLayout.addView(matchupIdInput)
+        layout.addView(matchupIdLayout)
+
+        // Team ID
+        val teamIdLayout = TextInputLayout(this).apply {
+            hint = "Team ID"
+        }
+        val teamIdInput = TextInputEditText(this)
+        teamIdLayout.addView(teamIdInput)
+        layout.addView(teamIdLayout)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Accept Versus Recreational Game")
+            .setView(layout)
+            .setPositiveButton("Accept", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                val matchupId = matchupIdInput.text.toString()
+                val teamId = teamIdInput.text.toString()
+
+                if (matchupId.isBlank() || teamId.isBlank()) {
+                    Toast.makeText(
+                        this,
+                        "Both Matchup ID and Team ID are required",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+
+                LucraClient().acceptVersusRecreationalGame(
+                    matchupId = matchupId,
+                    teamId = teamId
+                ) { result ->
+                    runOnUiThread {
+                        displayAcceptGameResult("Accept Versus Game Result", result)
+                        dialog.dismiss()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun acceptFreeForAllRecreationalGameDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+
+        // Matchup ID
+        val matchupIdLayout = TextInputLayout(this).apply {
+            hint = "Matchup ID"
+        }
+        val matchupIdInput = TextInputEditText(this)
+        matchupIdLayout.addView(matchupIdInput)
+        layout.addView(matchupIdLayout)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Accept Free-For-All Recreational Game")
+            .setView(layout)
+            .setPositiveButton("Accept", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                val matchupId = matchupIdInput.text.toString()
+
+                if (matchupId.isBlank()) {
+                    Toast.makeText(this, "Matchup ID is required", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                LucraClient().acceptFreeForAllRecreationalGame(
+                    matchupId = matchupId
+                ) { result ->
+                    runOnUiThread {
+                        displayAcceptGameResult("Accept Free-For-All Game Result", result)
+                        dialog.dismiss()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun cancelRecreationalGameDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+
+        // Matchup ID
+        val matchupIdLayout = TextInputLayout(this).apply {
+            hint = "Matchup ID"
+        }
+        val matchupIdInput = TextInputEditText(this)
+        matchupIdLayout.addView(matchupIdInput)
+        layout.addView(matchupIdLayout)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Cancel Recreational Game")
+            .setView(layout)
+            .setPositiveButton("Cancel Game", null)
+            .setNegativeButton("Close", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                val matchupId = matchupIdInput.text.toString()
+
+                if (matchupId.isBlank()) {
+                    Toast.makeText(this, "Matchup ID is required", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                LucraClient().cancelRecreationalGame(
+                    matchupId = matchupId
+                ) { result ->
+                    runOnUiThread {
+                        displayCancelGameResult("Cancel Game Result", result)
+                        dialog.dismiss()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun displayRecreationalGameResult(title: String, result: CreateGamesMatchupResult) {
+        val message = when (result) {
+            is CreateGamesMatchupResult.Success -> {
+                "Success!\nMatchup ID: ${result.matchupId}"
+            }
+
+            is CreateGamesMatchupResult.Failure -> {
+                "Failed: ${result.failure}"
+            }
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    private fun displayAcceptGameResult(title: String, result: AcceptRecreationalGameResult) {
+        val message = when (result) {
+            is AcceptRecreationalGameResult.Success -> {
+                "Success!\nMatchup accepted successfully."
+            }
+
+            is AcceptRecreationalGameResult.Failure -> {
+                "Failed: ${result.failure}"
+            }
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    private fun displayCancelGameResult(title: String, result: CancelGamesMatchupResult) {
+        val message = when (result) {
+            is CancelGamesMatchupResult.Success -> {
+                "Success!\nMatchup cancelled successfully."
+            }
+
+            is CancelGamesMatchupResult.Failure -> {
+                "Failed: ${result.failure}"
+            }
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     //
@@ -1271,17 +1648,40 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             flowsSection
         ) {
             val builder = MaterialAlertDialogBuilder(this)
-            val input = EditText(this).apply {
+            val inputGameId = EditText(this).apply {
                 hint = "Game ID Ex: CORNHOLE"
             }
 
-            builder.setTitle("Provide a Game ID")
-                .setView(input)
+            val inputLocation = EditText(this).apply {
+                hint = "Location ID"
+            }
+
+            val linearLayout = LinearLayout(this)
+            linearLayout.orientation = LinearLayout.VERTICAL
+            linearLayout.addView(inputGameId)
+            linearLayout.addView(inputLocation)
+
+            builder.setTitle("Provide a Game ID or Location ID")
+                .setView(linearLayout)
                 .setPositiveButton("Continue") { _, _ ->
-                    launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchupById(input.text.toString()))
+                    if (!inputGameId.text.isNullOrBlank()) {
+                        launchFlow(
+                            LucraUiProvider.LucraFlow.CreateGamesMatchupById(
+                                gameId = inputGameId.text.toString(),
+                            )
+                        )
+                    } else if (!inputLocation.text.isNullOrBlank()) {
+                        launchFlow(
+                            LucraUiProvider.LucraFlow.CreateGamesMatchup(
+                                locationId = inputLocation.text.toString(),
+                            )
+                        )
+                    } else {
+                        launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup())
+                    }
                 }
-                .setNeutralButton("Skip ID") { dialog, _ ->
-                    launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup)
+                .setNeutralButton("Skip ID") { _, _ ->
+                    launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup())
                 }
                 .setNegativeButton("Cancel") { dialog, _ ->
                     dialog.dismiss()
@@ -1304,6 +1704,30 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 .setView(input)
                 .setPositiveButton("Continue") { _, _ ->
                     launchFlow(LucraUiProvider.LucraFlow.GamesMatchupDetails(input.text.toString()))
+                }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+            builder.show()
+        }
+
+        appendOption(
+            "Show Tournament Matchup",
+            "Navigate to the tournament details flow. Authentication required",
+            flowsSection
+        ) {
+            val builder = MaterialAlertDialogBuilder(this)
+            val input = EditText(this).apply {
+                hint = "ID of Tournament"
+            }
+
+            input.setText("eb77921c-aad1-4ac3-b64b-916c45c1373d")
+
+            builder.setTitle("Provide a Tournament ID")
+                .setView(input)
+                .setPositiveButton("Continue") { _, _ ->
+                    launchFlow(LucraUiProvider.LucraFlow.TournamentDetails(input.text.toString()))
                 }
                 .setNegativeButton("Cancel") { dialog, _ ->
                     dialog.dismiss()
@@ -1537,48 +1961,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }.launchIn(lifecycleScope)
     }
 
-    private fun retrieveSportsMatch() {
-        val builder = MaterialAlertDialogBuilder(this)
-        val input = EditText(this).apply {
-            setText("123db0c6-3096-443a-ad63-8cc302bddf92")
-        }
-        builder.setTitle("Set Matchup Id")
-            .setView(input)
-            .setPositiveButton("OK") { dialog, id ->
-                val matchUpId = input.text.toString()
-                LucraClient().getSportsMatchup(matchUpId) {
-                    val builderDisplay = MaterialAlertDialogBuilder(this)
-                    if (it is RetrieveSportsMatchupResult.MatchupDetailsOutput) {
-                        var displayString = ""
-                        displayString += "${it.topLevelMatchupType}"
-
-                        val textView = TextView(this).apply {
-                            text = displayString
-                            setPadding(50, 50, 50, 50)
-                        }
-
-                        builderDisplay.setTitle("Matchup Results")
-                            .setView(textView)
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
-
-                    } else if (it is RetrieveSportsMatchupResult.Failure) {
-                        builderDisplay.setTitle("Failed to find matchup")
-                            .setMessage(it.failure.toString())
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel") { dialog, id ->
-                dialog.dismiss()
-            }
-
-        builder.show()
-    }
-
     private fun retrieveTournament() {
         val builder = MaterialAlertDialogBuilder(this)
         val input = EditText(this).apply {
@@ -1724,59 +2106,38 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         builder.show()
     }
 
-    private fun retrieveGamesMatch() {
+    private fun retrieveGamesMatchup() {
         val builder = MaterialAlertDialogBuilder(this)
-        val input = EditText(this).apply {
-            setText("7e547d90-5d54-4446-8443-26ad57e838c6")
-        }
+        val input = EditText(this)
         builder.setTitle("Set Matchup Id")
             .setView(input)
             .setPositiveButton("OK") { dialog, id ->
                 val matchUpId = input.text.toString()
-                LucraClient().getGamesMatchup(matchUpId) {
+                LucraClient().getMatchup(matchUpId) {
                     val builderDisplay = MaterialAlertDialogBuilder(this)
-                    if (it is GamesMatchup.RetrieveGamesMatchupResult.GYPMatchupDetailsOutput) {
-                        var displayString = ""
-                        displayString += "Amount > ${it.wagerAmount}\n" +
-                                "Status > ${it.status}\n" +
-                                "Created At > ${it.createdAt}\n" +
-                                "Updated At > ${it.updatedAt}\n" +
-                                "Owner Id > ${it.ownerId}\n" +
-                                "Game Type > ${it.gameType}\n" +
-                                "Game Shape > ${it.game}\n\n"
-
-                        displayString += "===Teams===\n"
-
-                        it.teams.forEach { gameMatchupTeam ->
-                            displayString += "Team Id: ${gameMatchupTeam.id}\n"
-                            displayString += "Number of Users: ${gameMatchupTeam.users.size}\n"
-                            gameMatchupTeam.users.forEach { matchupTeamUser ->
-                                displayString += "--User Id: ${matchupTeamUser.id}\n"
-                                displayString += "--Username: ${matchupTeamUser.username}\n"
-                            }
-
-                            displayString += "\n"
-                        }
-                        displayString += "\n"
-
-                        val textView = TextView(this).apply {
-                            setText(displayString)
-                            setPadding(50, 50, 50, 50)
+                    var displayString = ""
+                    var title = ""
+                    when (it) {
+                        is GetMatchupResult.Failure -> {
+                            title = "Failed to find matchup"
                         }
 
-                        builderDisplay.setTitle("Matchup Results")
-                            .setView(textView)
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
-
-                    } else if (it is GamesMatchup.RetrieveGamesMatchupResult.Failure) {
-                        builderDisplay.setTitle("Failed to find matchup")
-                            .setMessage(it.failure.toString())
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
+                        is GetMatchupResult.Success -> {
+                            title = "Matchup Results"
+                            displayString += "${it.matchup}\n"
+                        }
                     }
+
+                    val textView = TextView(this).apply {
+                        setText(displayString)
+                        setPadding(50, 50, 50, 50)
+                    }
+
+                    builderDisplay.setTitle(title)
+                        .setView(textView)
+                        .setPositiveButton("OK") { dialog, _ ->
+                            dialog.dismiss()
+                        }.show()
                 }
             }
             .setNegativeButton("Cancel") { dialog, id ->
@@ -1785,6 +2146,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         builder.show()
     }
+
 
     private fun configureUserDialog() {
 
