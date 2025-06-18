@@ -1,3 +1,6 @@
+## 4.0.1
+* Updates to GeoComply
+
 ## 4.0.0
 * [Breaking Change] Methods to get(both sport and recreational matchups), create, accept, and cancel recreational games matchup has been migrated:
   * `LucraClient.getMatchup`
