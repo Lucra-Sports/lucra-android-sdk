@@ -1,3 +1,9 @@
+## 4.1.0
+* [Breaking Change] `LucraClient.getMatchup()` returns `LucraMatchup` on success. This version updates the object's `recreationGameExtension` property to include `AtStake` object instead of `buyInAmount: Int` that represented the buy in amount.
+* [Breaking Change] `LucraMatchupRecreationalGameExtension` now contains `AtStake` object instead of `buyInAmount: Int`. `AtStake` can either be buy in amount, or a client defined `Reward` object.
+* Free to play (`Reward`) feature added for group play!
+* UI enhancements across Group Play and Tournaments.
+
 ## 4.0.1
 * Updates to GeoComply
 
