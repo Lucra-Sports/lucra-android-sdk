@@ -832,14 +832,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
         layout.addView(playStyleContainer)
 
-        // RewardType selection spinner
-        val rewardTypeLayout = TextInputLayout(this).apply {
-            hint = "Reward Type"
-        }
         val rewardTypeSpinner = Spinner(this)
         val rewardTypes = arrayOf(
             "CASH",
-//            "FREE"
+            "FREE"
         )
         val rewardTypeAdapter =
             ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, rewardTypes)
@@ -872,9 +868,20 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     "FREE_FOR_ALL" -> RecreationalGameInteractions.PlayStyle.FreeForAll
                     else -> RecreationalGameInteractions.PlayStyle.GroupVsGroup
                 }
-//                val rewardTypeValue = when (rewardTypeSpinner.selectedItem.toString()) {
-//                    "CASH" -> RecreationalGameInteractions.RewardType.Cash(5.00)
-//                }
+                val rewardTypeValue = when (rewardTypeSpinner.selectedItem.toString()) {
+                    "CASH" -> RecreationalGameInteractions.RewardType.Cash(5.00)
+                    else -> fakeLucraRewards.first().run {
+                        RecreationalGameInteractions.RewardType.TenantReward(
+                            rewardId = rewardId,
+                            title = title,
+                            descriptor = descriptor,
+                            iconUrl = iconUrl,
+                            bannerIconUrl = bannerIconUrl,
+                            disclaimer = disclaimer,
+                            metadata = metadata
+                        )
+                    }
+                }
 
                 if (gameTypeId.isBlank()) {
                     Toast.makeText(this, "Game Type ID is required", Toast.LENGTH_SHORT).show()
@@ -883,7 +890,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
                 LucraClient().createRecreationalGame(
                     gameTypeId = gameTypeId,
-                    atStake = RecreationalGameInteractions.RewardType.Cash(5.00),
+                    atStake = rewardTypeValue,
                     playStyle = playStyleValue
                 ) { result ->
                     runOnUiThread {
