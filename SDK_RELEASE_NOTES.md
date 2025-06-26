@@ -1,3 +1,8 @@
+## 4.1.1
+* [Breaking Change] updated `LucraMatchup`'s `atStake` field to `buyInAmount`, and type from `AtStake` object to `Double`.
+  * if the game is `tenantReward` based, the `buyInAmount` will be `0.0`.
+* You can still access the `Reward` object that represents a `tenantReward` through `lucraMatchup.participantGroups.participants.tenantReward`.
+
 ## 4.1.0
 * [Breaking Change] `LucraClient.getMatchup()` returns `LucraMatchup` on success. This version updates the object's `recreationGameExtension` property to include `AtStake` object instead of `buyInAmount: Int` that represented the buy in amount.
 * [Breaking Change] `LucraMatchupRecreationalGameExtension` now contains `AtStake` object instead of `buyInAmount: Int`. `AtStake` can either be buy in amount, or a client defined `Reward` object.
