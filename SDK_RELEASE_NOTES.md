@@ -1,3 +1,11 @@
+## 4.2.0
+* Updated Geocomply to 2.17.0
+* Added LucraEvent `LucraEvent.GamesContest.Started` to indicate when a Games matchup creator has pressed the "Start Matchup" button. Note: All other Games related events are now firing for the Free For All and Team vs Team matchups.
+* Free to play products now does not require age assurance check, instead soft checks against DOB
+* Introduced OrbitMVI library (version `9.0.0`)
+* Added the ability to create a tournament with a private join code that only allows users with that code to join
+* Added the ability to replay a tournament for select locations and tournaments
+
 ## 4.1.1
 * [Breaking Change] updated `LucraMatchup`'s `atStake` field to `buyInAmount`, and type from `AtStake` object to `Double`.
   * if the game is `tenantReward` based, the `buyInAmount` will be `0.0`.

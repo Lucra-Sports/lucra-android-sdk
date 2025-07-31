@@ -44,15 +44,36 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="https" android:host="${deepLinkHostName}"  />
+                <data
+                    android:scheme="${deepLinkSchemaName}" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${branchio-host}" />
+                <data android:scheme="https" android:host="${branchio-host-alt}" />
             </intent-filter>
         </activity>
+
+        <meta-data
+            android:name="io.branch.sdk.BranchKey"
+            android:value="${branchio-key}" />
+
+        <meta-data
+            android:name="io.branch.sdk.BranchKey.test"
+            android:value="${branchio-key-test}" />
+
+        <meta-data
+            android:name="io.branch.sdk.TestMode"
+            android:value="false" />
 
         <service
             android:name=".notifications.FCMService"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 
