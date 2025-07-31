@@ -28,8 +28,12 @@ android {
             )
         )
 
-        // TODO add your deeplink host config here as needed
-        manifestPlaceholders["deepLinkHostName"] = "todo-replace-me.com"
+        // TODO add your deeplink host config here as needed (this is not needed for Lucra)
+        manifestPlaceholders["deepLinkSchemaName"] = "not-needed-internal-code-reference-only"
+        manifestPlaceholders["branchio-host"] = "not-needed-internal-code-reference-only"
+        manifestPlaceholders["branchio-host-alt"] = "not-needed-internal-code-reference-only"
+        manifestPlaceholders["branchio-key"] = "not-needed-internal-code-reference-only"
+        manifestPlaceholders["branchio-key-test"] = "not-needed-internal-code-reference-only"
 
         // TODO Add your auth0 client id here
         buildConfigField(
@@ -88,6 +92,9 @@ dependencies {
     // Required for Lucra SDK
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
+    // Only brought in to make the branch io references work (only used on internal sample copied to here)
+    implementation("io.branch.sdk.android:library:5.16.1")
+
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.5.0")
@@ -106,4 +113,5 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("com.google.firebase:firebase-dynamic-links:21.1.0")
+
 }

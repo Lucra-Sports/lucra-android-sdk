@@ -92,3 +92,4 @@ productionkeystore.jks
 sardine.properties
 
 github.properties
+.idea/**
