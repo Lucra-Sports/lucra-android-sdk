@@ -7,7 +7,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -29,18 +28,13 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isNotEmpty
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.google.firebase.dynamiclinks.FirebaseDynamicLinks
-import com.google.firebase.dynamiclinks.androidParameters
-import com.google.firebase.dynamiclinks.iosParameters
-import com.google.firebase.dynamiclinks.ktx.dynamicLinks
-import com.google.firebase.dynamiclinks.navigationInfoParameters
-import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
@@ -76,13 +70,15 @@ import com.lucrasports.sdk.core.user.SDKUser
 import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
 import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
+import io.branch.indexing.BranchUniversalObject
+import io.branch.referral.Branch
+import io.branch.referral.util.LinkProperties
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
 import java.util.UUID
 
@@ -163,8 +159,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         val flow = LucraPushNotificationService.handleNotificationIntent(intent)
         flow?.let { launchFlow(it) }
 
-        consumeSampleDeepLink()
-
         observeLoggedInUser()
 
         setupAuthHeaderButton()
@@ -233,21 +227,34 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         LucraClient().setEventListener(object : LucraEventListener {
             override fun onEvent(event: LucraEvent) {
                 when (event) {
-                    is LucraEvent.GamesContest.Created -> {
-                        Log.d("Sample", "Games contest created: ${event.contestId}")
-                    }
-
-                    is LucraEvent.SportsContest.Created -> {
-                        Log.d("Sample", "Sports contest created: ${event.contestId}")
-                    }
-
+                    // Tournaments events
                     is LucraEvent.Tournament.Joined -> {
                         Log.d("Sample", "Tournament joined: ${event.tournamentId}")
                     }
 
-                    else -> {
-                        Log.d("Sample", "Other Event: $event")
+                    // Games events
+                    is LucraEvent.GamesContest.Created -> {
+                        Log.d("Sample", "Games contest created: ${event.contestId}")
                     }
+                    is LucraEvent.GamesContest.Accepted -> {
+                        Log.d("Sample", "Games contest accepted: ${event.contestId}")
+                    }
+                    is LucraEvent.GamesContest.Canceled ->
+                        Log.d("Sample", "Games contest canceled: ${event.matchupId}")
+                    is LucraEvent.GamesContest.Started ->
+                        Log.d("Sample", "Games contest started: ${event.matchupId}")
+
+
+                    // Sports events
+                    is LucraEvent.SportsContest.Created -> {
+                        Log.d("Sample", "Sports contest created: ${event.contestId}")
+                    }
+                    is LucraEvent.SportsContest.Accepted ->
+                        Log.d("Sample", "Sports contest accepted: ${event.contestId}")
+
+                    is LucraEvent.SportsContest.Canceled ->
+                        Log.d("Sample", "Sports contest canceled: ${event.matchupId}")
+
                 }
             }
         })
@@ -278,8 +285,18 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
         })
 
-        LucraClient().setDeeplinkTransformer {
-            generateNavigateLink(it)
+        LucraClient().setDeeplinkTransformer { url ->
+            val link = try {
+                val branchLinkProperties = LinkProperties()
+                val branchUniversalObject = BranchUniversalObject()
+                    .setCanonicalUrl(url)
+                val shortLink = branchUniversalObject.getShortUrl(this, branchLinkProperties)
+                shortLink
+            } catch (e: Exception) {
+                ""
+            }
+
+            link
         }
     }
 
@@ -365,30 +382,25 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    private fun consumeSampleDeepLink() {
-        intent?.let {
-            lifecycleScope.launch {
-                try {
-                    val dynamicLink = Firebase.dynamicLinks.getDynamicLink(intent).await()
-                    dynamicLink?.link?.toString()?.let { linkString ->
-                        LucraClient().getLucraFlowForDeeplinkUri(linkString)
-                            .let { lucraFlow ->
-                                if (lucraFlow != null) {
-                                    launchFlow(lucraFlow)
-                                }
-                            }
-                        intent?.replaceExtras(Bundle())
-                        intent?.data = null
+    override fun onStart() {
+        super.onStart()
+
+        Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
+            if (error != null) {
+                Log.e("Sample", "branch init failed. Caused by -" + error.message)
+            } else {
+                Log.i(
+                    "Sample",
+                    "branch init complete! canonical URL ${branchUniversalObject?.canonicalUrl}"
+                )
+
+                branchUniversalObject?.canonicalUrl?.let { lucraDeepLink ->
+                    LucraClient().getLucraFlowForDeeplinkUri(lucraDeepLink)?.let {
+                        launchFlow(it)
                     }
-                } catch (e: Exception) {
-                    Log.e(
-                        "Lucra SDK Sample",
-                        "Firebase is not setup for this sample project, and this deeplink example will not work...",
-                        e
-                    )
                 }
             }
-        }
+        }.withData(this.intent.data).init()
     }
 
     private fun appendComponentOptions() {
@@ -398,7 +410,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             componentsSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
-            if (viewGroup.childCount > 0) {
+            if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
             } else {
                 val view = LucraClient().getLucraComponent(
@@ -416,7 +428,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             componentsSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
-            if (viewGroup.childCount > 0) {
+            if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
             } else {
                 val view = LucraClient().getLucraComponent(
@@ -435,7 +447,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             componentsSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
-            if (viewGroup.childCount > 0) {
+            if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
             } else {
                 val view = LucraClient().getLucraComponent(
@@ -455,7 +467,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
 
-            if (viewGroup.childCount > 0) {
+            if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
                 return@appendOption
             }
@@ -503,7 +515,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             componentsSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
-            if (viewGroup.childCount > 0) {
+            if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
                 return@appendOption
             }
@@ -1729,7 +1741,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 hint = "ID of Tournament"
             }
 
-            input.setText("eb77921c-aad1-4ac3-b64b-916c45c1373d")
+            input.setText("6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
 
             builder.setTitle("Provide a Tournament ID")
                 .setView(input)
@@ -2413,62 +2425,22 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 //        LucraClient.release()
     }
 
-    suspend fun generateNavigateLink(url: String): String {
-        val link = try {
-            val dynamicLinksDomainURIPrefix = BuildConfig.FIREBASE_DEEPLINK_URL
-            val builder = FirebaseDynamicLinks.getInstance().createDynamicLink()
-            builder.link = Uri.parse(url)
-            builder.domainUriPrefix = dynamicLinksDomainURIPrefix
-            builder.androidParameters(packageName) {
-
-            }
-
-            val iosBundleSuffix = when (BuildConfig.BUILD_TYPE) {
-                "debug" -> {
-                    "-dev"
-                }
-
-                "staging" -> {
-                    "-stg"
-                }
-
-                "sandbox" -> {
-                    "-sandbox"
-                }
-
-                else -> {
-                    ""
-                }
-            }
-
-            val iosBundle = "com.lucrasports.mobile-sample${iosBundleSuffix}"
-            builder.iosParameters(iosBundle) {
-
-            }
-
-            builder.navigationInfoParameters {
-                forcedRedirectEnabled = false
-            }
-
-            val dynamicLinkUri = builder.buildDynamicLink().uri
-
-            try {
-                val result = builder.buildShortDynamicLink().await()
-                val shortLink = result.shortLink
-                shortLink?.toString() ?: dynamicLinkUri.toString()
-            } catch (e: Exception) {
-                dynamicLinkUri.toString()
-            }
-        } catch (e: Exception) {
-            ""
-        }
-
-        return link
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val flow = LucraPushNotificationService.handleNotificationIntent(intent)
         flow?.let { launchFlow(it) }
+        if (intent != null && intent.hasExtra("branch_force_new_session") && intent.getBooleanExtra(
+                "branch_force_new_session",
+                false
+            )
+        ) {
+            Branch.sessionBuilder(this).withCallback { referringParams, error ->
+                if (error != null) {
+                    Log.e("Sample", "BranchIO new intent error: ${error.message}")
+                } else if (referringParams != null) {
+                    Log.i("Sample", "BranchIO referring params: ${referringParams.toString()}")
+                }
+            }.reInit()
+        }
     }
 }
