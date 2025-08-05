@@ -1,3 +1,6 @@
+## 4.2.1
+* Fixed issue where invalid geocomply license key would cause the SDK to crash
+
 ## 4.2.0
 * Updated Geocomply to 2.17.0
 * Added LucraEvent `LucraEvent.GamesContest.Started` to indicate when a Games matchup creator has pressed the "Start Matchup" button. Note: All other Games related events are now firing for the Free For All and Team vs Team matchups.
