@@ -1,3 +1,9 @@
+## 4.3.0
+* Updated Wordings for free to play tournament
+* New UI for phone number authentication flow
+* Fixed a bug where game ID was not being passed when creating a Games matchup directly from bottom sheet
+* Other various UI improvements
+
 ## 4.2.1
 * Fixed issue where invalid geocomply license key would cause the SDK to crash
 
