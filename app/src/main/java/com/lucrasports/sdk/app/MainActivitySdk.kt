@@ -146,8 +146,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private var lucraSDKUser: SDKUser? = null
 
     // Referencing internal logger implementation
-    private val customLogger = LucraFirebaseLogger(this)
-
+    private lateinit var customLogger: LucraFirebaseLogger
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_sdk)
@@ -201,6 +200,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             //  https://lucrasports.atlassian.net/browse/LF-3596
         }
 
+        customLogger = LucraFirebaseLogger(applicationContext)
         LucraClient.initialize(
             application = application,
             lucraUiProvider = buildLucraUiInstance(),
