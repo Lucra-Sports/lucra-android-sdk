@@ -54,6 +54,12 @@ android {
             "FIREBASE_DEEPLINK_URL",
             "\"https://lucrasdk.page.link\""
         )
+
+        buildConfigField(
+            "Boolean",
+            "ENABLE_STRICT_MODE",
+            "false"
+        )
     }
 
     buildTypes {
