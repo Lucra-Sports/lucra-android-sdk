@@ -1,3 +1,19 @@
+## 4.4.0
+* Enhanced UI/UX for tournament flows. 
+  * You can now perform actions that are not dependent on the load state. 
+  * Enhanced haptic feedbacks. 
+  * Enhanced error handling. 
+* Fixed a bug where only the "tournament" and "game" were filterable categories.
+* Fixed a bug where tournament details screen would not prompt for location permission.
+* Removed various unused assets.
+* Removed dispute button when user is not part of the matchup.
+* Demographic collection form will now auto-fill information provided before.
+* Updated to allow setting `locationId` via `LucraClient` at any point (after SDK init) in the flow. 
+  * Consolidated tournament location operations into `TournamentLocationProvider`
+  * `TournamentLocationProvider` allows setting and getting of `locationId` either from user or from client.
+* Tournaments where buy in is $0 (free) can be joined with a single tap from the big featured game cards.
+* Bug fix of how tournament pot was displayed in the big featured game cards.
+
 ## 4.3.0
 * Updated Wordings for free to play tournament
 * New UI for phone number authentication flow
