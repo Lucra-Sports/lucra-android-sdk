@@ -141,6 +141,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
     private var lucraRewardProviderEnabled = true
+    private var provideLocationIdOnInit = true
 
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
@@ -260,6 +261,11 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         })
 
         setupRewardProvider(if (lucraRewardProviderEnabled) fakeLucraRewards else null)
+
+        if (provideLocationIdOnInit) {
+            LucraClient()
+                .setLocationId("f2708938-2517-46fb-a639-229f4d2ca6c7") // locationId for navy_pier
+        }
 
         LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
             override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
