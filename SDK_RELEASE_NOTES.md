@@ -1,3 +1,14 @@
+## 4.5.0
+* Added `LucraUiProvider.LucraFlow.MatchupDetails` Lucra flow to allow routing to the respective details view for each Matchup Type.
+* Added `LucraEvent.GamesContest.StartedActive` to indicate when a Games matchup creator starts a matchup while the non creator is viewing the matchup details. 
+* Added SnackBar
+* Reduced the amount of clicks/screens to complete KYC flow
+* Reduced number of clicks when Signing in by removing the Terms & Conditions checkbox.
+* Updated the funding and withdraw flow with a new design that reduces the number of clicks required to complete the process.
+* Improved the matchup joining flow, making it more streamlined with fewer clicks required.
+* Updated how we fetch tournament data to consume less bandwidth.
+* Introduced Feature Flag to configure profile FAB
+
 ## 4.4.0
 * Enhanced UI/UX for tournament flows. 
   * You can now perform actions that are not dependent on the load state. 

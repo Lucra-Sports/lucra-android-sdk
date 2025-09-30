@@ -148,7 +148,7 @@ class MyApplication : Application(), ImageLoaderFactory {
 
 ### Initialization
 
-In your application class, initialize the Lucra instance in `onCreate`.
+In your main Activity class, initialize the Lucra instance in `onCreate`.
 
 ```kotlin
 LucraClient.initialize(
@@ -856,6 +856,9 @@ Launch to view the public feed of sports matchups.
 
 `LucraUiProvider.LucraFlow.TournamentDetails`
 Launch the tournaments details flow to show details about a created tournament
+
+`LucraUiProvider.LucraFlow.MatchupDetails`
+Launch the details flow to show the details page for a created tournament, sports, or games matchup
 
 `LucraUiProvider.LucraFlow.Dynamic`
 Launch specific destinations, proprietary to the host app.
