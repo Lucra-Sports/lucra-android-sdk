@@ -256,6 +256,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     is LucraEvent.SportsContest.Canceled ->
                         Log.d("Sample", "Sports contest canceled: ${event.matchupId}")
 
+                    is LucraEvent.GamesContest.StartedActive ->
+                        Log.d("Sample", "Active game contest started: ${event.matchupId} match object: ${event.lucraMatchup}")
+
                 }
             }
         })
@@ -1716,19 +1719,19 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
-            "Show Games Matchup",
-            "Navigate to the games matchup details flow. Authentication required",
+            "Show Matchup",
+            "Navigate to the matchup details flow. Authentication required",
             flowsSection
         ) {
             val builder = MaterialAlertDialogBuilder(this)
             val input = EditText(this).apply {
-                hint = "ID of Games Matchup"
+                hint = "ID of Any Matchup"
             }
 
             builder.setTitle("Provide a Matchup ID")
                 .setView(input)
                 .setPositiveButton("Continue") { _, _ ->
-                    launchFlow(LucraUiProvider.LucraFlow.GamesMatchupDetails(input.text.toString()))
+                    launchFlow(LucraUiProvider.LucraFlow.MatchupDetails(input.text.toString()))
                 }
                 .setNegativeButton("Cancel") { dialog, _ ->
                     dialog.dismiss()
