@@ -1,3 +1,6 @@
+## 4.5.1
+* Fixed crash upon viewing completed tournament details
+
 ## 4.5.0
 * Added `LucraUiProvider.LucraFlow.MatchupDetails` Lucra flow to allow routing to the respective details view for each Matchup Type.
 * Added `LucraEvent.GamesContest.StartedActive` to indicate when a Games matchup creator starts a matchup while the non creator is viewing the matchup details. 
