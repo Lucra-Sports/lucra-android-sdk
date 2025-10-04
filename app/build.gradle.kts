@@ -1,21 +1,25 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 val mavenVersion = project.findProperty("publishVersion") as String
+val composeBomVersion = "2025.09.01"
+val navigationComposeVersion = "2.9.3"
 
 android {
     namespace = "com.lucrasports.sdk.app"
-    compileSdk = 34
+    compileSdk = 35
 
     buildFeatures {
         buildConfig = true
+        compose = true
     }
 
     defaultConfig {
         applicationId = "com.lucrasports.sdk.app"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = mavenVersion
 
@@ -35,17 +39,15 @@ android {
         manifestPlaceholders["branchio-key"] = "not-needed-internal-code-reference-only"
         manifestPlaceholders["branchio-key-test"] = "not-needed-internal-code-reference-only"
 
-        // TODO Add your auth0 client id here
         buildConfigField(
             "String",
             "TESTING_API_KEY",
-            "\"ADD YOUR API KEY HERE\""
+            "\"BHGhy6w9eOPoU7z1UdHffuDNdlihYU6T\""
         )
-        // TODO Add your auth0 domain url here
         buildConfigField(
             "String",
             "TESTING_API_URL",
-            "\"ADD YOUR API URL HERE\""
+            "\"api-sample.staging.lucrasports.com\""
         )
 
         // TODO this is just for our example, not required for your app!
@@ -84,6 +86,10 @@ android {
 }
 
 dependencies {
+    implementation(platform("androidx.compose:compose-bom:$composeBomVersion"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:$composeBomVersion"))
+    debugImplementation(platform("androidx.compose:compose-bom:$composeBomVersion"))
+
     implementation("com.lucrasports.sdk:sdk-ui:$mavenVersion")
 
     // For testing internal UI of the reward flow - not required for client integration
@@ -105,13 +111,41 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
-    implementation("com.jaredrummler:colorpicker:1.1.0")
+    implementation("com.google.firebase:firebase-dynamic-links:21.1.0")
+
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.compose.animation:animation")
+    implementation("androidx.compose.animation:animation-core")
+    implementation("androidx.compose.animation:animation-graphics")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.foundation:foundation-layout")
+    implementation("androidx.compose.material:material")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3-window-size-class")
+    implementation("androidx.compose.runtime:runtime")
+    implementation("androidx.compose.runtime:runtime-livedata")
+    implementation("androidx.compose.runtime:runtime-rxjava2")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-text")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.ui:ui-util")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
+    implementation("androidx.navigation:navigation-compose:$navigationComposeVersion")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
     testImplementation("org.reflections:reflections:0.9.12")
     testImplementation("io.mockk:mockk:1.12.0")
+
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    implementation("com.google.firebase:firebase-dynamic-links:21.1.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    implementation("com.jaredrummler:colorpicker:1.1.0")
 }

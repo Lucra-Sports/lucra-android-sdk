@@ -209,7 +209,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiKey = apiKeyOverride ?: BuildConfig.TESTING_API_KEY,
             // This must be updated to the correct api url per environment
             apiUrl = apiUrlOverride ?: BuildConfig.TESTING_API_URL,
-            environment = getEnvironmentFromBuildType(),
+            environment = Environment.STAGING,
             outputLogs = true,
             customLogger = customLogger,
             clientTheme = ClientTheme(
