@@ -42,12 +42,12 @@ android {
         buildConfigField(
             "String",
             "TESTING_API_KEY",
-            "\"BHGhy6w9eOPoU7z1UdHffuDNdlihYU6T\""
+            "\"YOUR API KEY HERE\""
         )
         buildConfigField(
             "String",
             "TESTING_API_URL",
-            "\"api-sample.staging.lucrasports.com\""
+            "\"YOUR API URL HERE\""
         )
 
         // TODO this is just for our example, not required for your app!
