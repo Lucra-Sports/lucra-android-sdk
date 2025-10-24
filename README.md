@@ -14,7 +14,6 @@ PAT and your username
         google()
         mavenCentral()
         maven { setUrl("https://jitpack.io") }
-        maven(url = "https://zendesk.jfrog.io/zendesk/repo")
         maven {
             name = "LucraGithubPackages"
             url = uri("https://maven.pkg.github.com/Lucra-Sports/lucra-android-sdk")
@@ -630,7 +629,24 @@ LucraClient().joinTournament(tournamentId = "tournamentId") { result ->
 }
 ```
 
+`setMatchupInviteDeeplinkProvider`
+
+Sets lambda function that will be used to append a Lucra matchup ID to a client specific deeplink URI. Make sure to pass the appended matchup ID to the flow `LucraFlow.MatchupDetails(matchupId)`.
+
+- **Parameters:**
+  - `suspend (String) -> String`: suspended string transformer lambda 
+
+- **Example usage:**
+
+```kotlin
+LucraClient().setMatchupInviteDeeplinkProvider { matchupId ->
+    appendMatchupIdToAppLink(matchupId)
+}
+```
+
 `setDeeplinkTransformer`
+
+Preferably use `setMatchupInviteDeeplinkProvider` for smaller share links, easier to scan QR codes, and simplified parsing.
 
 Sets lambda function that will be used to transform original lucra URI to client specific URI. Make sure to keep the original URI in the process to allow conversion into `LucraFlow` later.
 

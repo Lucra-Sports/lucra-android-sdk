@@ -16,6 +16,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -28,9 +29,13 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
@@ -72,6 +77,7 @@ import com.lucrasports.sdk.ui.LucraUi
 import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
 import io.branch.indexing.BranchUniversalObject
 import io.branch.referral.Branch
+import io.branch.referral.util.ContentMetadata
 import io.branch.referral.util.LinkProperties
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,6 +89,10 @@ import org.json.JSONObject
 import java.util.UUID
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
+
+    private val  topAppBar: CollapsingToolbarLayout by lazy {
+        findViewById(R.id.top_app_bar)
+    }
 
     private val header: TextView by lazy {
         findViewById(R.id.header_title)
@@ -151,6 +161,20 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_sdk)
+
+        ViewCompat.setOnApplyWindowInsetsListener(topAppBar) { _, insets ->
+            val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+
+            topAppBar.setPadding(
+                systemBarsInsets.left,
+                statusBarInsets.top,
+                systemBarsInsets.right,
+                0
+            )
+
+            insets
+        }
 
         initializeLucraClient()
 
@@ -307,6 +331,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
             link
         }
+
+        LucraClient().setMatchupInviteDeeplinkProvider { matchupId ->
+            try {
+                val buo = BranchUniversalObject().setContentMetadata( ContentMetadata().addCustomMetadata("matchupId", matchupId) )
+                val linkProps = LinkProperties()
+                buo.getShortUrl(this, linkProps)
+            } catch (e: Exception) {
+                ""
+            }
+        }
     }
 
     private fun setupRewardProvider(newRewards: List<LucraReward>? = fakeLucraRewards) {
@@ -394,22 +428,22 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     override fun onStart() {
         super.onStart()
 
-        Branch.sessionBuilder(this).withCallback { branchUniversalObject, linkProperties, error ->
-            if (error != null) {
-                Log.e("Sample", "branch init failed. Caused by -" + error.message)
-            } else {
-                Log.i(
-                    "Sample",
-                    "branch init complete! canonical URL ${branchUniversalObject?.canonicalUrl}"
-                )
+        Branch.sessionBuilder(this)
+            .withCallback { buo, lp, error ->
+                if (error != null) {
+                    Log.e("Branch", "init failed: ${error.message}")
+                    return@withCallback
+                }
 
-                branchUniversalObject?.canonicalUrl?.let { lucraDeepLink ->
-                    LucraClient().getLucraFlowForDeeplinkUri(lucraDeepLink)?.let {
-                        launchFlow(it)
-                    }
+                val matchupId = buo?.contentMetadata?.customMetadata?.get("matchupId")
+                if (!matchupId.isNullOrBlank()) {
+                    launchFlow(LucraUiProvider.LucraFlow.MatchupDetails(matchupId))
+                } else {
+                    Log.w("Branch", "No matchupId found in deeplink")
                 }
             }
-        }.withData(this.intent.data).init()
+            .withData(intent?.data)
+            .init()
     }
 
     private fun appendComponentOptions() {
@@ -703,7 +737,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         appendOption(
             "Join Tournament",
-            "A prompt will show to set the tournament_id. Authentication required.",
+            "A prompt will show to set the tournament_id. For free tournaments, will launch demographic form if email/zip missing. For paid tournaments, will launch verification if not verified.",
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
@@ -1639,6 +1673,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
+            "Demographic Form",
+            "Navigate to the demographic form to collect user information. Authentication required",
+            flowsSection
+        ) {
+            launchFlow(LucraUiProvider.LucraFlow.DemographicForm)
+        }
+
+        appendOption(
             "Add Funds",
             "Navigate to the add funds flow. Authentication required",
             flowsSection
@@ -1774,7 +1816,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         appendOption(
             "Deeplink to Matchup Details",
-            "Navigate to specific matchup via deeplink uri. Authentication required",
+            "Navigate to specific matchup via a legacy deeplink uri. Authentication required",
             flowsSection
         ) {
             val builder = MaterialAlertDialogBuilder(this)
@@ -2099,31 +2141,47 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private fun joinTournament() {
         val builder = MaterialAlertDialogBuilder(this)
         val input = EditText(this).apply {
-            setText("a35291cb-3f07-4515-8f1d-3fa512298b28")
+            setText("d0b78c81-a22b-4f54-b1fe-2fadc8354c3b")
         }
         builder.setTitle("Set Tournament Id")
             .setView(input)
-            .setPositiveButton("OK") { dialog, id ->
+            .setPositiveButton("OK") { _, _ ->
                 val matchUpId = input.text.toString()
                 LucraClient().joinTournament(matchUpId) {
                     val builderDisplay = MaterialAlertDialogBuilder(this)
-                    if (it is PoolTournament.JoinTournamentResult.JoinTournamentOutput) {
-                        var displayString = if (it.success)
-                            "Tournament Joined"
-                        else
-                            "Unable to join Tournament"
+                    if (it is PoolTournament.JoinTournamentResult.Success) {
                         builderDisplay.setTitle("Join Tournament Result")
-                            .setMessage(displayString)
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
+                            .setMessage("Tournament Joined")
+                            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }.show()
 
                     } else if (it is PoolTournament.JoinTournamentResult.Failure) {
-                        builderDisplay.setTitle("Failed to join tournament")
-                            .setMessage(it.failure.toString())
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
+                        when (it.failure) {
+                            is PoolTournament.FailedTournamentCall.UserStateError.DemographicInformationMissing -> {
+                                builderDisplay.setTitle("Demographic Information Required")
+                                    .setMessage("Please complete your demographic information to join free tournaments.")
+                                    .setPositiveButton("Complete Demographic Form") { dialog, _ ->
+                                        launchFlow(LucraUiProvider.LucraFlow.DemographicForm)
+                                        dialog.dismiss()
+                                    }
+                                    .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+                                    .show()
+                            }
+                            is PoolTournament.FailedTournamentCall.UserStateError.Unverified -> {
+                                builderDisplay.setTitle("Verification Required")
+                                    .setMessage("Please complete identity verification to join paid tournaments.")
+                                    .setPositiveButton("Complete Verification") { dialog, _ ->
+                                        launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
+                                        dialog.dismiss()
+                                    }
+                                    .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+                                    .show()
+                            }
+                            else -> {
+                                builderDisplay.setTitle("Failed to join tournament")
+                                    .setMessage(it.failure.toString())
+                                    .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }.show()
+                            }
+                        }
                     }
                 }
             }
@@ -2175,6 +2233,26 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         builder.show()
     }
 
+    private fun addMetadataRow(
+        container: LinearLayout,
+        key: String?,
+        value: String?
+    ) {
+        val row = layoutInflater.inflate(R.layout.view_metadata_row, container, false)
+        val keyInput = row.findViewById<TextInputEditText>(R.id.metadata_key)
+        val valueInput = row.findViewById<TextInputEditText>(R.id.metadata_value)
+        val removeButton = row.findViewById<ImageButton>(R.id.remove_metadata_row)
+
+        keyInput.setText(key)
+        valueInput.setText(value)
+
+        removeButton.setOnClickListener {
+            container.removeView(row)
+        }
+
+        container.addView(row)
+    }
+
 
     private fun configureUserDialog() {
 
@@ -2194,12 +2272,42 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
                 findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
                 findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
-            }
 
+                val metadataContainer = findViewById<LinearLayout>(R.id.metadata_container)
+                val addMetadataButton = findViewById<MaterialButton>(R.id.add_metadata_row)
+
+                val existingMetadata = lucraSDKUser?.metadata.orEmpty()
+                if (existingMetadata.isEmpty()) {
+                    addMetadataRow(metadataContainer, null, null)
+                } else {
+                    existingMetadata.forEach { (key, value) ->
+                        addMetadataRow(metadataContainer, key, value)
+                    }
+                }
+
+                addMetadataButton.setOnClickListener {
+                    addMetadataRow(metadataContainer, null, null)
+                }
+            }
 
         builder.setTitle("Configure the user")
             .setView(userForm)
             .setPositiveButton("Configure") { dialog, id ->
+                val metaMap = mutableMapOf<String, String>()
+                val metadataContainer = userForm.findViewById<LinearLayout>(R.id.metadata_container)
+                for (i in 0 until metadataContainer.childCount) {
+                    val row = metadataContainer.getChildAt(i)
+                    val key = row.findViewById<TextInputEditText>(R.id.metadata_key)?.text
+                        ?.toString()?.takeIf { it.isNotBlank() }
+                    val value = row.findViewById<TextInputEditText>(R.id.metadata_value)?.text
+                        ?.toString()
+
+                    if (key != null) {
+                        metaMap[key] = value.orEmpty()
+                    }
+                }
+                val metadata = metaMap
+
                 val newSdkUser = SDKUser(
                     username = userForm.findViewById<TextInputEditText>(R.id.username).getText()
                         .toString().takeIf { it.isNotBlank() },
@@ -2223,7 +2331,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     state = userForm.findViewById<TextInputEditText>(R.id.state).getText()
                         .toString().takeIf { it.isNotBlank() },
                     zip = userForm.findViewById<TextInputEditText>(R.id.zip).getText()
-                        .toString().takeIf { it.isNotBlank() }
+                        .toString().takeIf { it.isNotBlank() },
+                    metadata = metadata,
                 )
 
                 // set details here so information is not lost
@@ -2319,7 +2428,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         builder.setTitle("Update Username")
             .setView(input)
-            .setPositiveButton("OK") { dialog, id ->
+            .setPositiveButton("OK") { dialog, _ ->
                 val newUsername = input.text.toString()
                 if (newUsername.isEmpty()) {
                     Toast.makeText(
@@ -2451,5 +2560,17 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 }
             }.reInit()
         }
+    }
+}
+
+fun Map<String, String>?.toJsonString(): String {
+    if (this == null) return "null"
+
+    return this.entries.joinToString(
+        prefix = "{",
+        postfix = "}",
+        separator = ","
+    ) { (key, value) ->
+        "\"${key}\" : \"${value}\""
     }
 }

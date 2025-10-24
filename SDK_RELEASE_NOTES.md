@@ -1,3 +1,36 @@
+## 5.0.1
+* Hotfix for preconfigured phone numbers
+
+## 5.0.0
+* Added `metadata` field to `SDKUser` to allow linking between client users and Lucra users. This can be updated via the `configure(sdkUser: SDKUser)` method.
+* Added `LucraClient().setMatchupInviteDeeplinkProvider` to allows clients to append a Lucra specific matchupID to their existing deeplinks
+* [Breaking Change] `DemographicInformationMissing` is now part of `UserStateError` and can be returned if a user who is missing demographic information attempts to join a tournament that requires it.
+* Added DemographicForm flow to `LucraUiProvider` for headless access to demographic collection
+* Enhanced tournament joining logic to validate demographic data and return specific error types
+* Updated demographic form UI to use direct text input for date of birth instead of date picker
+* Complete the Android 16kb platform alignment requirement.
+* Simplified unused code path for fund flows.
+* Added back phone number lock on login if `configure(sdkUser)` is called prior.
+* **Major dependency updates and compatibility requirements:**
+  * **Updated Dependencies:**
+  * Upgraded Kotlin from 1.9.23 to **2.0.21** (major version update with new K2 compiler)
+  * Upgraded Android Gradle Plugin (AGP) from 8.3.2 to **8.10.1**
+  * Upgraded Gradle from 8.4 to **8.12**
+  * Updated Compose BOM from 2025.03.00 to **2025.09.01**
+  * Updated AndroidX Navigation from 2.8.3 to **2.9.3**
+  * Updated AndroidX Constraint Layout Compose from 1.1.0 to **1.1.1**
+  * Updated AndroidX Window Manager to **1.2.0**
+  * Updated AndroidX WebKit to **1.14.0**
+  * Updated Sardine MDI SDK from 1.2.46 to **1.2.59**
+  * **Architecture Changes:**
+  * Migrated to new Compose Compiler plugin architecture
+  * **Removed Dependencies (cleanup):**
+  * Removed `android-installreferrer`
+  * Removed `androidx-core-splashscreen`
+  * Removed unused Camera2 dependencies
+  * Removed unused tracing-ktx dependency
+  * And more...
+
 ## 4.5.1
 * Fixed crash upon viewing completed tournament details
 
