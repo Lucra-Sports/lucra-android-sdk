@@ -1,3 +1,6 @@
+## 5.0.1
+* Hotfix for preconfigured phone numbers
+
 ## 5.0.0
 * Added `metadata` field to `SDKUser` to allow linking between client users and Lucra users. This can be updated via the `configure(sdkUser: SDKUser)` method.
 * Added `LucraClient().setMatchupInviteDeeplinkProvider` to allows clients to append a Lucra specific matchupID to their existing deeplinks
