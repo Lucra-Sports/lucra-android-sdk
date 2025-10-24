@@ -6,7 +6,7 @@ val mavenVersion = project.findProperty("publishVersion") as String
 
 android {
     namespace = "com.lucrasports.sdk.app"
-    compileSdk = 34
+    compileSdk = 35
 
     buildFeatures {
         buildConfig = true
@@ -15,7 +15,7 @@ android {
     defaultConfig {
         applicationId = "com.lucrasports.sdk.app"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = mavenVersion
 
