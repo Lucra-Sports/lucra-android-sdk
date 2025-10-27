@@ -4,6 +4,31 @@
 
 ## Getting Started
 
+## Compatibility Overview
+
+This SDK (v5.0.0+) requires the following minimum versions in your app environment:
+
+| Component | Minimum Version | Notes |
+|------------|----------------|-------|
+| **Android Gradle Plugin (AGP)** | 8.10.1 | Requires Gradle 8.12+ |
+| **Gradle** | 8.12 | Use Gradle wrapper 8.12+ |
+| **Kotlin** | 2.0.21 | Includes new K2 compiler |
+| **Compose Compiler Plugin** | 2.0.21 | Managed via `org.jetbrains.kotlin.plugin.compose` |
+| **Compose BOM** | 2025.09.01+ | Must match Kotlin version |
+| **compileSdk** | 35 | Android 15 |
+| **targetSdk** | 35 | Recommended for full compatibility |
+| **AndroidX Navigation** | 2.9.3+ | Optional but recommended |
+
+### Migration Notes
+
+- The SDK now uses Kotlin’s **K2 compiler**, requiring Kotlin 2.x.
+- The **Compose compiler plugin** is now managed separately:
+  ```kotlin
+  plugins {
+      id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
+  }
+
+
 ### Gradle setup
 
 In your project's `build.gradle` add the following and replace the credentials with your provided
