@@ -58,6 +58,7 @@ import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteraction
 import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.CancelGamesMatchupResult
 import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.CreateGamesMatchupResult
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament
+import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreResult
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
 import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
@@ -773,6 +774,25 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             retrieveRecommendedTournaments()
         }
 
+        appendOption(
+            "Submit tournament score",
+            "Submit the score of a tournament for a specific user.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                return@appendOption
+            }
+
+            submitTournamentScore()
+        }
+
         // Add the recreational games API options
         appendRecreationalGamesApiOptions()
     }
@@ -950,6 +970,137 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 ) { result ->
                     runOnUiThread {
                         displayRecreationalGameResult("Create Game Result", result)
+                        dialog.dismiss()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun submitTournamentScore() {
+        val scrollView = ScrollView(this)
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+        scrollView.addView(layout)
+
+        val scoreLayout = TextInputLayout(this).apply {
+            hint = "Score"
+        }
+        val scoreInput = TextInputEditText(this).apply {
+            setText("25") // Default example value
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        scoreLayout.addView(scoreInput)
+        layout.addView(scoreLayout)
+
+        val tournamentIdLayout = TextInputLayout(this).apply {
+            hint = "Tournament ID"
+        }
+        val tournamentIdInput = TextInputEditText(this)
+        tournamentIdLayout.addView(tournamentIdInput)
+        layout.addView(tournamentIdLayout)
+
+        val isFinalCheckbox = androidx.appcompat.widget.AppCompatCheckBox(this).apply {
+            text = "Is Final Attempt?"
+            isChecked = false
+        }
+        layout.addView(isFinalCheckbox)
+
+        val metadataLabel = TextView(this).apply {
+            text = "Metadata"
+            textSize = 16f
+            setPadding(0, 30, 0, 10)
+        }
+        layout.addView(metadataLabel)
+
+        val metadataContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        layout.addView(metadataContainer)
+
+        addMetadataRow(metadataContainer, null, null)
+
+        val addMetadataButton = MaterialButton(this).apply {
+            text = "Add Metadata Row"
+            setOnClickListener {
+                addMetadataRow(metadataContainer, null, null)
+            }
+        }
+        layout.addView(addMetadataButton)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Submit Tournament Score")
+            .setView(scrollView)
+            .setPositiveButton("Submit", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                val scoreText = scoreInput.text.toString()
+                val tournamentId = tournamentIdInput.text.toString()
+                val isFinal = isFinalCheckbox.isChecked
+
+                if (scoreText.isBlank() || tournamentId.isBlank()) {
+                    Toast.makeText(
+                        this,
+                        "Score and Tournament ID are required",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+
+                val score = scoreText.toIntOrNull()
+                if (score == null) {
+                    Toast.makeText(
+                        this,
+                        "Invalid score value",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+
+                val metaMap = mutableMapOf<String, String>()
+                for (i in 0 until metadataContainer.childCount) {
+                    val row = metadataContainer.getChildAt(i)
+                    val key = row.findViewById<TextInputEditText>(R.id.metadata_key)?.text
+                        ?.toString()?.takeIf { it.isNotBlank() }
+                    val value = row.findViewById<TextInputEditText>(R.id.metadata_value)?.text
+                        ?.toString()
+
+                    if (key != null) {
+                        metaMap[key] = value.orEmpty()
+                    }
+                }
+
+                LucraClient().submitUserScore(
+                    score = score,
+                    tournamentId = tournamentId,
+                    metadata = metaMap,
+                    isFinal = isFinal,
+                ) { result ->
+                    runOnUiThread {
+                        val message = when (result) {
+                            is SubmitTournamentScoreResult.SubmitTournamentsScoreOutput -> {
+                                "Success!\nScore submitted to tournament: ${result.tournament.title}"
+                            }
+
+                            is SubmitTournamentScoreResult.Failure -> {
+                                "Failed: ${result.failure}"
+                            }
+                        }
+
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle("Submit Score Result")
+                            .setMessage(message)
+                            .setPositiveButton("OK", null)
+                            .show()
+
                         dialog.dismiss()
                     }
                 }
