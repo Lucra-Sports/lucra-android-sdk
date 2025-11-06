@@ -1,3 +1,12 @@
+## 5.1.0
+* Added `submitUserScore` to `LucraClient` to allow headless tournament score submissions
+* Added `Game` data object to `Tournament` to provide more details about tournaments for headless API calls
+* Optimized loading time for Tournaments/Games Landing screen queries.
+* Tournaments-only clients now have a simplified, vertically scrolling landing page for easier navigation.
+* Big cards for featured games now has a scroll indicator as well as "peek" animation for the card so it's more obvious that there are multiple cards in the carousel.
+* Add funds bottom sheet is now scrollable on smaller devices.
+* Location selector now only shows the venue name, instead of "city - venue name".
+
 ## 5.0.1
 * Hotfix for preconfigured phone numbers
 
