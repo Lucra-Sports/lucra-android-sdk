@@ -152,7 +152,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
     private var lucraRewardProviderEnabled = true
-    private var provideLocationIdOnInit = true
+    private var provideLocationIdOnInit = false
 
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
@@ -1821,6 +1821,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             flowsSection
         ) {
             launchFlow(LucraUiProvider.LucraFlow.Profile)
+        }
+
+        appendOption(
+            "Wallet",
+            "Navigate to the current user's wallet. Authentication required",
+            flowsSection
+        ) {
+            launchFlow(LucraUiProvider.LucraFlow.Wallet)
         }
 
         appendOption(

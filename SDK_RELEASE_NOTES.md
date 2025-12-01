@@ -1,3 +1,8 @@
+## 5.2.0
+* Added `LucraUiProvider.LucraFlow.Wallet` flow to allow for a simplified user profile screen.
+* Updated GeoComplyContexts to be more streamlined.
+* Added support for an unauthenticated Home Screen.
+
 ## 5.1.0
 * Added `submitUserScore` to `LucraClient` to allow headless tournament score submissions
 * Added `Game` data object to `Tournament` to provide more details about tournaments for headless API calls
