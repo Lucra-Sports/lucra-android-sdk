@@ -59,6 +59,15 @@ internal object SampleColorStore {
         onTertiary = "#05155E"
     )
 
+    val defaultBaseTheme = ColorStyle(
+        primary = "#FA5455",
+        secondary = "#5E5BD0",
+        tertiary = "#9C99FC",
+        onPrimary = "#001448",
+        onSecondary = "#FFFFFF",
+        onTertiary = "#FFFFFF"
+    )
+
     val defaultLightModeTheme = when (BuildConfig.BUILD_TYPE) {
         "release" -> ColorStyle(
             primary = "#09E35F",
@@ -98,41 +107,12 @@ internal object SampleColorStore {
     }
 
     val defaultDarkModeTheme = when (BuildConfig.BUILD_TYPE) {
-        "release" -> ColorStyle(
-            primary = "#09E35F",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-
-        "sandbox" -> ColorStyle(
-            primary = "#C2B280",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-
-        "staging" -> ColorStyle(
-            primary = "#FDE92B",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-        // debug and any other variant, which is important for the public sample
-        else -> ColorStyle(
-            primary = "#FA5455",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
+        "release" -> defaultBaseTheme.copy(primary = "#09E35F")
+        "sandbox" -> defaultBaseTheme.copy(primary = "#C2B280")
+        "staging" -> defaultBaseTheme.copy(primary = "#FDE92B")
+        "debug" -> defaultBaseTheme.copy(primary = "#FE5B00")
+        "dev2" -> defaultBaseTheme.copy(primary = "#3A79E0")
+        else -> defaultBaseTheme
     }
 
     private var activeLightModeTheme: ColorStyle = defaultLightModeTheme

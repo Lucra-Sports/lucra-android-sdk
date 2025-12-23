@@ -3,6 +3,7 @@ package com.lucrasports.sdk.app
 
 import android.app.Application
 import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy.Builder
 import coil.ImageLoaderFactory
 import com.lucrasports.apphost.LucraCoilImageLoader
 import io.branch.referral.Branch
@@ -15,13 +16,14 @@ class ApplicationSdk : Application(), ImageLoaderFactory {
         super.onCreate()
 
         if (BuildConfig.ENABLE_STRICT_MODE) {
+            /**
+             * Set a thread policy that detects all potential problems on the main thread, such as network
+             * and disk access.
+             *
+             * If a problem is found, the offending call will be logged and the application will be killed.
+             */
             StrictMode.setThreadPolicy(
-                StrictMode.ThreadPolicy.Builder()
-                    .detectNetwork() // Detect network calls on main thread
-                    .detectCustomSlowCalls() // Detect other potentially slow calls
-                    .penaltyLog() // Log violations to logcat
-                    .penaltyFlashScreen() // Flash screen on violation (visual indicator)
-                    .build()
+                Builder().detectAll().penaltyLog().build(),
             )
         }
 
