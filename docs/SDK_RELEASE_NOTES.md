@@ -1,3 +1,10 @@
+## 6.0.0
+* **[Breaking Change - LucraClient signature update & new apiKey]**
+  * `apiUrl` is no longer required and the prior `apiKey` CANNOT be reused. If you don't have the new key already contact Lucra for your new API key.
+* Added new `HomePage` flow that launch the home page where user can create tournaments or matchups. Supports unauthed access.
+* Added `submitUserScoreByMetadata` and `searchMatchupsByMetadata` to `LucraClient` to allow headless tournament score submissions and searching
+* Redesign of the user profile screen `LucraUiProvider.LucraFlow.Profile`
+
 ## 5.3.0
 * **[Breaking Change - Repository Migration]** SDK artifacts are now published to Maven Central instead of GitHub Packages.
   * No authentication required - artifacts are publicly accessible

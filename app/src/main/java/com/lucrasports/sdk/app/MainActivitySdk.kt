@@ -3,7 +3,6 @@ package com.lucrasports.sdk.app
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
@@ -12,15 +11,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,36 +22,36 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.CollapsingToolbarLayout
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.messaging.FirebaseMessaging
-import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDialogFragment
 import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment
 import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment.ViewMyRewardsListener
-import com.lucrasports.logger.impl.LucraFirebaseLogger
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
-import com.lucrasports.sdk.app.theming.SampleColorStore
-import com.lucrasports.sdk.app.theming.SampleColorStore.intToColorHex
+import com.lucrasports.sdk.app.headless_api.MatchupApiHandler
+import com.lucrasports.sdk.app.headless_api.UserApiHandler
+import com.lucrasports.sdk.app.logger.FirebaseLogger
+import com.lucrasports.sdk.app.ui.OptionBuilder
+import com.lucrasports.sdk.app.ui.dialogs.ComponentDialogs
+import com.lucrasports.sdk.app.ui.dialogs.ConfigDialogs
+import com.lucrasports.sdk.app.ui.dialogs.FlowDialogs
+import com.lucrasports.sdk.app.ui.dialogs.RecreationalGameDialogs
+import com.lucrasports.sdk.app.ui.dialogs.TournamentDialogs
+import com.lucrasports.sdk.app.ui.dialogs.UserDialogs
+import com.lucrasports.sdk.app.ui.theming.SampleColorStore
+import com.lucrasports.sdk.app.ui.theming.ThemeManager
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
-import com.lucrasports.sdk.core.contest.GameInteractions.GetMatchupResult
-import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions
-import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.AcceptRecreationalGameResult
-import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.CancelGamesMatchupResult
-import com.lucrasports.sdk.core.contest.recreational.RecreationalGameInteractions.CreateGamesMatchupResult
-import com.lucrasports.sdk.core.contest.tournament.PoolTournament
-import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreResult
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
 import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
 import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
@@ -86,8 +79,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.util.UUID
+import kotlin.collections.isNotEmpty
+
+private const val API_URL_OVERRIDE = "API_URL_OVERRIDE"
+private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
+private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
+private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
@@ -127,28 +125,32 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         findViewById(R.id.ll_api_section)
     }
 
-    private val themeOptionRowViewMap = mutableMapOf<Int, View>()
+    // Helper classes
+    private lateinit var recreationalGameDialogs: RecreationalGameDialogs
+    private lateinit var tournamentDialogs: TournamentDialogs
+    private lateinit var userDialogs: UserDialogs
+    private lateinit var configDialogs: ConfigDialogs
+    private lateinit var flowDialogs: FlowDialogs
+    private lateinit var componentDialogs: ComponentDialogs
+    private lateinit var matchupApiHandler: MatchupApiHandler
+    private lateinit var userApiHandler: UserApiHandler
+    private lateinit var themeManager: ThemeManager
+    private lateinit var optionBuilder: OptionBuilder
 
-    companion object {
-        private const val API_URL_OVERRIDE = "API_URL_OVERRIDE"
-        private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
-        private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
-        private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
-    }
+    private data class FlowOption(
+        val title: String,
+        val description: String,
+        val action: () -> Unit
+    )
 
     private val preferences by lazy {
         getSharedPreferences("LucraSamplePrefs", MODE_PRIVATE)
     }
-    private var apiUrlOverride: String?
-        get() = preferences.getString(API_URL_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
-        set(value) {
-            preferences.edit().putString(API_URL_OVERRIDE, value).apply()
-        }
 
     private var apiKeyOverride: String?
         get() = preferences.getString(API_KEY_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
         set(value) {
-            preferences.edit().putString(API_KEY_OVERRIDE, value).apply()
+            preferences.edit { putString(API_KEY_OVERRIDE, value) }
         }
 
     private var lucraRewardProviderEnabled = true
@@ -157,11 +159,22 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     // Managing latest user
     private var lucraSDKUser: SDKUser? = null
 
-    // Referencing internal logger implementation
-    private lateinit var customLogger: LucraFirebaseLogger
+    private lateinit var customLogger: FirebaseLogger
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_sdk)
+
+        // Initialize helper classes
+        recreationalGameDialogs = RecreationalGameDialogs(this)
+        tournamentDialogs = TournamentDialogs(this)
+        userDialogs = UserDialogs(this)
+        configDialogs = ConfigDialogs(this)
+        flowDialogs = FlowDialogs(this)
+        componentDialogs = ComponentDialogs(this)
+        matchupApiHandler = MatchupApiHandler(this)
+        userApiHandler = UserApiHandler(this)
+        themeManager = ThemeManager(this)
+        optionBuilder = OptionBuilder(this)
 
         ViewCompat.setOnApplyWindowInsetsListener(topAppBar) { _, insets ->
             val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -203,17 +216,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         appendComponentOptions()
     }
 
-    private fun buildApiUrlSet() = BuildConfig.TESTING_API_URL != "ADD YOUR API URL HERE"
     private fun buildApiKeySet() = BuildConfig.TESTING_API_KEY != "ADD YOUR API KEY HERE"
 
     private fun initializeLucraClient() {
-        val apiUrlSet = buildApiUrlSet() || apiUrlOverride != null
         val apiKeySet = buildApiKeySet() || apiKeyOverride != null
-        if (!apiUrlSet || !apiKeySet) {
-            Log.e("Lucra SDK Sample", "Be sure to use a valid API Url prior to initialization!")
+        if (!apiKeySet) {
+            Log.e("Lucra SDK Sample", "Did you forget to set your API key?")
             MaterialAlertDialogBuilder(this)
                 .setTitle("Woah, hold up!")
-                .setMessage("This sample only works if you've been given a valid API URL and API Key. Press configure to manually enter these values or reach out to your Lucra contact to get started.")
+                .setMessage("This sample only works if you've been given a API Key. Press configure to manually enter these values or reach out to your Lucra contact to get started.")
                 .setNeutralButton("Configure") { dialog, _ ->
                     overrideApiUrlAndKey()
                 }
@@ -221,20 +232,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     dialog.dismiss()
                 }
                 .show()
-
-            // TODO lucra client does NOT gracefully handle empty or invalid apikey/url
-            //  https://lucrasports.atlassian.net/browse/LF-3596
         }
 
-        customLogger = LucraFirebaseLogger(applicationContext)
+        customLogger = FirebaseLogger(applicationContext)
         LucraClient.initialize(
             application = application,
             lucraUiProvider = buildLucraUiInstance(),
-            // This must be updated to the correct auth0 client id per environment
-            // Logins won't work if there's a mismatch
             apiKey = apiKeyOverride ?: BuildConfig.TESTING_API_KEY,
-            // This must be updated to the correct api url per environment
-            apiUrl = apiUrlOverride ?: BuildConfig.TESTING_API_URL,
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             customLogger = customLogger,
@@ -319,6 +323,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
         })
 
+
         LucraClient().setDeeplinkTransformer { url ->
             val link = try {
                 val branchLinkProperties = LinkProperties()
@@ -369,7 +374,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
                 override fun viewRewards() {
                     // Again, the idea here is to show the list of available rewards for the current user
-                    // This is just a dumby example
+                    // This is just a dummy example
 
                     supportFragmentManager.fragments.filterIsInstance<DialogFragment>().forEach {
                         it.dismiss()
@@ -447,61 +452,40 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             .init()
     }
 
+    private fun appendToggleComponent(
+        title: String,
+        description: String,
+        componentProvider: () -> View
+    ) {
+        appendOption(title, description, componentsSection, AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)) { viewGroup ->
+            if (viewGroup.isNotEmpty()) {
+                viewGroup.removeAllViews()
+            } else {
+                viewGroup.addView(componentProvider())
+            }
+        }
+    }
+
     private fun appendComponentOptions() {
-        appendOption(
+        appendToggleComponent(
             "Profile Pill",
-            "Show the profile pill with the user balance. Authentication not required, but clicking will launch the auth flow.",
-            componentsSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
-        ) { viewGroup ->
-            if (viewGroup.isNotEmpty()) {
-                viewGroup.removeAllViews()
-            } else {
-                val view = LucraClient().getLucraComponent(
-                    this,
-                    LucraUiProvider.LucraComponent.ProfilePill {
-                        launchFlow(it)
-                    })
-                viewGroup.addView(view)
-            }
+            "Show the profile pill with the user balance. Authentication not required, but clicking will launch the auth flow."
+        ) {
+            LucraClient().getLucraComponent(this, LucraUiProvider.LucraComponent.ProfilePill { launchFlow(it) })
         }
 
-        appendOption(
+        appendToggleComponent(
             "Recommended Matchups Banner",
-            "Show the recommended matchups banner component. Authentication required.",
-            componentsSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
-        ) { viewGroup ->
-            if (viewGroup.isNotEmpty()) {
-                viewGroup.removeAllViews()
-            } else {
-                val view = LucraClient().getLucraComponent(
-                    this,
-                    LucraUiProvider.LucraComponent.RecommendedMatchups {
-                        launchFlow(it)
-                    }
-                )
-                viewGroup.addView(view)
-            }
+            "Show the recommended matchups banner component. Authentication required."
+        ) {
+            LucraClient().getLucraComponent(this, LucraUiProvider.LucraComponent.RecommendedMatchups { launchFlow(it) })
         }
 
-        appendOption(
+        appendToggleComponent(
             "Floating Action Button",
-            "Show the floating action button to create a sports contest.",
-            componentsSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
-        ) { viewGroup ->
-            if (viewGroup.isNotEmpty()) {
-                viewGroup.removeAllViews()
-            } else {
-                val view = LucraClient().getLucraComponent(
-                    this,
-                    LucraUiProvider.LucraComponent.FloatingActionButton {
-                        launchFlow(it)
-                    })
-
-                viewGroup.addView(view)
-            }
+            "Show the floating action button to create a sports contest."
+        ) {
+            LucraClient().getLucraComponent(this, LucraUiProvider.LucraComponent.FloatingActionButton { launchFlow(it) })
         }
 
         appendOption(
@@ -510,47 +494,20 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             componentsSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
         ) { viewGroup ->
-
             if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
                 return@appendOption
             }
 
-            val builder = MaterialAlertDialogBuilder(this)
-            val layout = LinearLayout(this)
-            layout.orientation = LinearLayout.VERTICAL
-            val playerOneInput = EditText(this).apply {
-                hint = "Set player 1 ID (optional)"
-                //                setText("aaafe923-e36a-4514-a463-3e620033c416")
+            componentDialogs.showMiniPublicFeedDialog { playerOneId, playerTwoId ->
+                val view = LucraClient().getLucraComponent(
+                    this,
+                    LucraUiProvider.LucraComponent.MiniPublicFeed(listOf(playerOneId, playerTwoId)) {
+                        launchFlow(it)
+                    }
+                )
+                viewGroup.addView(view)
             }
-            val playerTwoInput = EditText(this).apply {
-                hint = "Set player 2 ID (optional)"
-                //                setText( "0ae16407-9f7f-484c-9eb3-4f2a641c78bc")
-            }
-
-            layout.addView(playerOneInput)
-            layout.addView(playerTwoInput)
-
-            builder.setTitle("Add player ids")
-                .setView(layout)
-                .setPositiveButton("OK") { dialog, id ->
-                    val playerOneId = playerOneInput.text.toString()
-                    val playerTwoId = playerTwoInput.text.toString()
-                    val view = LucraClient().getLucraComponent(
-                        this,
-                        LucraUiProvider.LucraComponent.MiniPublicFeed(
-                            listOf(playerOneId, playerTwoId)
-                        ) {
-                            launchFlow(it)
-                        })
-                    viewGroup.addView(view)
-
-                }
-                .setNegativeButton("Cancel") { dialog, id ->
-                    dialog.dismiss()
-                }
-
-            builder.show()
         }
 
         appendOption(
@@ -564,36 +521,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 return@appendOption
             }
 
-            val builder = MaterialAlertDialogBuilder(this)
-            val layout = LinearLayout(this)
-            layout.orientation = LinearLayout.VERTICAL
-            val contestInput = EditText(this).apply {
-                hint = "Set contest ID"
-                setText("000cfba7-17cd-4702-9d04-ed23c84a89fe")
+            componentDialogs.showContestCardDialog { contestId ->
+                val view = LucraClient().getLucraComponent(
+                    this,
+                    LucraUiProvider.LucraComponent.ContestCard(contestId = contestId) {
+                        launchFlow(it)
+                    }
+                )
+                viewGroup.addView(view)
             }
-
-            layout.addView(contestInput)
-
-            builder.setTitle("Add Contest Id")
-                .setView(layout)
-                .setPositiveButton("OK") { dialog, id ->
-                    val contestId = contestInput.text.toString()
-                    val view = LucraClient().getLucraComponent(
-                        this,
-                        LucraUiProvider.LucraComponent.ContestCard(
-                            contestId = contestId,
-                        ) {
-                            launchFlow(it)
-                        }
-                    )
-
-                    viewGroup.addView(view)
-                }
-                .setNegativeButton("Cancel") { dialog, id ->
-                    dialog.dismiss()
-                }
-
-            builder.show()
         }
     }
 
@@ -612,10 +548,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
                 Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
                 Log.d("Sample", "fragments: ${supportFragmentManager.fragments}")
-                Log.d(
-                    "Sample",
-                    "backstack count: ${supportFragmentManager.backStackEntryCount}"
-                )
+                Log.d("Sample", "backstack count: ${supportFragmentManager.backStackEntryCount}")
                 supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
                     Log.d("Sample", "Found $entryLucraFlow as $it")
 
@@ -649,7 +582,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            logoutUser()
+            userApiHandler.logout()
         }
 
         appendOption(
@@ -658,7 +591,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            updateUsernameDialog()
+            userDialogs.showUpdateUsernameDialog(lucraSDKUser) { updatedUser ->
+                lucraSDKUser = updatedUser
+            }
         }
 
         appendOption(
@@ -667,7 +602,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            configureUserDialog()
+            userDialogs.showConfigureUserDialog(lucraSDKUser) { updatedUser ->
+                lucraSDKUser = updatedUser
+            }
         }
 
         appendOption(
@@ -676,7 +613,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            retrieveGamesMatchup()
+            matchupApiHandler.showRetrieveMatchupDialog()
         }
 
         appendOption(
@@ -685,36 +622,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                return@appendOption
+            requireAuth {
+                userApiHandler.checkKYCStatus(lucraSDKUser!!.userId!!)
             }
-
-            LucraClient().checkUsersKYCStatus(
-                lucraSDKUser!!.userId!!,
-                object : LucraClient.LucraKYCStatusListener {
-                    override fun onKYCStatusCheckFailed(exception: Exception) {
-                        Toast.makeText(
-                            this@MainActivitySdk,
-                            "Verified Failed ${exception}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-
-                    override fun onKYCStatusAvailable(isVerified: Boolean) {
-                        Toast.makeText(
-                            this@MainActivitySdk,
-                            "Is user verified? $isVerified",
-                            Toast.LENGTH_LONG
-                        )
-                            .show()
-                    }
-                })
         }
 
         appendOption(
@@ -723,17 +633,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                return@appendOption
+            requireAuth {
+                tournamentDialogs.showRetrieveTournamentDialog()
             }
-
-            retrieveTournament()
         }
 
         appendOption(
@@ -742,18 +644,56 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
+            requireAuth {
+                tournamentDialogs.showJoinTournamentDialog(::launchFlow)
+            }
+        }
+
+        appendOption(
+            "Submit tournament score manually",
+            "Submit the score of a tournament for a specified tournament. Tournament ID is required",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            requireAuth {
+                tournamentDialogs.showSubmitScoreDialog(::launchFlow)
+            }
+        }
+
+        appendOption(
+            "Submit Score by Metadata",
+            "Submit a tournament score by matching matchup details, game ID or location ID.. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
             if (lucraSDKUser?.userId == null) {
                 Toast.makeText(
                     this@MainActivitySdk,
                     "Not logged in yet!",
                     Toast.LENGTH_SHORT
-                )
-                    .show()
+                ).show()
                 return@appendOption
             }
-
-            joinTournament()
+            tournamentDialogs.showSubmitUserScoreByMetadataDialog()
         }
+
+        appendOption(
+            "Search Matchups by Metadata",
+            "Search for matchups using metadata criteria. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            if (lucraSDKUser?.userId == null) {
+                Toast.makeText(
+                    this@MainActivitySdk,
+                    "Not logged in yet!",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@appendOption
+            }
+            tournamentDialogs.showSearchMatchupsByMetadataDialog()
+        }
+
 
         appendOption(
             "Recommended Tournaments",
@@ -761,41 +701,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                return@appendOption
+            requireAuth {
+                tournamentDialogs.showRecommendedTournamentsDialog()
             }
-
-            retrieveRecommendedTournaments()
         }
 
-        appendOption(
-            "Submit tournament score",
-            "Submit the score of a tournament for a specific user.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                return@appendOption
-            }
-
-            submitTournamentScore()
-        }
 
         // Add the recreational games API options
         appendRecreationalGamesApiOptions()
     }
+
 
     private fun appendRecreationalGamesApiOptions() {
         appendOption(
@@ -804,15 +719,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@appendOption
+            requireAuth {
+                recreationalGameDialogs.showCreateGameDialog()
             }
-            createRecreationalGameDialog()
         }
 
         appendOption(
@@ -821,15 +730,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@appendOption
+            requireAuth {
+                recreationalGameDialogs.showAcceptVersusGameDialog()
             }
-            acceptVersusRecreationalGameDialog()
         }
 
         appendOption(
@@ -838,15 +741,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@appendOption
+            requireAuth {
+                recreationalGameDialogs.showAcceptFreeForAllGameDialog()
             }
-            acceptFreeForAllRecreationalGameDialog()
         }
 
         appendOption(
@@ -855,465 +752,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@appendOption
+            requireAuth {
+                recreationalGameDialogs.showCancelGameDialog()
             }
-            cancelRecreationalGameDialog()
         }
     }
 
-    private fun createRecreationalGameDialog() {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
-        }
-
-        // Game Type ID
-        val gameTypeIdLayout = TextInputLayout(this).apply {
-            hint = "Game Type ID"
-        }
-        val gameTypeIdInput = TextInputEditText(this).apply {
-            setText("CORNHOLE") // Default example value
-        }
-        gameTypeIdLayout.addView(gameTypeIdInput)
-        layout.addView(gameTypeIdLayout)
-
-        // PlayStyle selection spinner
-        val playStyleLayout = TextInputLayout(this).apply {
-            hint = "Play Style"
-        }
-        val playStyleSpinner = Spinner(this)
-        val playStyles = arrayOf(
-            "GROUP_VS_GROUP",
-            "FREE_FOR_ALL"
-        )
-        val playStyleAdapter =
-            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, playStyles)
-        playStyleSpinner.adapter = playStyleAdapter
-
-        // Add a container for the spinner
-        val playStyleContainer = LinearLayout(this).apply {
-            addView(TextView(context).apply {
-                text = "Play Style:"
-                setPadding(0, 30, 20, 0)
-            })
-            addView(playStyleSpinner)
-            setPadding(0, 20, 0, 20)
-        }
-        layout.addView(playStyleContainer)
-
-        val rewardTypeSpinner = Spinner(this)
-        val rewardTypes = arrayOf(
-            "CASH",
-            "FREE"
-        )
-        val rewardTypeAdapter =
-            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, rewardTypes)
-        rewardTypeSpinner.adapter = rewardTypeAdapter
-
-        // Add a container for the spinner
-        val rewardTypeContainer = LinearLayout(this).apply {
-            addView(TextView(context).apply {
-                text = "Reward Type:"
-                setPadding(0, 30, 20, 0)
-            })
-            addView(rewardTypeSpinner)
-            setPadding(0, 20, 0, 20)
-        }
-        layout.addView(rewardTypeContainer)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Create Recreational Game")
-            .setView(layout)
-            .setPositiveButton("Create", null)
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        dialog.setOnShowListener {
-            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-                val gameTypeId = gameTypeIdInput.text.toString()
-                val playStyleValue = when (playStyleSpinner.selectedItem.toString()) {
-                    "GROUP_VS_GROUP" -> RecreationalGameInteractions.PlayStyle.GroupVsGroup
-                    "FREE_FOR_ALL" -> RecreationalGameInteractions.PlayStyle.FreeForAll
-                    else -> RecreationalGameInteractions.PlayStyle.GroupVsGroup
-                }
-                val rewardTypeValue = when (rewardTypeSpinner.selectedItem.toString()) {
-                    "CASH" -> RecreationalGameInteractions.RewardType.Cash(5.00)
-                    else -> fakeLucraRewards.first().run {
-                        RecreationalGameInteractions.RewardType.TenantReward(
-                            rewardId = rewardId,
-                            title = title,
-                            descriptor = descriptor,
-                            iconUrl = iconUrl,
-                            bannerIconUrl = bannerIconUrl,
-                            disclaimer = disclaimer,
-                            metadata = metadata
-                        )
-                    }
-                }
-
-                if (gameTypeId.isBlank()) {
-                    Toast.makeText(this, "Game Type ID is required", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-
-                LucraClient().createRecreationalGame(
-                    gameTypeId = gameTypeId,
-                    atStake = rewardTypeValue,
-                    playStyle = playStyleValue
-                ) { result ->
-                    runOnUiThread {
-                        displayRecreationalGameResult("Create Game Result", result)
-                        dialog.dismiss()
-                    }
-                }
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun submitTournamentScore() {
-        val scrollView = ScrollView(this)
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
-        }
-        scrollView.addView(layout)
-
-        val scoreLayout = TextInputLayout(this).apply {
-            hint = "Score"
-        }
-        val scoreInput = TextInputEditText(this).apply {
-            setText("25") // Default example value
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        scoreLayout.addView(scoreInput)
-        layout.addView(scoreLayout)
-
-        val tournamentIdLayout = TextInputLayout(this).apply {
-            hint = "Tournament ID"
-        }
-        val tournamentIdInput = TextInputEditText(this)
-        tournamentIdLayout.addView(tournamentIdInput)
-        layout.addView(tournamentIdLayout)
-
-        val isFinalCheckbox = androidx.appcompat.widget.AppCompatCheckBox(this).apply {
-            text = "Is Final Attempt?"
-            isChecked = false
-        }
-        layout.addView(isFinalCheckbox)
-
-        val metadataLabel = TextView(this).apply {
-            text = "Metadata"
-            textSize = 16f
-            setPadding(0, 30, 0, 10)
-        }
-        layout.addView(metadataLabel)
-
-        val metadataContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-        layout.addView(metadataContainer)
-
-        addMetadataRow(metadataContainer, null, null)
-
-        val addMetadataButton = MaterialButton(this).apply {
-            text = "Add Metadata Row"
-            setOnClickListener {
-                addMetadataRow(metadataContainer, null, null)
-            }
-        }
-        layout.addView(addMetadataButton)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Submit Tournament Score")
-            .setView(scrollView)
-            .setPositiveButton("Submit", null)
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        dialog.setOnShowListener {
-            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-                val scoreText = scoreInput.text.toString()
-                val tournamentId = tournamentIdInput.text.toString()
-                val isFinal = isFinalCheckbox.isChecked
-
-                if (scoreText.isBlank() || tournamentId.isBlank()) {
-                    Toast.makeText(
-                        this,
-                        "Score and Tournament ID are required",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setOnClickListener
-                }
-
-                val score = scoreText.toIntOrNull()
-                if (score == null) {
-                    Toast.makeText(
-                        this,
-                        "Invalid score value",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setOnClickListener
-                }
-
-                val metaMap = mutableMapOf<String, String>()
-                for (i in 0 until metadataContainer.childCount) {
-                    val row = metadataContainer.getChildAt(i)
-                    val key = row.findViewById<TextInputEditText>(R.id.metadata_key)?.text
-                        ?.toString()?.takeIf { it.isNotBlank() }
-                    val value = row.findViewById<TextInputEditText>(R.id.metadata_value)?.text
-                        ?.toString()
-
-                    if (key != null) {
-                        metaMap[key] = value.orEmpty()
-                    }
-                }
-
-                LucraClient().submitUserScore(
-                    score = score,
-                    tournamentId = tournamentId,
-                    metadata = metaMap,
-                    isFinal = isFinal,
-                ) { result ->
-                    runOnUiThread {
-                        val message = when (result) {
-                            is SubmitTournamentScoreResult.SubmitTournamentsScoreOutput -> {
-                                "Success!\nScore submitted to tournament: ${result.tournament.title}"
-                            }
-
-                            is SubmitTournamentScoreResult.Failure -> {
-                                "Failed: ${result.failure}"
-                            }
-                        }
-
-                        MaterialAlertDialogBuilder(this)
-                            .setTitle("Submit Score Result")
-                            .setMessage(message)
-                            .setPositiveButton("OK", null)
-                            .show()
-
-                        dialog.dismiss()
-                    }
-                }
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun acceptVersusRecreationalGameDialog() {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
-        }
-
-        // Matchup ID
-        val matchupIdLayout = TextInputLayout(this).apply {
-            hint = "Matchup ID"
-        }
-        val matchupIdInput = TextInputEditText(this)
-        matchupIdLayout.addView(matchupIdInput)
-        layout.addView(matchupIdLayout)
-
-        // Team ID
-        val teamIdLayout = TextInputLayout(this).apply {
-            hint = "Team ID"
-        }
-        val teamIdInput = TextInputEditText(this)
-        teamIdLayout.addView(teamIdInput)
-        layout.addView(teamIdLayout)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Accept Versus Recreational Game")
-            .setView(layout)
-            .setPositiveButton("Accept", null)
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        dialog.setOnShowListener {
-            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-                val matchupId = matchupIdInput.text.toString()
-                val teamId = teamIdInput.text.toString()
-
-                if (matchupId.isBlank() || teamId.isBlank()) {
-                    Toast.makeText(
-                        this,
-                        "Both Matchup ID and Team ID are required",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setOnClickListener
-                }
-
-                LucraClient().acceptVersusRecreationalGame(
-                    matchupId = matchupId,
-                    teamId = teamId
-                ) { result ->
-                    runOnUiThread {
-                        displayAcceptGameResult("Accept Versus Game Result", result)
-                        dialog.dismiss()
-                    }
-                }
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun acceptFreeForAllRecreationalGameDialog() {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
-        }
-
-        // Matchup ID
-        val matchupIdLayout = TextInputLayout(this).apply {
-            hint = "Matchup ID"
-        }
-        val matchupIdInput = TextInputEditText(this)
-        matchupIdLayout.addView(matchupIdInput)
-        layout.addView(matchupIdLayout)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Accept Free-For-All Recreational Game")
-            .setView(layout)
-            .setPositiveButton("Accept", null)
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        dialog.setOnShowListener {
-            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-                val matchupId = matchupIdInput.text.toString()
-
-                if (matchupId.isBlank()) {
-                    Toast.makeText(this, "Matchup ID is required", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-
-                LucraClient().acceptFreeForAllRecreationalGame(
-                    matchupId = matchupId
-                ) { result ->
-                    runOnUiThread {
-                        displayAcceptGameResult("Accept Free-For-All Game Result", result)
-                        dialog.dismiss()
-                    }
-                }
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun cancelRecreationalGameDialog() {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
-        }
-
-        // Matchup ID
-        val matchupIdLayout = TextInputLayout(this).apply {
-            hint = "Matchup ID"
-        }
-        val matchupIdInput = TextInputEditText(this)
-        matchupIdLayout.addView(matchupIdInput)
-        layout.addView(matchupIdLayout)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Cancel Recreational Game")
-            .setView(layout)
-            .setPositiveButton("Cancel Game", null)
-            .setNegativeButton("Close", null)
-            .create()
-
-        dialog.setOnShowListener {
-            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-                val matchupId = matchupIdInput.text.toString()
-
-                if (matchupId.isBlank()) {
-                    Toast.makeText(this, "Matchup ID is required", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-
-                LucraClient().cancelRecreationalGame(
-                    matchupId = matchupId
-                ) { result ->
-                    runOnUiThread {
-                        displayCancelGameResult("Cancel Game Result", result)
-                        dialog.dismiss()
-                    }
-                }
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun displayRecreationalGameResult(title: String, result: CreateGamesMatchupResult) {
-        val message = when (result) {
-            is CreateGamesMatchupResult.Success -> {
-                "Success!\nMatchup ID: ${result.matchupId}"
-            }
-
-            is CreateGamesMatchupResult.Failure -> {
-                "Failed: ${result.failure}"
-            }
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun displayAcceptGameResult(title: String, result: AcceptRecreationalGameResult) {
-        val message = when (result) {
-            is AcceptRecreationalGameResult.Success -> {
-                "Success!\nMatchup accepted successfully."
-            }
-
-            is AcceptRecreationalGameResult.Failure -> {
-                "Failed: ${result.failure}"
-            }
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun displayCancelGameResult(title: String, result: CancelGamesMatchupResult) {
-        val message = when (result) {
-            is CancelGamesMatchupResult.Success -> {
-                "Success!\nMatchup cancelled successfully."
-            }
-
-            is CancelGamesMatchupResult.Failure -> {
-                "Failed: ${result.failure}"
-            }
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    //
     private fun setupAuthSettingsButton() {
         headerSettings.setOnClickListener {
             MaterialAlertDialogBuilder(this)
@@ -1337,320 +781,44 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
 
                         1 -> {
-                            val editText =
-                                layoutInflater.inflate(
-                                    R.layout.main_option_setting_edit_text,
-                                    null
-                                )
                             val leagueFilter = LucraClient().getPublicFeedLeagueIdFilter()
-                            editText.findViewById<TextInputLayout>(R.id.option_setting_edit_text_layout)
-                                .setHint("Add a league filter id")
-                            if (leagueFilter.currentIdFilters.value.isNotEmpty()) {
-                                editText.findViewById<TextView>(R.id.option_setting_edit_text_supporting_text).text =
-                                    "Active ids: " + leagueFilter.currentIdFilters.value.joinToString(
-                                        ",\n"
-                                    )
-                            }
-
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Add League Filter ID")
-                                .setView(editText)
-                                .setNeutralButton("Clear Filter(s)") { dialog, id ->
-                                    leagueFilter.clearIds()
-                                    dialog.dismiss()
-                                }
-                                .setNegativeButton("Close", null)
-                                .setPositiveButton("Add ID") { dialog, id ->
-                                    val id =
-                                        editText.findViewById<EditText>(R.id.option_setting_edit_text)
-                                            .text.toString()
-                                    leagueFilter.addId(id)
-                                    dialog.dismiss()
-                                }
-                                .show()
+                            configDialogs.showLeagueFilterDialog(
+                                currentFilters = leagueFilter.currentIdFilters.value,
+                                onAddFilter = { id -> leagueFilter.addId(id) },
+                                onClearFilters = { leagueFilter.clearIds() }
+                            )
                         }
 
                         2 -> {
                             // TODO expose an internal list which contains list of recent
                             //  Games Ids, League Ids, and Player Ids
                             //  It should be a capped list and for testing purposes only
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Recent Game Data")
-                                .setMessage("This feature is not yet implemented")
-                                .setPositiveButton("Close", null)
-                                .show()
+                            configDialogs.showNotImplementedDialog("Recent Game Data")
                         }
 
                         3 -> {
-
-                            val colorLayout = layoutInflater.inflate(
-                                /* resource = */ R.layout.main_theming_options_layout,
-                                /* root = */ null
-                            )
-                            val themingOptionsSection =
-                                colorLayout.findViewById<LinearLayout>(R.id.ll_theming_options_section)
-                            val btnThemeDefault: Button =
-                                colorLayout.findViewById(R.id.btn_theme_default)
-                            val btnThemeDandb: Button =
-                                colorLayout.findViewById(R.id.btn_theme_dandb)
-                            val btnThemeDupr: Button =
-                                colorLayout.findViewById(R.id.btn_theme_dupr)
-                            val btnThemeChaos: Button =
-                                colorLayout.findViewById(R.id.btn_theme_chaos)
-                            val btnThemePsf: Button =
-                                colorLayout.findViewById(R.id.btn_theme_psf)
-                            val btnThemeT1: Button =
-                                colorLayout.findViewById(R.id.btn_theme_t1)
-
-                            btnThemeDefault.setOnClickListener {
-                                SampleColorStore.applyTheme(
-                                    SampleColorStore.defaultLightModeTheme,
-                                    SampleColorStore.defaultDarkModeTheme
-                                )
-                                resetThemingOptions(themingOptionsSection)
-                            }
-                            btnThemeDandb.setOnClickListener {
-                                SampleColorStore.applyTheme(
-                                    SampleColorStore.dandbLightTheme,
-                                    SampleColorStore.dandbDarkTheme
-                                )
-                                resetThemingOptions(themingOptionsSection)
-                            }
-                            btnThemeDupr.setOnClickListener {
-                                SampleColorStore.applyTheme(
-                                    SampleColorStore.duprTheme
-                                )
-                                resetThemingOptions(themingOptionsSection)
-                            }
-                            btnThemeChaos.setOnClickListener {
-                                SampleColorStore.applyTheme(
-                                    SampleColorStore.chaosTheme
-                                )
-                                resetThemingOptions(themingOptionsSection)
-                            }
-                            btnThemeT1.setOnClickListener {
-                                SampleColorStore.applyTheme(
-                                    SampleColorStore.t1Theme
-                                )
-                                resetThemingOptions(themingOptionsSection)
-                            }
-                            btnThemePsf.setOnClickListener {
-                                SampleColorStore.applyTheme(
-                                    SampleColorStore.psfTheme
-                                )
-                                resetThemingOptions(themingOptionsSection)
-                            }
-
-                            appendThemingOptions(themingOptionsSection)
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Lucra Theming")
-                                .setView(colorLayout)
-                                .setNegativeButton("Cancel", null)
-                                .setPositiveButton("Apply") { themingDialog, _ ->
-                                    themingDialog.dismiss()
-                                    restartActivity()
-                                }
-                                .show()
+                            configDialogs.showThemingDialog(themeManager, ::restartActivity)
                         }
 
                         4 -> {
-
-                            val rewardProviderLayout = layoutInflater.inflate(
-                                /* resource = */ R.layout.main_option_reward_provider,
-                                /* root = */ null
-                            )
-                            val lucraReward = fakeLucraRewards.first()
-                            val etRewardTitle =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_title)
-                                    .apply {
-                                        setText(lucraReward.title)
-                                    }
-                            val etRewardDescriptor =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_descriptor)
-                                    .apply {
-                                        setText(lucraReward.descriptor)
-                                    }
-                            val etRewardIconUrl =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_icon_url)
-                                    .apply {
-                                        setText(lucraReward.iconUrl)
-                                    }
-                            val etRewardBannerUrl =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_banner_url)
-                                    .apply {
-                                        setText(lucraReward.bannerIconUrl)
-                                    }
-                            val etRewardDisclaimer =
-                                rewardProviderLayout.findViewById<TextInputEditText>(R.id.et_reward_disclaimer)
-                                    .apply {
-                                        setText(lucraReward.disclaimer)
-                                    }
-                            val rewardEnabledSwitch =
-                                rewardProviderLayout.findViewById<SwitchMaterial>(R.id.enable_provider)
-                                    .apply {
-                                        isChecked = lucraRewardProviderEnabled
-                                    }
-
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Lucra Reward Provider")
-                                .setView(rewardProviderLayout)
-                                .setNegativeButton("Cancel", null)
-                                .setPositiveButton("Apply") { themingDialog, _ ->
-                                    themingDialog.dismiss()
-                                    lucraRewardProviderEnabled = rewardEnabledSwitch.isChecked
-                                    fakeLucraRewards = listOf(
-                                        lucraReward.copy(
-                                            title = etRewardTitle.text.toString(),
-                                            descriptor = etRewardDescriptor.text.toString(),
-                                            iconUrl = etRewardIconUrl.text.toString(),
-                                            bannerIconUrl = etRewardBannerUrl.text.toString(),
-                                            disclaimer = etRewardDisclaimer.text.toString()
-                                        )
-                                    ) + fakeLucraRewards
-                                    setupRewardProvider(if (lucraRewardProviderEnabled) fakeLucraRewards else null)
-                                }
-                                .show()
+                            configDialogs.showRewardProviderDialog(
+                                currentRewards = fakeLucraRewards,
+                                enabled = lucraRewardProviderEnabled
+                            ) { enabled, updatedRewards ->
+                                lucraRewardProviderEnabled = enabled
+                                fakeLucraRewards = updatedRewards
+                                setupRewardProvider(if (enabled) updatedRewards else null)
+                            }
                         }
 
                         5 -> {
-
-                            val convertToCredit = layoutInflater.inflate(
-                                R.layout.main_option_convert_to_credit,
-                                null
-                            )
-
-                            val onOffSwitch =
-                                convertToCredit.findViewById<SwitchCompat>(R.id.csc_enabled)
-                            onOffSwitch.isChecked = LucraClient().isConvertToCreditAvailable()
-
-                            val idEditText =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_id)
-                            idEditText.setText(UUID.randomUUID().toString())
-                            val convertedAmountEditText =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_converted_amount)
-                            convertedAmountEditText.setText("10.00")
-                            val convertedAmountDisplayEditText =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_converted_amount_display)
-                            convertedAmountDisplayEditText.setText("$10.00 Credits")
-                            val iconUrl =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_icon_url)
-                            iconUrl.setText("https://lucrasports.com/images/homepage/lucra-l.svg")
-                            val metaData =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_meta_data)
-                            val longDescription =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_long_description)
-                            longDescription.setText("This is a really really really really really really long description")
-                            val shortDescription =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_short_description)
-                            shortDescription.setText("Short description")
-                            val title =
-                                convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_title)
-                            shortDescription.setText("Awesome Credits")
-
-                            val spinner: Spinner = convertToCredit.findViewById(R.id.meta_spinner)
-                            val items = arrayOf(
-                                "{\"showError\":\"blank\"}",
-                                "{\"showError\":\"extraShort\"}",
-                                "{\"showError\":\"short\"}",
-                                "{\"showError\":\"medium\"}",
-                                "{\"showError\":\"long\"}",
-                                "{\"showError\":\"extraLong\"}",
-                                "{\"showError\":\"superLong\"}",
-                                "{\"showSuccess\":\"blank\"}",
-                                "{\"showSuccess\":\"extraShort\"}",
-                                "{\"showSuccess\":\"short\"}",
-                                "{\"showSuccess\":\"medium\"}",
-                                "{\"showSuccess\":\"long\"}",
-                                "{\"showSuccess\":\"extraLong\"}",
-                                "{\"showSuccess\":\"superLong\"}"
-                            )
-                            val adapter =
-                                ArrayAdapter(this, R.layout.meta_dropdown_list_item, items)
-                            spinner.adapter = adapter
-                            spinner.onItemSelectedListener =
-                                object : AdapterView.OnItemSelectedListener {
-                                    override fun onItemSelected(
-                                        parent: AdapterView<*>,
-                                        view: View?,
-                                        position: Int,
-                                        id: Long
-                                    ) {
-                                        metaData.setText(items[position])
-                                    }
-
-                                    override fun onNothingSelected(parent: AdapterView<*>) {}
-                                }
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Convert to Credit Options")
-                                .setView(convertToCredit)
-                                .setNegativeButton("Cancel", null)
-                                .setPositiveButton("Apply") { convertToCreditDialog, _ ->
-                                    if (onOffSwitch.isChecked) {
-
-                                        val metaMap = try {
-                                            val jsonObject = JSONObject(metaData.text.toString())
-                                            mutableMapOf<String, Any>().apply {
-                                                for (key in jsonObject.keys()) {
-                                                    this[key] = jsonObject.get(key)
-                                                }
-                                            }.mapValues { it.value.toString() }
-                                        } catch (e: Exception) {
-                                            null
-                                        }
-
-                                        LucraClient().setConvertToCreditProvider(object :
-                                            LucraConvertToCreditProvider {
-                                            override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod? {
-                                                delay(2000L)
-
-                                                return LucraConvertToCreditWithdrawMethod(
-                                                    id = idEditText.text.toString(),
-                                                    conversionTerms = "No Fee  |  Instant transfer",
-                                                    title = title.text.toString(),
-                                                    amount = cashAmount,
-                                                    convertedAmount = convertedAmountEditText.text.toString()
-                                                        .toDouble(),
-                                                    convertedAmountDisplay = convertedAmountDisplayEditText.text.toString(),
-                                                    shortDescription = shortDescription.text.toString(),
-                                                    longDescription = longDescription.text.toString(),
-                                                    iconUrl = if (iconUrl.text.isNullOrBlank()) null else iconUrl.text.toString(),
-                                                    metaData = metaMap,
-                                                    theme = LucraWithdrawCardTheme(
-                                                        cardColor = "#5A1668",
-                                                        cardTextColor = "#FFFFFF",
-                                                        pillColor = "#5A1668",
-                                                        pillTextColor = "#FFFFFF",
-                                                    )
-                                                )
-                                            }
-                                        }
-                                        )
-                                    } else {
-                                        LucraClient().setConvertToCreditProvider(null)
-                                    }
-
-                                    convertToCreditDialog.dismiss()
-                                }
-                                .show()
+                            configDialogs.showConvertToCreditDialog { provider ->
+                                LucraClient().setConvertToCreditProvider(provider)
+                            }
                         }
 
                         6 -> {
-                            val formattedString =
-                                LucraClient().revealConfiguration()
-
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle("Configuration")
-                                .setMessage(
-                                    android.text.Html.fromHtml(
-                                        formattedString ?: "Not initialized yet...",
-                                        android.text.Html.FROM_HTML_MODE_LEGACY
-                                    )
-                                )
-                                .setPositiveButton("Dismiss") { dialog, _ ->
-                                    dialog.dismiss()
-                                }
-                                // TODO allow edit experience...
-                                .show()
+                            configDialogs.showViewConfigurationDialog(LucraClient().revealConfiguration())
                         }
 
                         7 -> {
@@ -1667,89 +835,18 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     private fun overrideApiUrlAndKey() {
-        val layout =
-            layoutInflater.inflate(
-                R.layout.main_option_configure_api,
-                null
-            )
-        val apiUrlEt = layout.findViewById<TextInputEditText>(R.id.et_api_url)
-        val apiUrlTil = layout.findViewById<TextInputLayout>(R.id.til_api_url)
-        apiUrlOverride?.let {
-            apiUrlTil.hint = "API URL (overrode)"
-            apiUrlEt.setText(it)
-        } ?: run {
-            apiUrlEt.setText(
-                if (buildApiUrlSet()) {
-                    apiUrlTil.hint = "API URL (default)"
-                    BuildConfig.TESTING_API_URL
-                } else {
-                    "Add an API Url!"
-                }
-            )
-        }
-        val apiKeyEt = layout.findViewById<TextInputEditText>(R.id.et_api_key)
-        val apiKeyTil = layout.findViewById<TextInputLayout>(R.id.til_api_key)
-        apiKeyOverride?.let {
-            apiKeyTil.hint = "API Key (overrode)"
-            apiKeyEt.setText(it)
-        } ?: run {
-            apiKeyEt.setText(
-                if (buildApiKeySet()) {
-                    apiKeyTil.hint = "API Key (default)"
-                    BuildConfig.TESTING_API_KEY
-                } else {
-                    "Add an API Key!"
-                }
-            )
-        }
-
-        val configureApiDialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Update Api Url ")
-            .setView(layout)
-            .setNeutralButton("Reset") { dialog, id ->
-                apiUrlOverride = null
+        configDialogs.showOverrideApiKeyDialog(
+            currentApiKeyOverride = apiKeyOverride,
+            buildApiKeySet = buildApiKeySet(),
+            onSave = { newApiKey ->
+                apiKeyOverride = newApiKey
+                restartActivity()
+            },
+            onReset = {
                 apiKeyOverride = null
-                dialog.dismiss()
                 restartActivity()
             }
-            .setNegativeButton("Close", null)
-            .setPositiveButton("Save", null)
-            .create()
-
-        configureApiDialog.setOnShowListener {
-
-            val positiveButton = configureApiDialog.getButton(DialogInterface.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-
-                val enteredApiUrl = apiUrlEt.text.toString()
-                if (enteredApiUrl.isEmpty()) {
-                    apiUrlEt.error = "Cannot be blank"
-                    return@setOnClickListener
-                }
-
-                val enteredApiKey = apiKeyEt.text.toString()
-                if (enteredApiKey.isEmpty()) {
-                    apiKeyEt.error = "Cannot be blank"
-                    return@setOnClickListener
-                }
-
-                apiKeyOverride = if (enteredApiKey != BuildConfig.TESTING_API_KEY) {
-                    enteredApiKey
-                } else {
-                    null
-                }
-
-
-                apiUrlOverride = if (enteredApiUrl != BuildConfig.TESTING_API_URL) {
-                    enteredApiUrl
-                } else {
-                    null
-                }
-                configureApiDialog.dismiss()
-                restartActivity()
-            }
-        }
-        configureApiDialog.show()
+        )
     }
 
     private fun setupAuthHeaderButton() {
@@ -1767,7 +864,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 .apply {
                     if (isUserLoggedIn) {
                         setPositiveButton("Logout") { dialog, id ->
-                            logoutUser()
+                            userApiHandler.logout()
                             dialog.dismiss()
                         }
                         setNeutralButton(
@@ -1793,7 +890,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
                     }
                     setNegativeButton("Configure") { dialog, id ->
-                        configureUserDialog()
+                        userDialogs.showConfigureUserDialog(lucraSDKUser) { updatedUser ->
+                            lucraSDKUser = updatedUser
+                        }
                         dialog.dismiss()
                     }
                 }
@@ -1801,288 +900,106 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    private fun logoutUser() {
-        LucraClient().logout(this)
-        Toast.makeText(this, "Successfully logged out", Toast.LENGTH_LONG).show()
-    }
+    private fun getFlowOptions(): List<FlowOption> = listOf(
+        FlowOption(
+            "Profile",
+            "Navigate to the current user's profile. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.Profile) },
+        
+        FlowOption(
+            "Home Page",
+            "Navigate to the primary starting point for Tournaments and Games."
+        ) { flowDialogs.showHomePageDialog(::launchFlow) },
+        
+        FlowOption(
+            "Wallet",
+            "Navigate to the current user's wallet. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.Wallet) },
+        
+        FlowOption(
+            "Verify User Identity",
+            "Navigate user identity verification screen. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity) },
+        
+        FlowOption(
+            "Demographic Form",
+            "Navigate to the demographic form to collect user information. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.DemographicForm) },
+        
+        FlowOption(
+            "Create Games Matchup",
+            "Navigate to the create games match up flow. Authentication required"
+        ) { flowDialogs.showCreateGamesMatchupDialog(::launchFlow) },
+        
+        FlowOption(
+            "Login",
+            "Navigate directly to the login screen. If user is already logged in, this will exit immediately"
+        ) { launchFlow(LucraUiProvider.LucraFlow.Login) },
+        
+        FlowOption(
+            "Add Funds",
+            "Navigate to the add funds flow. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.AddFunds) },
+        
+        FlowOption(
+            "Withdraw Funds",
+            "Navigate to the withdraw funds flow. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.WithdrawFunds) },
+        
+        FlowOption(
+            "Public Sports Feed",
+            "Navigate to the public sports feed. No authentication required. Any proceeding actions with prompt the user to authenticate first"
+        ) { launchFlow(LucraUiProvider.LucraFlow.PublicFeed) },
+        
+        FlowOption(
+            "Create Sports Matchup",
+            "Navigate to the create sports match up flow. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup) },
+        
+        FlowOption(
+            "Show Matchup",
+            "Navigate to the matchup details flow. Authentication required"
+        ) { flowDialogs.showMatchupDetailsDialog(::launchFlow) },
+        
+        FlowOption(
+            "Show Tournament Matchup",
+            "Navigate to the tournament details flow. Authentication required"
+        ) { flowDialogs.showTournamentDetailsDialog(::launchFlow) },
+        
+        FlowOption(
+            "My Matchups",
+            "Navigate to the user's created matchups screen. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.MyMatchup) },
+        
+        FlowOption(
+            "Deeplink to Matchup Details",
+            "Navigate to specific matchup via a legacy deeplink uri. Authentication required"
+        ) { flowDialogs.showDeeplinkDialog(::launchFlow) },
+        
+        FlowOption(
+            "Tournaments",
+            "Navigate to the Tournaments screen."
+        ) { launchFlow(LucraUiProvider.LucraFlow.Tournaments) }
+    )
 
     private fun appendFlowOptions() {
-        appendOption(
-            "Login",
-            "Navigate directly to the login screen. If user is already logged in, this will exit immediately",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.Login)
-        }
-
-        appendOption(
-            "Profile",
-            "Navigate to the current user's profile. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.Profile)
-        }
-
-        appendOption(
-            "Wallet",
-            "Navigate to the current user's wallet. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.Wallet)
-        }
-
-        appendOption(
-            "Demographic Form",
-            "Navigate to the demographic form to collect user information. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.DemographicForm)
-        }
-
-        appendOption(
-            "Add Funds",
-            "Navigate to the add funds flow. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.AddFunds)
-        }
-
-        appendOption(
-            "Withdraw Funds",
-            "Navigate to the withdraw funds flow. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.WithdrawFunds)
-        }
-
-        appendOption(
-            "Public Sports Feed",
-            "Navigate to the public sports feed. No authentication required. Any proceeding actions with prompt the user to authenticate first",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.PublicFeed)
-        }
-
-        appendOption(
-            "Create Sports Matchup",
-            "Navigate to the create sports match up flow. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup)
-        }
-
-        appendOption(
-            "Create Games Matchup",
-            "Navigate to the create games match up flow. Authentication required",
-            flowsSection
-        ) {
-            val builder = MaterialAlertDialogBuilder(this)
-            val inputGameId = EditText(this).apply {
-                hint = "Game ID Ex: CORNHOLE"
-            }
-
-            val inputLocation = EditText(this).apply {
-                hint = "Location ID"
-            }
-
-            val linearLayout = LinearLayout(this)
-            linearLayout.orientation = LinearLayout.VERTICAL
-            linearLayout.addView(inputGameId)
-            linearLayout.addView(inputLocation)
-
-            builder.setTitle("Provide a Game ID or Location ID")
-                .setView(linearLayout)
-                .setPositiveButton("Continue") { _, _ ->
-                    if (!inputGameId.text.isNullOrBlank()) {
-                        launchFlow(
-                            LucraUiProvider.LucraFlow.CreateGamesMatchupById(
-                                gameId = inputGameId.text.toString(),
-                            )
-                        )
-                    } else if (!inputLocation.text.isNullOrBlank()) {
-                        launchFlow(
-                            LucraUiProvider.LucraFlow.CreateGamesMatchup(
-                                locationId = inputLocation.text.toString(),
-                            )
-                        )
-                    } else {
-                        launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup())
-                    }
-                }
-                .setNeutralButton("Skip ID") { _, _ ->
-                    launchFlow(LucraUiProvider.LucraFlow.CreateGamesMatchup())
-                }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }
-
-            builder.show()
-        }
-
-        appendOption(
-            "Show Matchup",
-            "Navigate to the matchup details flow. Authentication required",
-            flowsSection
-        ) {
-            val builder = MaterialAlertDialogBuilder(this)
-            val input = EditText(this).apply {
-                hint = "ID of Any Matchup"
-            }
-
-            builder.setTitle("Provide a Matchup ID")
-                .setView(input)
-                .setPositiveButton("Continue") { _, _ ->
-                    launchFlow(LucraUiProvider.LucraFlow.MatchupDetails(input.text.toString()))
-                }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }
-
-            builder.show()
-        }
-
-        appendOption(
-            "Show Tournament Matchup",
-            "Navigate to the tournament details flow. Authentication required",
-            flowsSection
-        ) {
-            val builder = MaterialAlertDialogBuilder(this)
-            val input = EditText(this).apply {
-                hint = "ID of Tournament"
-            }
-
-            input.setText("6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
-
-            builder.setTitle("Provide a Tournament ID")
-                .setView(input)
-                .setPositiveButton("Continue") { _, _ ->
-                    launchFlow(LucraUiProvider.LucraFlow.TournamentDetails(input.text.toString()))
-                }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }
-
-            builder.show()
-        }
-
-        appendOption(
-            "My Matchups",
-            "Navigate to the user's created matchups screen. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.MyMatchup)
-        }
-
-        appendOption(
-            "Deeplink to Matchup Details",
-            "Navigate to specific matchup via a legacy deeplink uri. Authentication required",
-            flowsSection
-        ) {
-            val builder = MaterialAlertDialogBuilder(this)
-
-            // Create the EditText for the dialog.
-            val input = EditText(this).apply {
-                hint = "deeplink uri, Ex: lucra://referral/com.tennis..."
-            }
-
-            builder.setTitle("Provide Deeplink URI")
-                .setView(input)
-                .setPositiveButton("OK") { _, _ ->
-                    LucraClient().getLucraFlowForDeeplinkUri(input.text.toString())
-                        .let { lucraFlow ->
-
-                            if (lucraFlow != null) {
-                                launchFlow(lucraFlow)
-                            } else {
-                                Toast.makeText(
-                                    /* context = */ this@MainActivitySdk,
-                                    /* text = */ "Invalid URI - could not parse!",
-                                    /* duration = */ Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }
-
-            builder.show()
-        }
-
-        appendOption(
-            "Verify User Identity",
-            "Navigate user identity verification screen. Authentication required",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
-        }
-
-        appendOption(
-            "Tournaments",
-            "Navigate to the Tournaments screen.",
-            flowsSection
-        ) {
-            launchFlow(LucraUiProvider.LucraFlow.Tournaments)
+        getFlowOptions().forEach { option ->
+            appendOption(option.title, option.description, flowsSection) { option.action() }
         }
     }
 
-    private fun resetThemingOptions(root: ViewGroup) {
-        root.removeAllViews()
-        appendThemingOptions(root)
+    override fun onColorSelected(dialogId: Int, color: Int) {
+        themeManager.onColorSelected(dialogId, color)
     }
 
-    private fun appendThemingOptions(root: ViewGroup) {
-        layoutInflater.inflate(R.layout.theme_color_selector, root, false)
-            .apply {
-                findViewById<TextView>(R.id.colorDescriptorTv).text = "LightTheme options"
-                findViewById<TextView>(R.id.colorHexTv).visibility = View.GONE
-                findViewById<View>(R.id.colorPreview).visibility = View.GONE
-            }
-            .also { root.addView(it) }
+    override fun onDialogDismissed(dialogId: Int) { /* no-op */ }
 
-
-        SampleColorStore.getColorIdHexIntForAllLightModeProperties { id, title, colorHex, colorInt ->
-            appendThemingOption(
-                title = title,
-                colorHex = colorHex,
-                id = id,
-                defaultColor = colorInt,
-                root = root
-            ).also { themeOptionRowViewMap[id] = it }
+    private inline fun requireAuth(action: () -> Unit) {
+        if (lucraSDKUser?.userId == null) {
+            Toast.makeText(this, "Not logged in yet!", Toast.LENGTH_SHORT).show()
+            return
         }
-
-        layoutInflater.inflate(R.layout.theme_color_selector, root, false)
-            .apply {
-                findViewById<TextView>(R.id.colorDescriptorTv).text = "DarkTheme options"
-                findViewById<TextView>(R.id.colorHexTv).visibility = View.GONE
-                findViewById<View>(R.id.colorPreview).visibility = View.GONE
-            }
-            .also { root.addView(it) }
-
-        SampleColorStore.getColorIdHexIntForAllDarkModeProperties { id, title, colorHex, colorInt ->
-            appendThemingOption(
-                title = title,
-                colorHex = colorHex,
-                id = id,
-                defaultColor = colorInt,
-                root = root
-            ).also { themeOptionRowViewMap[id] = it }
-        }
-    }
-
-    override fun onColorSelected(
-        dialogId: Int,
-        color: Int
-    ) {
-        SampleColorStore.ColorIdMap.updateColorBasedOnId(dialogId, color)
-
-        themeOptionRowViewMap[dialogId]?.run {
-            findViewById<TextView>(R.id.colorHexTv).text = color.intToColorHex()
-            findViewById<View>(R.id.colorPreview).setBackgroundColor(color)
-        }
-    }
-
-    override fun onDialogDismissed(dialogId: Int) { /* no-op */
+        action()
     }
 
     private fun appendOption(
@@ -2092,51 +1009,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         drawable: Drawable? = null,
         onClick: (ViewGroup) -> Unit
     ) {
-        val optionView = layoutInflater.inflate(R.layout.main_option_click, root, false)
-        optionView.findViewById<TextView>(R.id.option_title).text = title
-        drawable?.let {
-            optionView.findViewById<ImageView>(R.id.option_icon).setImageDrawable(it)
-        }
-        optionView.findViewById<TextView>(R.id.option_description).text = description
-
-        optionView.setOnClickListener {
-            onClick(optionView.findViewById(R.id.option_view_container))
-        }
-        root.addView(optionView)
-    }
-
-    private fun appendThemingOption(
-        title: String,
-        colorHex: String,
-        id: Int,
-        defaultColor: Int,
-        root: ViewGroup,
-    ): View {
-        val optionView =
-            layoutInflater.inflate(R.layout.theme_color_selector, root, false).apply {
-                findViewById<TextView>(R.id.colorDescriptorTv).text = title
-                findViewById<TextView>(R.id.colorHexTv).text = colorHex
-                findViewById<View>(R.id.colorPreview).setBackgroundColor(defaultColor)
-                setOnClickListener {
-                    showColorPickerDialog(
-                        id = id,
-                        defaultColor = defaultColor
-                    )
-                }
-            }
-
-        root.addView(optionView)
-        return optionView
-    }
-
-    private fun showColorPickerDialog(
-        id: Int,
-        defaultColor: Int
-    ) {
-        ColorPickerDialog.newBuilder()
-            .setDialogId(id) // set id here
-            .setColor(defaultColor)
-            .show(this)
+        optionBuilder.appendOption(title, description, root, drawable, onClick)
     }
 
     private fun observeLoggedInUser() {
@@ -2186,485 +1059,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 SDKUserResult.Loading -> {
 
                 }
+
+                else -> {
+
+                }
             }
         }.launchIn(lifecycleScope)
-    }
-
-    private fun retrieveTournament() {
-        val builder = MaterialAlertDialogBuilder(this)
-        val input = EditText(this).apply {
-            setText("eb77921c-aad1-4ac3-b64b-916c45c1373d")
-        }
-        builder.setTitle("Set Tournament Id")
-            .setView(input)
-            .setPositiveButton("OK") { dialog, id ->
-                val tournamentId = input.text.toString()
-                LucraClient().retrieveTournament(tournamentId) {
-                    val builderDisplay = MaterialAlertDialogBuilder(this)
-                    if (it is PoolTournament.RetrieveTournamentResult.RetrieveTournamentOutput) {
-                        var displayString = ""
-                        displayString += "Title > ${it.tournament.title}\n" +
-                                "Type > ${it.tournament.type}\n" +
-                                "Fee > ${it.tournament.fee}\n" +
-                                "Buy In Amount > ${it.tournament.buyInAmount}\n" +
-                                "Pot Total > ${it.tournament.potTotal}\n\n" +
-                                "Pot Net Amount > ${it.tournament.potNetAmount}\n\n" +
-                                "Expires at > ${it.tournament.expiresAt}\n\n"
-
-                        displayString += "===Participants===\n"
-
-                        it.tournament.participants.forEach { participant ->
-                            displayString += "UserId: ${participant.id}\n"
-                            displayString += "Username: ${participant.username}\n"
-                            displayString += "Place: ${participant.place}\n"
-                            displayString += "Reward Value: ${participant.rewardValue}\n"
-                            displayString += "\n"
-                        }
-                        displayString += "\n"
-
-                        val textView = TextView(this).apply {
-                            setText(displayString)
-                            setPadding(50, 50, 50, 50)
-                        }
-
-                        val scrollView = ScrollView(this).apply {
-                            addView(textView)
-                        }
-
-                        builderDisplay.setTitle("Tournament Results")
-                            .setView(scrollView)
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
-
-                    } else if (it is PoolTournament.RetrieveTournamentResult.Failure) {
-                        builderDisplay.setTitle("Failed to find tournament")
-                            .setMessage(it.failure.toString())
-                            .setPositiveButton("OK") { dialog, id ->
-                                dialog.dismiss()
-                            }.show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel") { dialog, id ->
-                dialog.dismiss()
-            }
-
-        builder.show()
-    }
-
-    private fun retrieveRecommendedTournaments() {
-        LucraClient().queryRecommendedTournaments(20, 0, true) {
-            val builderDisplay = MaterialAlertDialogBuilder(this)
-            if (it is PoolTournament.QueryRecommendedTournamentsResult.RecommendedTournamentsOutput) {
-                var displayString = ""
-
-                it.recommendedTournaments.forEach { tournament ->
-                    displayString += "Title: ${tournament.title}\n"
-                    displayString += "Status: ${tournament.status}\n"
-                    displayString += "Expires At: ${tournament.expiresAt}\n"
-                    displayString += "Buy In: ${tournament.buyInAmount}\n"
-                    displayString += "Pot Total: ${tournament.potTotal}\n"
-                    displayString += "Pot Net Amount: ${tournament.potNetAmount}\n"
-                    displayString += "\n"
-                }
-                displayString += "\n"
-
-
-                val textView = TextView(this).apply {
-                    setText(displayString)
-                    setPadding(50, 50, 50, 50)
-                }
-
-                val scrollView = ScrollView(this).apply {
-                    addView(textView)
-                }
-
-                builderDisplay.setTitle("Recommended Tournaments Result")
-                    .setView(scrollView)
-                    .setPositiveButton("OK") { dialog, id ->
-                        dialog.dismiss()
-                    }.show()
-
-            } else if (it is PoolTournament.QueryRecommendedTournamentsResult.Failure) {
-                builderDisplay.setTitle("Failed to find tournament")
-                    .setMessage(it.failure.toString())
-                    .setPositiveButton("OK") { dialog, id ->
-                        dialog.dismiss()
-                    }.show()
-            }
-        }
-
-    }
-
-    private fun joinTournament() {
-        val builder = MaterialAlertDialogBuilder(this)
-        val input = EditText(this).apply {
-            setText("d0b78c81-a22b-4f54-b1fe-2fadc8354c3b")
-        }
-        builder.setTitle("Set Tournament Id")
-            .setView(input)
-            .setPositiveButton("OK") { _, _ ->
-                val matchUpId = input.text.toString()
-                LucraClient().joinTournament(matchUpId) {
-                    val builderDisplay = MaterialAlertDialogBuilder(this)
-                    if (it is PoolTournament.JoinTournamentResult.Success) {
-                        builderDisplay.setTitle("Join Tournament Result")
-                            .setMessage("Tournament Joined")
-                            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }.show()
-
-                    } else if (it is PoolTournament.JoinTournamentResult.Failure) {
-                        when (it.failure) {
-                            is PoolTournament.FailedTournamentCall.UserStateError.DemographicInformationMissing -> {
-                                builderDisplay.setTitle("Demographic Information Required")
-                                    .setMessage("Please complete your demographic information to join free tournaments.")
-                                    .setPositiveButton("Complete Demographic Form") { dialog, _ ->
-                                        launchFlow(LucraUiProvider.LucraFlow.DemographicForm)
-                                        dialog.dismiss()
-                                    }
-                                    .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-                                    .show()
-                            }
-                            is PoolTournament.FailedTournamentCall.UserStateError.Unverified -> {
-                                builderDisplay.setTitle("Verification Required")
-                                    .setMessage("Please complete identity verification to join paid tournaments.")
-                                    .setPositiveButton("Complete Verification") { dialog, _ ->
-                                        launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity)
-                                        dialog.dismiss()
-                                    }
-                                    .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-                                    .show()
-                            }
-                            else -> {
-                                builderDisplay.setTitle("Failed to join tournament")
-                                    .setMessage(it.failure.toString())
-                                    .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }.show()
-                            }
-                        }
-                    }
-                }
-            }
-            .setNegativeButton("Cancel") { dialog, id ->
-                dialog.dismiss()
-            }
-
-        builder.show()
-    }
-
-    private fun retrieveGamesMatchup() {
-        val builder = MaterialAlertDialogBuilder(this)
-        val input = EditText(this)
-        builder.setTitle("Set Matchup Id")
-            .setView(input)
-            .setPositiveButton("OK") { dialog, id ->
-                val matchUpId = input.text.toString()
-                LucraClient().getMatchup(matchUpId) {
-                    val builderDisplay = MaterialAlertDialogBuilder(this)
-                    var displayString = ""
-                    var title = ""
-                    when (it) {
-                        is GetMatchupResult.Failure -> {
-                            title = "Failed to find matchup"
-                        }
-
-                        is GetMatchupResult.Success -> {
-                            title = "Matchup Results"
-                            displayString += "${it.matchup}\n"
-                        }
-                    }
-
-                    val textView = TextView(this).apply {
-                        setText(displayString)
-                        setPadding(50, 50, 50, 50)
-                    }
-
-                    builderDisplay.setTitle(title)
-                        .setView(textView)
-                        .setPositiveButton("OK") { dialog, _ ->
-                            dialog.dismiss()
-                        }.show()
-                }
-            }
-            .setNegativeButton("Cancel") { dialog, id ->
-                dialog.dismiss()
-            }
-
-        builder.show()
-    }
-
-    private fun addMetadataRow(
-        container: LinearLayout,
-        key: String?,
-        value: String?
-    ) {
-        val row = layoutInflater.inflate(R.layout.view_metadata_row, container, false)
-        val keyInput = row.findViewById<TextInputEditText>(R.id.metadata_key)
-        val valueInput = row.findViewById<TextInputEditText>(R.id.metadata_value)
-        val removeButton = row.findViewById<ImageButton>(R.id.remove_metadata_row)
-
-        keyInput.setText(key)
-        valueInput.setText(value)
-
-        removeButton.setOnClickListener {
-            container.removeView(row)
-        }
-
-        container.addView(row)
-    }
-
-
-    private fun configureUserDialog() {
-
-        val builder = MaterialAlertDialogBuilder(this)
-
-        // Create the EditText for the dialog.
-        val userForm =
-            layoutInflater.inflate(R.layout.main_configure_user_options, null).apply {
-                findViewById<TextInputEditText>(R.id.username).setText(lucraSDKUser?.username.orEmpty())
-                findViewById<TextInputEditText>(R.id.email).setText(lucraSDKUser?.email.orEmpty())
-                findViewById<TextInputEditText>(R.id.avatar).setText(lucraSDKUser?.avatarUrl.orEmpty())
-                findViewById<TextInputEditText>(R.id.phone).setText(lucraSDKUser?.phoneNumber.orEmpty())
-                findViewById<TextInputEditText>(R.id.firstName).setText(lucraSDKUser?.firstName.orEmpty())
-                findViewById<TextInputEditText>(R.id.lastName).setText(lucraSDKUser?.lastName.orEmpty())
-                findViewById<TextInputEditText>(R.id.address).setText(lucraSDKUser?.address.orEmpty())
-                findViewById<TextInputEditText>(R.id.addresCont).setText(lucraSDKUser?.addressCont.orEmpty())
-                findViewById<TextInputEditText>(R.id.city).setText(lucraSDKUser?.city.orEmpty())
-                findViewById<TextInputEditText>(R.id.state).setText(lucraSDKUser?.state.orEmpty())
-                findViewById<TextInputEditText>(R.id.zip).setText(lucraSDKUser?.zip.orEmpty())
-
-                val metadataContainer = findViewById<LinearLayout>(R.id.metadata_container)
-                val addMetadataButton = findViewById<MaterialButton>(R.id.add_metadata_row)
-
-                val existingMetadata = lucraSDKUser?.metadata.orEmpty()
-                if (existingMetadata.isEmpty()) {
-                    addMetadataRow(metadataContainer, null, null)
-                } else {
-                    existingMetadata.forEach { (key, value) ->
-                        addMetadataRow(metadataContainer, key, value)
-                    }
-                }
-
-                addMetadataButton.setOnClickListener {
-                    addMetadataRow(metadataContainer, null, null)
-                }
-            }
-
-        builder.setTitle("Configure the user")
-            .setView(userForm)
-            .setPositiveButton("Configure") { dialog, id ->
-                val metaMap = mutableMapOf<String, String>()
-                val metadataContainer = userForm.findViewById<LinearLayout>(R.id.metadata_container)
-                for (i in 0 until metadataContainer.childCount) {
-                    val row = metadataContainer.getChildAt(i)
-                    val key = row.findViewById<TextInputEditText>(R.id.metadata_key)?.text
-                        ?.toString()?.takeIf { it.isNotBlank() }
-                    val value = row.findViewById<TextInputEditText>(R.id.metadata_value)?.text
-                        ?.toString()
-
-                    if (key != null) {
-                        metaMap[key] = value.orEmpty()
-                    }
-                }
-                val metadata = metaMap
-
-                val newSdkUser = SDKUser(
-                    username = userForm.findViewById<TextInputEditText>(R.id.username).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    email = userForm.findViewById<TextInputEditText>(R.id.email).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    avatarUrl = userForm.findViewById<TextInputEditText>(R.id.avatar).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    phoneNumber = userForm.findViewById<TextInputEditText>(R.id.phone).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    firstName = userForm.findViewById<TextInputEditText>(R.id.firstName)
-                        .getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    lastName = userForm.findViewById<TextInputEditText>(R.id.lastName).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    address = userForm.findViewById<TextInputEditText>(R.id.address).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    addressCont = userForm.findViewById<TextInputEditText>(R.id.addresCont)
-                        .getText().toString().takeIf { it.isNotBlank() },
-                    city = userForm.findViewById<TextInputEditText>(R.id.city).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    state = userForm.findViewById<TextInputEditText>(R.id.state).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    zip = userForm.findViewById<TextInputEditText>(R.id.zip).getText()
-                        .toString().takeIf { it.isNotBlank() },
-                    metadata = metadata,
-                )
-
-                // set details here so information is not lost
-                lucraSDKUser = newSdkUser
-                LucraClient().configure(
-                    newSdkUser
-                ) { result ->
-                    when (result) {
-                        is SDKUserResult.Error -> {
-                            Log.e(
-                                "Lucra SDK Sample",
-                                "Unable to configure user ${result.error}"
-                            )
-                            Toast.makeText(
-                                this@MainActivitySdk,
-                                "Error!: " + result.error.message,
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-
-                        SDKUserResult.InvalidUsername -> {
-
-                            Toast.makeText(
-                                this@MainActivitySdk,
-                                "Invalid Username!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        SDKUserResult.Loading -> {
-                            // no loading here...
-                            dialog.dismiss()
-                        }
-
-                        SDKUserResult.NotLoggedIn -> {
-                            // shouldn't happen here!
-                        }
-
-                        is SDKUserResult.Success -> {
-                            dialog.dismiss()
-                            Toast.makeText(
-                                this@MainActivitySdk,
-                                "User configured!",
-                                Toast.LENGTH_SHORT
-                            )
-                                .show()
-                        }
-
-                        SDKUserResult.WaitingForLogin -> {
-                            dialog.dismiss()
-
-                            Toast.makeText(
-                                this@MainActivitySdk,
-                                "Waiting for login prior to configuration",
-                                Toast.LENGTH_SHORT
-                            )
-                                .show()
-                        }
-                    }
-                }
-            }
-            .setNegativeButton("Cancel") { dialog, id ->
-                dialog.dismiss()
-            }
-
-        builder.show()
-    }
-
-    private fun updateUsernameDialog() {
-
-        if (lucraSDKUser == null) {
-            Toast.makeText(
-                this@MainActivitySdk,
-                "Not logged in yet!",
-                Toast.LENGTH_SHORT
-            )
-                .show()
-            return
-        }
-
-        val builder = MaterialAlertDialogBuilder(this)
-
-        // Create the EditText for the dialog.
-        val input = EditText(this).apply {
-            if (lucraSDKUser?.username.isNullOrEmpty()) {
-                hint = "No username set yet"
-            } else {
-                hint = "Current username: ${lucraSDKUser?.username}"
-                setText(lucraSDKUser?.username!!)
-            }
-
-        }
-
-        builder.setTitle("Update Username")
-            .setView(input)
-            .setPositiveButton("OK") { dialog, _ ->
-                val newUsername = input.text.toString()
-                if (newUsername.isEmpty()) {
-                    Toast.makeText(
-                        this@MainActivitySdk,
-                        "Username cannot be empty",
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
-                    return@setPositiveButton
-                } else {
-
-                    // User configure to update the username!
-                    val newSdkUser = lucraSDKUser!!.copy(username = newUsername)
-                    LucraClient().configure(newSdkUser) {
-                        when (it) {
-                            is SDKUserResult.Error -> {
-                                Log.e(
-                                    "Lucra SDK Sample",
-                                    "Unable to update username ${it.error}"
-                                )
-                                Toast.makeText(
-                                    this@MainActivitySdk,
-                                    "Unable to update username",
-                                    Toast.LENGTH_SHORT
-                                )
-                                    .show()
-                            }
-
-                            SDKUserResult.InvalidUsername -> {
-                                Toast.makeText(
-                                    this@MainActivitySdk,
-                                    "Invalid username, try a different one",
-                                    Toast.LENGTH_SHORT
-                                )
-                                    .show()
-                            }
-
-                            SDKUserResult.NotLoggedIn -> {
-                                Log.e(
-                                    "Lucra SDK Sample",
-                                    "User not logged in yet! Close this dialog and try again"
-                                )
-                                Toast.makeText(
-                                    this@MainActivitySdk,
-                                    "User not logged in!",
-                                    Toast.LENGTH_SHORT
-                                )
-                                    .show()
-                            }
-
-                            is SDKUserResult.Success -> {
-                                Toast.makeText(
-                                    this@MainActivitySdk,
-                                    "Username updated to ${it.sdkUser.username}",
-                                    Toast.LENGTH_SHORT
-                                )
-                                    .show()
-                                lucraSDKUser = it.sdkUser
-                                dialog.dismiss()
-                            }
-
-                            SDKUserResult.Loading -> {
-                                // Show loading affordance
-                            }
-
-                            SDKUserResult.WaitingForLogin -> {
-                                // not used in this scenario
-                            }
-                        }
-                    }
-                }
-            }
-            .setNegativeButton("Cancel") { dialog, id ->
-                dialog.dismiss()
-            }
-
-        builder.show()
     }
 
     /**
@@ -2706,7 +1106,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         super.onNewIntent(intent)
         val flow = LucraPushNotificationService.handleNotificationIntent(intent)
         flow?.let { launchFlow(it) }
-        if (intent != null && intent.hasExtra("branch_force_new_session") && intent.getBooleanExtra(
+        if (intent.hasExtra("branch_force_new_session") && intent.getBooleanExtra(
                 "branch_force_new_session",
                 false
             )
@@ -2715,21 +1115,9 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 if (error != null) {
                     Log.e("Sample", "BranchIO new intent error: ${error.message}")
                 } else if (referringParams != null) {
-                    Log.i("Sample", "BranchIO referring params: ${referringParams.toString()}")
+                    Log.i("Sample", "BranchIO referring params: $referringParams")
                 }
             }.reInit()
         }
-    }
-}
-
-fun Map<String, String>?.toJsonString(): String {
-    if (this == null) return "null"
-
-    return this.entries.joinToString(
-        prefix = "{",
-        postfix = "}",
-        separator = ","
-    ) { (key, value) ->
-        "\"${key}\" : \"${value}\""
     }
 }
