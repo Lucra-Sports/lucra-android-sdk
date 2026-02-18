@@ -5,7 +5,7 @@ on:
     branches:
       - develop
     paths:
-      - 'SDK_RELEASE_NOTES.md'
+      - 'docs/SDK_RELEASE_NOTES.md'
   workflow_dispatch:
 
 env:
