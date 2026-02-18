@@ -1,4 +1,7 @@
-## 6.0.0
+## 6.0.1
+* Patched critical authentication issue where refreshing tokens would result in invalid user state.
+
+## 6.0.0 (Do not use)
 * **[Breaking Change - LucraClient signature update & new apiKey]**
   * `apiUrl` is no longer required and the prior `apiKey` CANNOT be reused. If you don't have the new key already contact Lucra for your new API key.
 * Added new `HomePage` flow that launch the home page where user can create tournaments or matchups. Supports unauthed access.
