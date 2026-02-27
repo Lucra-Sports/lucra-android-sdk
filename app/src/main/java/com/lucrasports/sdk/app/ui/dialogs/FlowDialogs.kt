@@ -85,7 +85,7 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
      * Shows dialog to navigate to matchup details.
      */
     fun showMatchupDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val input = createEditText("ID of Any Matchup")
+        val input = createEditText("ID of Any Matchup", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
 
         createDialogBuilder()
             .setTitle("Provide a Matchup ID")
@@ -103,7 +103,7 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
      * Shows dialog to navigate to tournament details.
      */
     fun showTournamentDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val input = createEditText("ID of Tournament", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
+        val input = createEditText("ID of Tournament", "4a31e824-0d15-42b3-bc35-e016a660241d")
 
         createDialogBuilder()
             .setTitle("Provide a Tournament ID")

@@ -10,8 +10,8 @@ import androidx.appcompat.widget.AppCompatCheckBox
 import com.google.android.material.button.MaterialButton
 import com.lucrasports.sdk.app.utils.MetadataHelper
 import com.lucrasports.sdk.core.LucraClient
-import com.lucrasports.sdk.core.contest.tournament.PoolTournament
 import com.lucrasports.sdk.core.contest.GameInteractions.SearchMatchupsByMetadataResult
+import com.lucrasports.sdk.core.contest.tournament.PoolTournament
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreMatchingResult
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreResult
 import com.lucrasports.sdk.core.ui.LucraUiProvider

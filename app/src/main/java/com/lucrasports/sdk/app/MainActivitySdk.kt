@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -30,8 +29,6 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDialogFragment
@@ -80,9 +77,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.UUID
-import kotlin.collections.isNotEmpty
 
-private const val API_URL_OVERRIDE = "API_URL_OVERRIDE"
 private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
 private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
 private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"

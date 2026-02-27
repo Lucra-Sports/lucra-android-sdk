@@ -1,3 +1,9 @@
+## 6.1.0
+* Patched `LucraClient.configure(SDKUser)` function to not allow redundant requests to be made unless there is a meaningful difference between the current user and the submitted user.
+* Updated GeoComplyLibrary to `2.18.0`
+* Added GeoComplyExtension version `1.0.0`
+* Added more clarity on tournament details UI so payouts per user and each ranking on the leaderboard has improved visibility.
+
 ## 6.0.1
 * Patched critical authentication issue where refreshing tokens would result in invalid user state.
 
