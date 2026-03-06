@@ -1,3 +1,12 @@
+## 6.2.0
+* **Updated Dependencies:**
+  * Upgraded Kotlin from 2.0.21 to **2.2.20**
+  * Upgraded kotlinx-coroutines from 1.7.3 to **1.10.1**
+  * Upgraded kotlinx-serialization from 1.4.0 to **1.8.0**
+* Removed `-Xskip-metadata-version-check` compiler workaround — all library metadata is now aligned
+* Migrated build configuration from deprecated `kotlinOptions` to `compilerOptions` (Kotlin 2.2 requirement)
+* Removed deprecated `composeOptions` blocks — Compose compiler is now managed via the `kotlin.plugin.compose` plugin
+
 ## 6.1.0
 * Patched `LucraClient.configure(SDKUser)` function to not allow redundant requests to be made unless there is a meaningful difference between the current user and the submitted user.
 * Updated GeoComplyLibrary to `2.18.0`
