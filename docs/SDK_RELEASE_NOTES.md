@@ -1,3 +1,14 @@
+## 6.3.0
+* Improved mid-flow authentication handling: navigation destinations now correctly enforce authentication requirements.
+* Added `score` and `avatarUrl` fields to the headless `Tournament.Participant` model. 
+  * Both fields default to `null` for backward compatibility.
+* Fixed a bug where stale or incorrect game details could be shown when navigating to the matchup details screen.
+* Added reward UI to tournament details
+* Added auto settlement support to the Games Your Play flows
+* New earned rewards section on the tournament completed page.
+* New rewards section explaining the rewards for non finished tournaments.
+* New rewards pop up when a user enters the SDK if they have pending rewards that can be claimed.
+
 ## 6.2.0
 * **Updated Dependencies:**
   * Upgraded Kotlin from 2.0.21 to **2.2.20**
