@@ -28,7 +28,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_lucra_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Lucra">
+        android:theme="@style/Theme.Lucra"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivitySdk"
             android:exported="true">
@@ -44,16 +45,21 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:scheme="${deepLinkSchemaName}" />
+                <data android:scheme="${deepLinkSchemaName}" />
             </intent-filter>
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="${branchio-host}" />
-                <data android:scheme="https" android:host="${branchio-host-alt}" />
+
+                <data
+                    android:host="${branchio-host}"
+                    android:scheme="https" />
+                <data
+                    android:host="${branchio-host-alt}"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
 

@@ -35,6 +35,7 @@ import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDial
 import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment
 import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment.ViewMyRewardsListener
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
+import com.lucrasports.sdk.app.fake_resources.fakeLucraTournamentRewards
 import com.lucrasports.sdk.app.headless_api.MatchupApiHandler
 import com.lucrasports.sdk.app.headless_api.UserApiHandler
 import com.lucrasports.sdk.app.logger.FirebaseLogger
@@ -569,7 +570,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    // TODO add cancel games you play API
     private fun appendApiOptions() {
         appendOption(
             "Logout",
@@ -974,7 +974,18 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         FlowOption(
             "Tournaments",
             "Navigate to the Tournaments screen."
-        ) { launchFlow(LucraUiProvider.LucraFlow.Tournaments) }
+        ) { launchFlow(LucraUiProvider.LucraFlow.Tournaments) },
+
+        FlowOption(
+            "Achievements",
+            "Navigate to the Achievements screen to view and claim achievement rewards. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.Achievements) },
+
+        FlowOption(
+            "Claim Prize Sheet",
+            "Launches the claim prize bottom sheet seeded with sample tournament rewards. " +
+                "Demonstrates that the sheet is invokable as a regular LucraFlow via onLaunchFlow(...)."
+        ) { launchFlow(LucraUiProvider.LucraFlow.ClaimRewards(fakeLucraTournamentRewards)) }
     )
 
     private fun appendFlowOptions() {

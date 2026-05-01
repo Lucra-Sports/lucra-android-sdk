@@ -1,6 +1,10 @@
 package com.lucrasports.sdk.app.fake_resources
 
+import com.lucrasports.sdk.core.reward.LucraCatalogReward
+import com.lucrasports.sdk.core.reward.LucraDiscountCodeConfig
+import com.lucrasports.sdk.core.reward.LucraFreeItemConfig
 import com.lucrasports.sdk.core.reward.LucraReward
+import com.lucrasports.sdk.core.reward.LucraTournamentReward
 
 internal var fakeLucraRewards = listOf(
     LucraReward(
@@ -81,4 +85,50 @@ internal var fakeLucraRewards = listOf(
         disclaimer = "Available while supplies last.",
         metadata = mapOf("expiry" to "2024-12-31", "terms" to "One per customer")
     )
+)
+
+internal val fakeLucraTournamentRewards = listOf(
+    LucraTournamentReward(
+        rewardId = "tournament_reward_001",
+        matchupId = "tournament_001",
+        matchupTitle = "Sample Cornhole Open",
+        place = 1,
+        claimedAt = null,
+        viewedAt = null,
+        reward = LucraCatalogReward(
+            id = "catalog_001",
+            type = "DISCOUNT_CODE",
+            title = "10% Off Pro Shop",
+            descriptor = "10% off your next pro shop order",
+            iconUrl = "https://picsum.photos/200",
+            bannerIconUrl = "https://picsum.photos/200",
+            disclaimer = "*Limit one per customer",
+            discountCode = LucraDiscountCodeConfig(
+                code = "PROSHOP10",
+                claimUrl = "https://example.com/claim",
+            ),
+            freeItem = null,
+        ),
+    ),
+    LucraTournamentReward(
+        rewardId = "tournament_reward_002",
+        matchupId = "tournament_002",
+        matchupTitle = "Pickleball Spring Invitational",
+        place = 2,
+        claimedAt = null,
+        viewedAt = null,
+        reward = LucraCatalogReward(
+            id = "catalog_002",
+            type = "FREE_ITEM",
+            title = "Free Branded Hat",
+            descriptor = "Pick up a free branded hat at the pro shop",
+            iconUrl = "https://picsum.photos/200",
+            bannerIconUrl = "https://picsum.photos/200",
+            disclaimer = "*Sizes subject to availability",
+            discountCode = null,
+            freeItem = LucraFreeItemConfig(
+                itemId = "branded_hat",
+            ),
+        ),
+    ),
 )
