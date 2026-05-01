@@ -1,3 +1,13 @@
+## 6.4.0
+* Add Trackman Account Linking
+* Added Achievements to the SDK — users can now earn, view, and claim achievements tied to their game and tournament activity.
+  * New LucraUiProvider.LucraFlow.Achievements entry point presents the full-screen Achievements list.
+  * New Achievements bottom sheet entry points.
+  * New headless method LucraClient.getUserAchievements(...) returns the current user's achievements with optional filtering.
+  * New headless method LucraClient.getUserTournamentRewards((...) -> Unit) returns the current user's tournament rewards with optional filtering.
+  * New public models: LucraAchievement, LucraAchievementDefinition, LucraAchievementCriteriaType, LucraAchievementCriteriaConfig.
+  * New public reward models: LucraTournamentReward, LucraCatalogReward, LucraDiscountCodeConfig, LucraFreeItemConfig.
+
 ## 6.3.0
 * Improved mid-flow authentication handling: navigation destinations now correctly enforce authentication requirements.
 * Added `score` and `avatarUrl` fields to the headless `Tournament.Participant` model. 
@@ -8,6 +18,10 @@
 * New earned rewards section on the tournament completed page.
 * New rewards section explaining the rewards for non finished tournaments.
 * New rewards pop up when a user enters the SDK if they have pending rewards that can be claimed.
+* Added Achievements to the SDK.
+  * New `LucraUiProvider.LucraFlow.Achievements` entry point presents the full-screen Achievements list.
+  * New sheet-style reward flows: `LucraUiProvider.LucraFlow.ClaimRewards` and `LucraUiProvider.LucraFlow.ClaimAchievementRewards`.
+  * New experimental headless methods `LucraClient.getUserAchievements(...)` and `LucraClient.getUserTournamentRewards(...)`.
 
 ## 6.2.0
 * **Updated Dependencies:**
