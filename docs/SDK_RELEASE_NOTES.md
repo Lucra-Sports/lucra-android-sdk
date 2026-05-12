@@ -1,3 +1,6 @@
+## 6.4.1
+* Introduced new `queryRecommendedTournaments` to return smaller payloads for tournaments.
+
 ## 6.4.0
 * Add Trackman Account Linking
 * Added Achievements to the SDK — users can now earn, view, and claim achievements tied to their game and tournament activity.
