@@ -701,6 +701,17 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
         }
 
+        appendOption(
+            "Recommended Tournaments Light",
+            "Retrieve lightweight recommended tournament data. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            requireAuth {
+                tournamentDialogs.showRecommendedTournamentsLightDialog()
+            }
+        }
+
 
         // Add the recreational games API options
         appendRecreationalGamesApiOptions()

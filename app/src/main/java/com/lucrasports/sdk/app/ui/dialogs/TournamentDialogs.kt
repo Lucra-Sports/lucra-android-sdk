@@ -366,8 +366,13 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
     /**
      * Shows dialog to retrieve recommended tournaments.
      */
+    @Suppress("DEPRECATION")
     fun showRecommendedTournamentsDialog() {
-        LucraClient().queryRecommendedTournaments(20, 0, true) {
+        LucraClient().queryRecommendedTournaments(
+            limit = 50,
+            offset = 0,
+            includeCompletedTournaments = false
+        ) {
             activity.runOnUiThread {
                 when (it) {
                     is PoolTournament.QueryRecommendedTournamentsResult.RecommendedTournamentsOutput -> {
@@ -382,6 +387,63 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
                 }
             }
         }
+    }
+
+    /**
+     * Shows dialog to retrieve lightweight recommended tournaments.
+     */
+    fun showRecommendedTournamentsLightDialog() {
+        val scrollView = ScrollView(context)
+        val layout = createVerticalLayout()
+        scrollView.addView(layout)
+
+        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)")
+        layout.addView(locationIdLayout)
+
+        val (limitLayout, limitInput) = createTextInputLayout("Limit", "20")
+        limitInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        layout.addView(limitLayout)
+
+        val (offsetLayout, offsetInput) = createTextInputLayout("Offset", "0")
+        offsetInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        layout.addView(offsetLayout)
+
+        val includeCompletedCheckbox = AppCompatCheckBox(context).apply {
+            text = "Include Completed Tournaments"
+            isChecked = false
+        }
+        layout.addView(includeCompletedCheckbox)
+
+        createDialogBuilder()
+            .setTitle("Recommended Tournaments Light")
+            .setView(scrollView)
+            .setPositiveButton("Query") { _, _ ->
+                val locationId = locationIdInput.text.toString().takeIf { it.isNotBlank() }
+                val limit = limitInput.text.toString().toIntOrNull() ?: 20
+                val offset = offsetInput.text.toString().toIntOrNull() ?: 0
+                LucraClient().queryRecommendedTournaments(
+                    locationId = locationId,
+                    limit = limit,
+                    offset = offset,
+                    includeCompletedTournaments = includeCompletedCheckbox.isChecked
+                ) {
+                    activity.runOnUiThread {
+                        when (it) {
+                            is PoolTournament.QueryRecommendedTournamentsLightResult.RecommendedTournamentsOutput -> {
+                                displayRecommendedTournamentsLight(it)
+                            }
+                            is PoolTournament.QueryRecommendedTournamentsLightResult.Failure -> {
+                                showMessageDialog(
+                                    "Failed to find tournament",
+                                    it.failure.toString()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+            .show()
     }
 
     /**
@@ -463,6 +525,59 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
 
         createDialogBuilder()
             .setTitle("Recommended Tournaments Result")
+            .setView(scrollView)
+            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun displayRecommendedTournamentsLight(result: PoolTournament.QueryRecommendedTournamentsLightResult.RecommendedTournamentsOutput) {
+        val displayString = buildString {
+            result.recommendedTournaments.forEach { tournament ->
+                append("Title: ${tournament.title}\n")
+                append("Type: ${tournament.type}\n")
+                append("Status: ${tournament.status}\n")
+                append("Can Join: ${tournament.canJoinTournament}\n")
+                append("User Present: ${tournament.isUserPresent}\n")
+                append("Fee: ${tournament.fee}\n")
+                append("Buy In: ${tournament.buyInAmount}\n")
+                append("Pot Total: ${tournament.potTotal}\n")
+                append("Pot Net Amount: ${tournament.potNetAmount}\n")
+                append("Max Participants: ${tournament.maxParticipants}\n")
+                append("Total Participants: ${tournament.totalParticipants}\n")
+                append("Reward Type: ${tournament.rewardType}\n")
+                append("Visibility: ${tournament.visibilityLevel}\n")
+                append("Starts At: ${tournament.startsAt}\n")
+                append("Expires At: ${tournament.expiresAt}\n")
+                append("Icon: ${tournament.iconUrl}\n")
+                append("Description: ${tournament.description}\n")
+                append("Game: ${tournament.game?.name} (${tournament.game?.id})\n")
+                append("Game Description: ${tournament.game?.description}\n")
+                append("Game Icon: ${tournament.game?.iconUrl}\n")
+                append("Game Image: ${tournament.game?.imageUrl}\n")
+                append("Game BG Image: ${tournament.game?.imageBgUrl}\n")
+                append("Game Categories: ${tournament.game?.categoryIds?.joinToString()}\n")
+                append("Track Results: ${tournament.game?.trackResults?.name}\n")
+                append("Scoring Unit: ${tournament.game?.scoringUnit}\n")
+                append("Rewards: ${tournament.rewardStructure.size}\n")
+                append("===Leaderboard===\n")
+                tournament.leaderboard.forEach { row ->
+                    append("${row.place ?: "-"}: ${row.username} (${row.score ?: "0"})\n")
+                }
+                append("\n")
+            }
+        }
+
+        val textView = TextView(context).apply {
+            text = displayString
+            setPadding(50, 50, 50, 50)
+        }
+
+        val scrollView = ScrollView(context).apply {
+            addView(textView)
+        }
+
+        createDialogBuilder()
+            .setTitle("Recommended Tournaments Light Result")
             .setView(scrollView)
             .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
             .show()
