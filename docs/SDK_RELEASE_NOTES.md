@@ -1,3 +1,6 @@
+## 6.5.1
+* Fixed a bug where insufficient fund would lead to infinite loading when the tenant has deferred kyc on.
+
 ## 6.5.0
 * Added headless method `LucraClient.startMiniGame(gameId, gameMode, amount, matchupId, onProgress, onResult)` — orchestrates user validation, funds check, GeoComply verification, and returns a `MiniGameSession` with the iframe URL for host-owned WebView rendering.
 * Added headless method `LucraClient.preloadGeoToken(type)`. Pre-warms a GeoComply token (fire-and-forget) so the next `startMiniGame` call doesn't block on geo verification.
