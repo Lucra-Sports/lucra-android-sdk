@@ -1,3 +1,29 @@
+## 6.5.0
+* Added headless method `LucraClient.startMiniGame(gameId, gameMode, amount, matchupId, onProgress, onResult)` — orchestrates user validation, funds check, GeoComply verification, and returns a `MiniGameSession` with the iframe URL for host-owned WebView rendering.
+* Added headless method `LucraClient.preloadGeoToken(type)`. Pre-warms a GeoComply token (fire-and-forget) so the next `startMiniGame` call doesn't block on geo verification.
+* Added `LucraUiProvider.LucraFlow.MiniGame(gameId, gameMode, amount, matchupId)`. UI-bundled counterpart to `startMiniGame`.
+* Added `LucraEvent.MiniGame.Finished(gameId, gameMode, amount, matchupId)`. Emitted after a minigame session ends.
+* `LucraClient.claimReward(...)`, `markRewardViewed(...)`, and `getUserTournamentRewards(...)` now also cover minigame matchup rewards (previously tournament-only).
+* Added minigame-specific geo compliance contexts (`FreeMinigames` / `CashMinigames`). When a game has `minigameEnabled = true`, tournament joins, GYP matchup creation/acceptance, and minigame sessions now use these contexts instead of the standard `FreeBuyIn` / `CashBuyIn`.
+* Added optional `minigameEnabled` parameter to `LucraClient.createRecreationalGame(...)`. Pass `true` when creating a matchup for a minigame-enabled game to use the correct geo compliance context.
+* Added `minigameEnabled` field to `Tournament.Game` and `RecommendedTournamentGameLight` headless models.
+* Added `LucraClient.observeGamesMatchupFee()` — a `Flow<Double>` that emits the platform service fee for mini games matchups (defaults to `0.05` until config is received).
+* Added `LucraClient.getMatchupDetails(...)` and `LucraMatchupDetails`, including group scores, individual payouts, and per-participant ranking scores for recreational game matchup details.
+* Introduced Lucra Flow modifiers to better customize flow behavior, such as safe inner padding, per flow on dismiss handlers and the ability to hide the close button for root flow embedded screens.
+* Fixed a bug where the home/featured games screen could remain in a loading state indefinitely when no tournament locations were set.
+* Added headless demographic submission call.
+* New headless method `LucraClient.getUserMatchups(limit, onResult)` returns the current user's matchup history grouped by type (Tournaments, Games, Sports) and status (Results, In Progress, Upcoming, Pending).
+* New headless method `LucraClient.uploadUserAvatar(bitmap, onResult)` uploads a new avatar image for the current user. Scales the image, uploads to S3, and updates the avatar URL. The user subscription emits the updated user on completion.
+* Added new `LucraFlow` types: `TransactionHistory`, `CustomerSupport`, `ResponsibleGaming`, and `Notifications` for launching SDK screens directly.
+* Added `placement`, `userPayout`, `subtypeLabel`, `date`, and `outcome` fields to `ProfileMatchupItem` for richer matchup card display.
+* New experimental headless methods for granular reward state mutations (previously only available via the bottom-sheet flows):
+  * `LucraClient.claimAchievement(userAchievementId, onResult)` — mark a user achievement as claimed.
+  * `LucraClient.markAchievementViewed(userAchievementId, onResult)` — mark a user achievement as viewed.
+  * `LucraClient.claimReward(rewardId, onResult)` — mark a tournament reward as claimed.
+  * `LucraClient.markRewardViewed(rewardId, onResult)` — mark a tournament reward as viewed.
+* Added `currentProgress: Int` to `LucraAchievement`. Completion percentage in the range `0..100`; reaches `100` once `isEarned` flips to `true`.
+* Updated Sardine MDI SDK from 1.2.59 to **1.2.67**
+
 ## 6.4.1
 * Introduced new `queryRecommendedTournaments` to return smaller payloads for tournaments.
 

@@ -91,6 +91,7 @@ android {
 
 dependencies {
     implementation("com.lucrasports.sdk:sdk-ui:$mavenVersion")
+    implementation("com.lucrasports.sdk:core-data:$mavenVersion")
 
     // For testing internal UI of the reward flow - not required for client integration
     implementation("com.lucrasports.sdk:feature-reward-selection-flow:$mavenVersion")

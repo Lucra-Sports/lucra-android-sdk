@@ -37,12 +37,15 @@ import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDia
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.fake_resources.fakeLucraTournamentRewards
 import com.lucrasports.sdk.app.headless_api.MatchupApiHandler
+import com.lucrasports.sdk.app.headless_api.TournamentApiHandler
+import com.lucrasports.sdk.app.headless_api.PhoneAuthApiHandler
 import com.lucrasports.sdk.app.headless_api.UserApiHandler
 import com.lucrasports.sdk.app.logger.FirebaseLogger
 import com.lucrasports.sdk.app.ui.OptionBuilder
 import com.lucrasports.sdk.app.ui.dialogs.ComponentDialogs
 import com.lucrasports.sdk.app.ui.dialogs.ConfigDialogs
 import com.lucrasports.sdk.app.ui.dialogs.FlowDialogs
+import com.lucrasports.sdk.app.ui.dialogs.MiniGameDialogs
 import com.lucrasports.sdk.app.ui.dialogs.RecreationalGameDialogs
 import com.lucrasports.sdk.app.ui.dialogs.TournamentDialogs
 import com.lucrasports.sdk.app.ui.dialogs.UserDialogs
@@ -80,12 +83,13 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
+private const val AUTO_JOIN_ENABLED = "AUTO_JOIN_ENABLED"
 private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
 private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
-    private val  topAppBar: CollapsingToolbarLayout by lazy {
+    private val topAppBar: CollapsingToolbarLayout by lazy {
         findViewById(R.id.top_app_bar)
     }
 
@@ -128,7 +132,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private lateinit var configDialogs: ConfigDialogs
     private lateinit var flowDialogs: FlowDialogs
     private lateinit var componentDialogs: ComponentDialogs
+    private lateinit var miniGameDialogs: MiniGameDialogs
     private lateinit var matchupApiHandler: MatchupApiHandler
+    private lateinit var tournamentApiHandler: TournamentApiHandler
+    private lateinit var phoneAuthApiHandler: PhoneAuthApiHandler
     private lateinit var userApiHandler: UserApiHandler
     private lateinit var themeManager: ThemeManager
     private lateinit var optionBuilder: OptionBuilder
@@ -149,6 +156,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             preferences.edit { putString(API_KEY_OVERRIDE, value) }
         }
 
+    private var autoJoinEnabled: Boolean
+        get() = preferences.getBoolean(AUTO_JOIN_ENABLED, false)
+        set(value) {
+            preferences.edit { putBoolean(AUTO_JOIN_ENABLED, value) }
+        }
+
     private var lucraRewardProviderEnabled = true
     private var provideLocationIdOnInit = false
 
@@ -167,7 +180,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         configDialogs = ConfigDialogs(this)
         flowDialogs = FlowDialogs(this)
         componentDialogs = ComponentDialogs(this)
+        miniGameDialogs = MiniGameDialogs(this)
         matchupApiHandler = MatchupApiHandler(this)
+        tournamentApiHandler = TournamentApiHandler(this)
+        phoneAuthApiHandler = PhoneAuthApiHandler(this)
         userApiHandler = UserApiHandler(this)
         themeManager = ThemeManager(this)
         optionBuilder = OptionBuilder(this)
@@ -238,6 +254,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
             customLogger = customLogger,
+            autoJoin = autoJoinEnabled,
             clientTheme = ClientTheme(
                 lightColorStyle = SampleColorStore.getLightColorStyle(),
                 darkColorStyle = SampleColorStore.getDarkColorStyle(),
@@ -262,11 +279,14 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     is LucraEvent.GamesContest.Created -> {
                         Log.d("Sample", "Games contest created: ${event.contestId}")
                     }
+
                     is LucraEvent.GamesContest.Accepted -> {
                         Log.d("Sample", "Games contest accepted: ${event.contestId}")
                     }
+
                     is LucraEvent.GamesContest.Canceled ->
                         Log.d("Sample", "Games contest canceled: ${event.matchupId}")
+
                     is LucraEvent.GamesContest.Started ->
                         Log.d("Sample", "Games contest started: ${event.matchupId}")
 
@@ -275,6 +295,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     is LucraEvent.SportsContest.Created -> {
                         Log.d("Sample", "Sports contest created: ${event.contestId}")
                     }
+
                     is LucraEvent.SportsContest.Accepted ->
                         Log.d("Sample", "Sports contest accepted: ${event.contestId}")
 
@@ -282,8 +303,19 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         Log.d("Sample", "Sports contest canceled: ${event.matchupId}")
 
                     is LucraEvent.GamesContest.StartedActive ->
-                        Log.d("Sample", "Active game contest started: ${event.matchupId} match object: ${event.lucraMatchup}")
+                        Log.d(
+                            "Sample",
+                            "Active game contest started: ${event.matchupId} match object: ${event.lucraMatchup}"
+                        )
 
+                    is LucraEvent.Tournament.AutoJoinedTournaments ->
+                        Log.d("Sample", "Auto joined tournaments: ${event.tournamentIds}")
+                    is LucraEvent.MiniGame.Finished -> {
+                        Log.d(
+                            "Sample",
+                            "Mini game finished: gameId=${event.gameId} mode=${event.gameMode} amount=${event.amount} matchupId=${event.matchupId}"
+                        )
+                    }
                 }
             }
         })
@@ -336,7 +368,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         LucraClient().setMatchupInviteDeeplinkProvider { matchupId ->
             try {
-                val buo = BranchUniversalObject().setContentMetadata( ContentMetadata().addCustomMetadata("matchupId", matchupId) )
+                val buo = BranchUniversalObject().setContentMetadata(
+                    ContentMetadata().addCustomMetadata(
+                        "matchupId",
+                        matchupId
+                    )
+                )
                 val linkProps = LinkProperties()
                 buo.getShortUrl(this, linkProps)
             } catch (e: Exception) {
@@ -453,7 +490,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         description: String,
         componentProvider: () -> View
     ) {
-        appendOption(title, description, componentsSection, AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)) { viewGroup ->
+        appendOption(
+            title,
+            description,
+            componentsSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
+        ) { viewGroup ->
             if (viewGroup.isNotEmpty()) {
                 viewGroup.removeAllViews()
             } else {
@@ -467,21 +509,27 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             "Profile Pill",
             "Show the profile pill with the user balance. Authentication not required, but clicking will launch the auth flow."
         ) {
-            LucraClient().getLucraComponent(this, LucraUiProvider.LucraComponent.ProfilePill { launchFlow(it) })
+            LucraClient().getLucraComponent(
+                this,
+                LucraUiProvider.LucraComponent.ProfilePill { launchFlow(it) })
         }
 
         appendToggleComponent(
             "Recommended Matchups Banner",
             "Show the recommended matchups banner component. Authentication required."
         ) {
-            LucraClient().getLucraComponent(this, LucraUiProvider.LucraComponent.RecommendedMatchups { launchFlow(it) })
+            LucraClient().getLucraComponent(
+                this,
+                LucraUiProvider.LucraComponent.RecommendedMatchups { launchFlow(it) })
         }
 
         appendToggleComponent(
             "Floating Action Button",
             "Show the floating action button to create a sports contest."
         ) {
-            LucraClient().getLucraComponent(this, LucraUiProvider.LucraComponent.FloatingActionButton { launchFlow(it) })
+            LucraClient().getLucraComponent(
+                this,
+                LucraUiProvider.LucraComponent.FloatingActionButton { launchFlow(it) })
         }
 
         appendOption(
@@ -498,7 +546,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             componentDialogs.showMiniPublicFeedDialog { playerOneId, playerTwoId ->
                 val view = LucraClient().getLucraComponent(
                     this,
-                    LucraUiProvider.LucraComponent.MiniPublicFeed(listOf(playerOneId, playerTwoId)) {
+                    LucraUiProvider.LucraComponent.MiniPublicFeed(
+                        listOf(
+                            playerOneId,
+                            playerTwoId
+                        )
+                    ) {
                         launchFlow(it)
                     }
                 )
@@ -572,6 +625,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
     private fun appendApiOptions() {
         appendOption(
+            "Phone Authentication",
+            "Authenticate via phone number with SMS verification code. No login required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            phoneAuthApiHandler.showPhoneAuthDialog()
+        }
+
+        appendOption(
             "Logout",
             "Logout the current user.",
             apiSection,
@@ -603,12 +665,41 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
-            "Retrieve Matchup",
+            "Retrieve Matchup Details",
             "A prompt will show to set the matchup_id.",
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
             matchupApiHandler.showRetrieveMatchupDialog()
+        }
+
+        appendOption(
+            "Get User Matchups",
+            "Retrieve the current user's matchups grouped by type and status. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            requireAuth {
+                userApiHandler.getUserMatchups()
+            }
+        }
+
+        appendOption(
+            "Subscribe to Matchup Details",
+            "A prompt will show to set the matchup_id and subscribe to live updates.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            matchupApiHandler.showSubscribeMatchupDialog()
+        }
+
+        appendOption(
+            "Cancel Matchup Details Subscription",
+            "Cancel the active matchup details subscription, if any.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            matchupApiHandler.cancelMatchupDetailsSubscription()
         }
 
         appendOption(
@@ -619,6 +710,17 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         ) {
             requireAuth {
                 userApiHandler.checkKYCStatus(lucraSDKUser!!.userId!!)
+            }
+        }
+
+        appendOption(
+            "Submit Demographic Form",
+            "Submit demographic data headlessly (DOB, email, zip, name). Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            requireAuth {
+                userDialogs.showSubmitDemographicFormDialog()
             }
         }
 
@@ -701,6 +803,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             }
         }
 
+
         appendOption(
             "Recommended Tournaments Light",
             "Retrieve lightweight recommended tournament data. Authentication required.",
@@ -710,6 +813,35 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             requireAuth {
                 tournamentDialogs.showRecommendedTournamentsLightDialog()
             }
+        }
+
+        appendOption(
+            "Auto-Join Tournaments",
+            "Manually trigger auto-join for all eligible free tournaments. Authentication required.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            requireAuth {
+                tournamentApiHandler.autoJoinTournaments()
+            }
+        }
+
+        appendOption(
+            "Start MiniGame (Headless)",
+            "Headless start of a minigame session. Prompts for game ID, mode (defaults to Practice), wager amount, and matchup ID. Returns the iframe URL for the partner-owned WebView.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            miniGameDialogs.showStartMiniGameApiDialog()
+        }
+
+        appendOption(
+            "Preload Geo Token",
+            "Pre-fetch a GeoComply token for cash modes. Fire-and-forget — call early so the token is cached before starting a cash minigame.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            miniGameDialogs.preloadGeoToken()
         }
 
 
@@ -779,6 +911,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "Update Convert to Credit Info",
                         "View Configuration",
                         "Close all Lucra Flows in 10 seconds",
+                        "Toggle Auto-Join (currently: ${if (autoJoinEnabled) "ON" else "OFF"})",
+                        "Restart SDK",
                     )
                 ) { dialog, which ->
                     when (which) {
@@ -832,6 +966,19 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                                 delay(10000)
                                 LucraClient().closeFullScreenLucraFlows(supportFragmentManager)
                             }
+                        }
+
+                        8 -> {
+                            autoJoinEnabled = !autoJoinEnabled
+                            Toast.makeText(
+                                this,
+                                "Auto-join ${if (autoJoinEnabled) "enabled" else "disabled"}. Restart SDK to apply.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+
+                        9 -> {
+                            restartActivity()
                         }
                     }
                     dialog.dismiss()
@@ -911,77 +1058,77 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             "Profile",
             "Navigate to the current user's profile. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.Profile) },
-        
+
         FlowOption(
             "Home Page",
             "Navigate to the primary starting point for Tournaments and Games."
         ) { flowDialogs.showHomePageDialog(::launchFlow) },
-        
+
         FlowOption(
             "Wallet",
             "Navigate to the current user's wallet. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.Wallet) },
-        
+
         FlowOption(
             "Verify User Identity",
             "Navigate user identity verification screen. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity) },
-        
+
         FlowOption(
             "Demographic Form",
             "Navigate to the demographic form to collect user information. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.DemographicForm) },
-        
+
         FlowOption(
             "Create Games Matchup",
             "Navigate to the create games match up flow. Authentication required"
         ) { flowDialogs.showCreateGamesMatchupDialog(::launchFlow) },
-        
+
         FlowOption(
             "Login",
             "Navigate directly to the login screen. If user is already logged in, this will exit immediately"
         ) { launchFlow(LucraUiProvider.LucraFlow.Login) },
-        
+
         FlowOption(
             "Add Funds",
             "Navigate to the add funds flow. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.AddFunds) },
-        
+
         FlowOption(
             "Withdraw Funds",
             "Navigate to the withdraw funds flow. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.WithdrawFunds) },
-        
+
         FlowOption(
             "Public Sports Feed",
             "Navigate to the public sports feed. No authentication required. Any proceeding actions with prompt the user to authenticate first"
         ) { launchFlow(LucraUiProvider.LucraFlow.PublicFeed) },
-        
+
         FlowOption(
             "Create Sports Matchup",
             "Navigate to the create sports match up flow. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup) },
-        
+
         FlowOption(
             "Show Matchup",
             "Navigate to the matchup details flow. Authentication required"
         ) { flowDialogs.showMatchupDetailsDialog(::launchFlow) },
-        
+
         FlowOption(
             "Show Tournament Matchup",
             "Navigate to the tournament details flow. Authentication required"
         ) { flowDialogs.showTournamentDetailsDialog(::launchFlow) },
-        
+
         FlowOption(
             "My Matchups",
             "Navigate to the user's created matchups screen. Authentication required"
         ) { launchFlow(LucraUiProvider.LucraFlow.MyMatchup) },
-        
+
         FlowOption(
             "Deeplink to Matchup Details",
             "Navigate to specific matchup via a legacy deeplink uri. Authentication required"
         ) { flowDialogs.showDeeplinkDialog(::launchFlow) },
-        
+
         FlowOption(
             "Tournaments",
             "Navigate to the Tournaments screen."
@@ -995,8 +1142,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         FlowOption(
             "Claim Prize Sheet",
             "Launches the claim prize bottom sheet seeded with sample tournament rewards. " +
-                "Demonstrates that the sheet is invokable as a regular LucraFlow via onLaunchFlow(...)."
-        ) { launchFlow(LucraUiProvider.LucraFlow.ClaimRewards(fakeLucraTournamentRewards)) }
+                    "Demonstrates that the sheet is invokable as a regular LucraFlow via onLaunchFlow(...)."
+        ) { launchFlow(LucraUiProvider.LucraFlow.ClaimRewards(fakeLucraTournamentRewards)) },
+
+        FlowOption(
+            "MiniGame",
+            "Launch the MiniGame flow. Prompts for game ID, mode (defaults to Practice), wager amount, and matchup ID."
+        ) { miniGameDialogs.showLaunchMiniGameFlowDialog(::launchFlow) },
     )
 
     private fun appendFlowOptions() {
@@ -1009,7 +1161,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         themeManager.onColorSelected(dialogId, color)
     }
 
-    override fun onDialogDismissed(dialogId: Int) { /* no-op */ }
+    override fun onDialogDismissed(dialogId: Int) { /* no-op */
+    }
 
     private inline fun requireAuth(action: () -> Unit) {
         if (lucraSDKUser?.userId == null) {
