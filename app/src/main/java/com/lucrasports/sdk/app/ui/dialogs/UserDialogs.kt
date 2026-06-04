@@ -8,7 +8,6 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.lucrasports.data.demographic.DemographicInteractions
 import com.lucrasports.data.demographic.DemographicInteractions.DemographicFormError
 import com.lucrasports.data.demographic.DemographicInteractions.SubmitDemographicFormResult
 import com.lucrasports.sdk.app.R

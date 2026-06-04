@@ -1,3 +1,6 @@
+## 6.5.2
+* Fixed location fetching errors.
+
 ## 6.5.1
 * Fixed a bug where insufficient fund would lead to infinite loading when the tenant has deferred kyc on.
 
