@@ -1,3 +1,6 @@
+## 6.5.3
+* Removed CTA buttons from the profile matchups empty state
+
 ## 6.5.2
 * Fixed location fetching errors.
 
