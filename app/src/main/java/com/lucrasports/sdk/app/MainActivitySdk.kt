@@ -37,8 +37,8 @@ import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDia
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.fake_resources.fakeLucraTournamentRewards
 import com.lucrasports.sdk.app.headless_api.MatchupApiHandler
-import com.lucrasports.sdk.app.headless_api.TournamentApiHandler
 import com.lucrasports.sdk.app.headless_api.PhoneAuthApiHandler
+import com.lucrasports.sdk.app.headless_api.TournamentApiHandler
 import com.lucrasports.sdk.app.headless_api.UserApiHandler
 import com.lucrasports.sdk.app.logger.FirebaseLogger
 import com.lucrasports.sdk.app.ui.OptionBuilder
@@ -310,6 +310,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
                     is LucraEvent.Tournament.AutoJoinedTournaments ->
                         Log.d("Sample", "Auto joined tournaments: ${event.tournamentIds}")
+
                     is LucraEvent.MiniGame.Finished -> {
                         Log.d(
                             "Sample",
@@ -730,9 +731,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             apiSection,
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
-            requireAuth {
-                tournamentDialogs.showRetrieveTournamentDialog()
-            }
+            tournamentDialogs.showRetrieveTournamentDialog()
         }
 
         appendOption(
