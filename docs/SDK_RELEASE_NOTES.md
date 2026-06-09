@@ -1,3 +1,16 @@
+## 6.6.0
+* `LucraClient.retrieveTournament(tournamentId, onResult)` now returns the full tournament reward structure. Two new fields are added to `Tournament` — a purely additive, non-breaking change; all existing fields (including the cash `rewardStructure` list) are unchanged:
+  * `rewardType: String?` — the raw API reward category (`"POOL_CASH_REWARD"` for cash tournaments, `"POOL_TENANT_REWARD"` for tangible-prize tournaments). Use this to branch your reward presentation logic. `null` when the backend does not supply it.
+  * `payoutStructure: PayoutStructure?` — the complete payout structure: pre-formatted place/position/reward/amount labels, jackpot total, percentage-vs-fixed and show-amount flags, and an ordered list of `PayoutReward` rows. Each `PayoutReward` carries an optional `CatalogReward` (type, title, description, icon, banner, disclaimer) for tangible-prize rows. `CatalogReward` intentionally omits redemption details (discount codes, claim URLs, free-item IDs). `null` when the backend returns none.
+  * See [3.3_tournaments_headless.md](3.3_tournaments_headless.md) for the full type reference and example.
+* Provided correct `LucraClient.startMiniGame` consumer proguard files.
+
+## 6.5.3
+* Removed CTA buttons from the profile matchups empty state
+
+## 6.5.2
+* Fixed location fetching errors.
+
 ## 6.5.1
 * Fixed a bug where insufficient fund would lead to infinite loading when the tenant has deferred kyc on.
 
