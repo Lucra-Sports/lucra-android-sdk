@@ -1,3 +1,6 @@
+## 6.6.1
+* Fixed sporadic addObserver off main thread exception
+
 ## 6.6.0
 * `LucraClient.retrieveTournament(tournamentId, onResult)` now returns the full tournament reward structure. Two new fields are added to `Tournament` — a purely additive, non-breaking change; all existing fields (including the cash `rewardStructure` list) are unchanged:
   * `rewardType: String?` — the raw API reward category (`"POOL_CASH_REWARD"` for cash tournaments, `"POOL_TENANT_REWARD"` for tangible-prize tournaments). Use this to branch your reward presentation logic. `null` when the backend does not supply it.
