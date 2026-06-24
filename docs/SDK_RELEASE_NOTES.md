@@ -1,3 +1,6 @@
+## 6.6.2
+* Removed the "Go" button from the achievements screen.
+
 ## 6.6.1
 * Fixed sporadic addObserver off main thread exception
 
