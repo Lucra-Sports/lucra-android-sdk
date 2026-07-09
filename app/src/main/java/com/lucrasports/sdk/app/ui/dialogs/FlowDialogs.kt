@@ -100,6 +100,26 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
     }
 
     /**
+     * Shows dialog to navigate directly to the minigames-themed matchup details
+     * (skips the agnostic router; the caller is asserting the underlying game
+     * has `minigame_enabled = true`).
+     */
+    fun showMinigameMatchupDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
+        val input = createEditText("ID of a Minigame Matchup", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
+
+        createDialogBuilder()
+            .setTitle("Provide a Minigame Matchup ID")
+            .setView(input)
+            .setPositiveButton("Continue") { _, _ ->
+                onLaunchFlow(LucraUiProvider.LucraFlow.MinigameMatchupDetails(input.text.toString()))
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /**
      * Shows dialog to navigate to tournament details.
      */
     fun showTournamentDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
