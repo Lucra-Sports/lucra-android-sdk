@@ -13,6 +13,7 @@ import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.contest.GameInteractions.SearchMatchupsByMetadataResult
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreMatchingResult
+import com.lucrasports.sdk.core.contest.tournament.TournamentDetails
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreResult
 import com.lucrasports.sdk.core.ui.LucraUiProvider
 
@@ -333,8 +334,62 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
     }
 
     /**
+     * Shows dialog to retrieve the lightweight tournament details (ui_tournament_details).
+     */
+    fun showRetrieveTournamentDetailsDialog() {
+        val scrollView = ScrollView(context)
+        val layout = createVerticalLayout()
+        scrollView.addView(layout)
+
+        val (tournamentIdLayout, tournamentIdInput) =
+            createTextInputLayout("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d")
+        layout.addView(tournamentIdLayout)
+
+        val (limitLayout, limitInput) = createTextInputLayout("Leaderboard Limit (optional)")
+        limitInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        layout.addView(limitLayout)
+
+        val (offsetLayout, offsetInput) = createTextInputLayout("Leaderboard Offset (optional)")
+        offsetInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        layout.addView(offsetLayout)
+
+        createDialogBuilder()
+            .setTitle("Retrieve Tournament Details")
+            .setView(scrollView)
+            .setPositiveButton("Retrieve") { _, _ ->
+                val tournamentId = tournamentIdInput.text.toString()
+                if (tournamentId.isBlank()) {
+                    Toast.makeText(context, "Tournament ID is required", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                LucraClient().retrieveTournamentDetails(
+                    tournamentId = tournamentId,
+                    leaderboardLimit = limitInput.text.toString().toIntOrNull(),
+                    leaderboardOffset = offsetInput.text.toString().toIntOrNull(),
+                ) { result ->
+                    activity.runOnUiThread {
+                        when (result) {
+                            is PoolTournament.RetrieveTournamentDetailsResult.TournamentDetailsOutput -> {
+                                displayTournamentDetailsLight(result.details)
+                            }
+                            is PoolTournament.RetrieveTournamentDetailsResult.Failure -> {
+                                showMessageDialog(
+                                    "Failed to find tournament details",
+                                    result.failure.toString()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    /**
      * Shows dialog to retrieve tournament details.
      */
+    @Suppress("DEPRECATION")
     fun showRetrieveTournamentDialog() {
         val input = createEditText("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d")
         
@@ -497,6 +552,98 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
 
         createDialogBuilder()
             .setTitle("Tournament Results")
+            .setView(scrollView)
+            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun displayTournamentDetailsLight(details: TournamentDetails) {
+        val displayString = buildString {
+            append("Id > ${details.id}\n")
+            append("Title > ${details.title}\n")
+            append("Description > ${details.description}\n")
+            append("Image Url > ${details.imageUrl}\n")
+            append("Status > ${details.status}\n")
+            append("Visibility > ${details.visibilityLevel} (private: ${details.isPrivate})\n")
+            append("Completed > ${details.isCompleted}\n")
+            append("Not Started > ${details.isNotStarted}\n")
+            append("Expired > ${details.isExpired}\n")
+            append("Free Buy In > ${details.freeBuyIn}\n")
+            append("Buy In Amount > ${details.buyInAmount}\n")
+            append("Participants > ${details.totalParticipants}/${details.maxParticipants}\n")
+            append("Reward Type > ${details.rewardType}\n")
+            append("Game Id > ${details.gameId}\n")
+            append("Minigame Enabled > ${details.minigameEnabled}\n")
+            details.timer?.let { append("Timer > ${it.caption} (${it.state})\n") }
+
+            if (details.howToPlay.isNotEmpty()) {
+                append("\n===How To Play===\n")
+                details.howToPlay.forEach { append("${it.step}. ${it.text}\n") }
+            }
+
+            details.attemptData?.let { attempt ->
+                append("\n===Attempt Data===\n")
+                append("Can Join > ${attempt.canJoinTournament}\n")
+                append("Replayable > ${attempt.isReplayable}\n")
+                append("User Present > ${attempt.isUserPresent}\n")
+                append("Attempts Remaining > ${attempt.attemptsRemaining}\n")
+                append("Rank Variation > ${attempt.rankVariation}\n")
+                append("Icon Type > ${attempt.iconType}\n")
+                attempt.scores.forEach {
+                    append("Attempt ${it.attempt}: ${it.score}${if (it.isBest) " (best)" else ""}\n")
+                }
+            }
+
+            details.payoutStructure?.let { payout ->
+                append("\n===Payout Structure===\n")
+                append("${payout.title} — ${payout.description}\n")
+                append("Jackpot > ${payout.jackpotDescriptor} ${payout.jackpotAmount}\n")
+                append("No Payout > ${payout.noPayout}, Percentage > ${payout.isPercentagePayout}, Show Amount > ${payout.showAmount}\n")
+                payout.rewards.forEach { reward ->
+                    append("${reward.positionLabel ?: reward.placeLabel} > ${reward.rewardLabel} (${reward.amountLabel})")
+                    reward.catalogReward?.let { append(" prize: ${it.title} [${it.type}]") }
+                    append("\n")
+                }
+            }
+
+            if (details.earnedRewards.isNotEmpty()) {
+                append("\n===Earned Rewards===\n")
+                details.earnedRewards.forEach {
+                    append("Place ${it.place} > ${it.reward?.title} (${it.id})\n")
+                }
+            }
+
+            details.leaderboard?.let { board ->
+                append("\n===Leaderboard===\n")
+                append("Columns > ${board.columns.joinToString { it.label }}\n")
+                append("Pagination > offset ${board.pagination.offset}, limit ${board.pagination.limit}, total ${board.pagination.totalCount}\n")
+                board.rows.forEach { row ->
+                    append("${row.rank ?: "-"}: ${row.name} points=${row.points ?: "-"} payout=${row.payout}\n")
+                }
+            }
+
+            details.userLeaderboardRow?.let { row ->
+                append("\n===Your Row===\n")
+                append("${row.rank ?: "-"}: ${row.name} points=${row.points ?: "-"} payout=${row.payout}\n")
+            }
+
+            if (details.terms.isNotEmpty()) {
+                append("\n===Terms===\n")
+                details.terms.forEach { append("${it.title}: ${it.description}\n") }
+            }
+        }
+
+        val textView = TextView(context).apply {
+            text = displayString
+            setPadding(50, 50, 50, 50)
+        }
+
+        val scrollView = ScrollView(context).apply {
+            addView(textView)
+        }
+
+        createDialogBuilder()
+            .setTitle("Tournament Details Result")
             .setView(scrollView)
             .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
             .show()

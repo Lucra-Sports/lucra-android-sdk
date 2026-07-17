@@ -743,6 +743,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
+            "Retrieve Tournament Details (light)",
+            "Fetch the lightweight ui_tournament_details payload for a tournament_id and print the full result.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            tournamentDialogs.showRetrieveTournamentDetailsDialog()
+        }
+
+        appendOption(
             "Join Tournament",
             "A prompt will show to set the tournament_id. For free tournaments, will launch demographic form if email/zip missing. For paid tournaments, will launch verification if not verified.",
             apiSection,
