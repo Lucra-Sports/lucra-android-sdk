@@ -1,3 +1,18 @@
+## 6.8.0
+* New headless method `LucraClient.retrieveTournamentDetails(tournamentId, leaderboardLimit, leaderboardOffset, onResult)` returns a lightweight `TournamentDetails` payload backed by the `ui_tournament_details` API — the same response that powers Lucra's in-app tournament details screen. It includes lifecycle flags, buy-in details, reward type, payout structure, how-to-play steps, earned rewards, attempt/replay data, a pageable leaderboard, and terms. See [3.3_tournaments_headless.md](3.3_tournaments_headless.md) for the full type reference and example.
+* Deprecated `LucraClient.retrieveTournament(tournamentId, onResult)` in favor of `retrieveTournamentDetails` for a smaller headless response. The deprecated call keeps working unchanged.
+* `LucraClient.joinTournament(...)` now validates the tournament via the lighter `ui_tournament_details` request instead of the full tournament query. Behavior and results are unchanged.
+
+## 6.7.0
+* Added `allowRewardSheetToDisplay` parameter to `LucraClient.initialize()` (defaults to `true`). When set to `false`, reward sheets are globally suppressed and will never appear — neither inside the SDK UI nor outside of it. Mini games flow no longer shows the reward sheet.
+* Hardened the `LucraClient.startMiniGame` session-launch guardrails to match the join-tournament/create-matchup contract.
+* Added `LucraUiProvider.LucraFlow.MinigamesProfile` which is a minigames-flavored profile screen.
+* Added `LucraUiProvider.LucraFlow.MinigamesRewards`, the minigames-flavored achievement rewards screen. It groups achievement progress and claimable rewards by game, presents the reward redemption flow, and provides per-game claimed-reward history.
+* Added `LucraUiProvider.LucraFlow.MinigamesHome`, the minigames-flavored home screen (profile pill, achievement card, game carousel, featured tournament). Playing a game routes into Game Mode Selection (mode/wager/battle-tier picker) before launching the minigame.
+* Added `LucraUiProvider.LucraFlow.MinigameMatchupDetails(matchupId)`, the minigames-themed matchup details screen. Prefer launching `MatchupDetails` from outside the minigames flow; it routes to this destination automatically when the matchup's game is minigame-enabled.
+* Added headless method `LucraClient.getMiniGames(onResult)`, returns every minigame enabled for the current tenant, each with the tenant's subscribed config options.
+* Introduced `handlePostNavigation` to `LucraUiProvider.LucraFlow.MiniGame` to allow Tournament details to automatically launch any Minigame related tournament join intents. Defaults to `false`.
+
 ## 6.6.2
 * Removed the "Go" button from the achievements screen.
 

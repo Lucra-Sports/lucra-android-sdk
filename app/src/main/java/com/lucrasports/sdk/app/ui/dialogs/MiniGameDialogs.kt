@@ -2,11 +2,13 @@ package com.lucrasports.sdk.app.ui.dialogs
 
 import android.app.Activity
 import android.content.DialogInterface
+import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.contest.LucraError
+import com.lucrasports.sdk.core.contest.minigame.MiniGameInteractions.GetMiniGamesResult
 import com.lucrasports.sdk.core.contest.minigame.MiniGameInteractions.StartMiniGameResult
 import com.lucrasports.sdk.core.minigames.LucraMiniGameMode
 import com.lucrasports.sdk.core.ui.LucraUiProvider
@@ -18,6 +20,7 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
         val gameMode: LucraMiniGameMode,
         val amount: Double?,
         val matchupId: String?,
+        val handlePostNavigation: Boolean,
     )
 
     fun showLaunchMiniGameFlowDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
@@ -28,6 +31,7 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
                     gameMode = inputs.gameMode,
                     amount = inputs.amount,
                     matchupId = inputs.matchupId,
+                    handlePostNavigation = inputs.handlePostNavigation,
                 )
             )
         }
@@ -61,6 +65,14 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
             "Preloading geo token (fire-and-forget)…",
             Toast.LENGTH_SHORT,
         ).show()
+    }
+
+    fun showGetMiniGamesApiDialog() {
+        LucraClient().getMiniGames { result ->
+            activity.runOnUiThread {
+                displayGetMiniGamesResult(result)
+            }
+        }
     }
 
     private fun showInputDialog(
@@ -99,6 +111,12 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
         )
         layout.addView(matchupIdLayout)
 
+        val handlePostNavigationCheckBox = CheckBox(context).apply {
+            text = "Handle post navigation (1v1 / FFA → Matchup Details)"
+            setPadding(0, 30, 0, 0)
+        }
+        layout.addView(handlePostNavigationCheckBox)
+
         val dialog = createDialogBuilder()
             .setTitle(title)
             .setView(layout)
@@ -118,7 +136,15 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
                 val amount = amountInput.text.toString().trim().toDoubleOrNull()
                 val matchupId = matchupIdInput.text.toString().trim().ifBlank { null }
 
-                onSubmit(MiniGameInputs(gameId, gameMode, amount, matchupId))
+                onSubmit(
+                    MiniGameInputs(
+                        gameId = gameId,
+                        gameMode = gameMode,
+                        amount = amount,
+                        matchupId = matchupId,
+                        handlePostNavigation = handlePostNavigationCheckBox.isChecked,
+                    )
+                )
                 dialog.dismiss()
             }
         }
@@ -133,6 +159,36 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
                 append("Matchup ID: ${result.session.matchupId ?: "—"}")
             }
             is StartMiniGameResult.Failure -> "Failed to Start MiniGame" to result.failure.describe()
+        }
+
+        val textView = TextView(context).apply {
+            text = message
+            setPadding(50, 50, 50, 50)
+            setTextIsSelectable(true)
+        }
+
+        createDialogBuilder()
+            .setTitle(title)
+            .setView(textView)
+            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun displayGetMiniGamesResult(result: GetMiniGamesResult) {
+        val (title, message) = when (result) {
+            is GetMiniGamesResult.Success -> "Tenant MiniGames (${result.games.size})" to
+                result.games.joinToString("\n\n") { game ->
+                    buildString {
+                        append("${game.name} (${game.gameId})\n")
+                        append("Configs: ${game.config.size}")
+                        game.config.forEach { config ->
+                            append("\n  • ${config.mode}")
+                            config.wagerAmount?.let { append(" — \$$it") }
+                            config.groupSize?.let { append(" × $it") }
+                        }
+                    }
+                }.ifBlank { "No minigames enabled for this tenant." }
+            is GetMiniGamesResult.Failure -> "Failed to Get MiniGames" to result.failure.describe()
         }
 
         val textView = TextView(context).apply {

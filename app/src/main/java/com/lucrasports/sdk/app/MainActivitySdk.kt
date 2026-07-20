@@ -84,6 +84,7 @@ import java.util.UUID
 
 private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
 private const val AUTO_JOIN_ENABLED = "AUTO_JOIN_ENABLED"
+private const val SUPPRESS_REWARD_SHEET = "SUPPRESS_REWARD_SHEET"
 private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
 private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
 
@@ -160,6 +161,12 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         get() = preferences.getBoolean(AUTO_JOIN_ENABLED, false)
         set(value) {
             preferences.edit { putBoolean(AUTO_JOIN_ENABLED, value) }
+        }
+
+    private var suppressRewardSheet: Boolean
+        get() = preferences.getBoolean(SUPPRESS_REWARD_SHEET, false)
+        set(value) {
+            preferences.edit { putBoolean(SUPPRESS_REWARD_SHEET, value) }
         }
 
     private var lucraRewardProviderEnabled = true
@@ -255,6 +262,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             outputLogs = true,
             customLogger = customLogger,
             autoJoin = autoJoinEnabled,
+            allowRewardSheetToDisplay = !suppressRewardSheet,
             clientTheme = ClientTheme(
                 lightColorStyle = SampleColorStore.getLightColorStyle(),
                 darkColorStyle = SampleColorStore.getDarkColorStyle(),
@@ -735,6 +743,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         appendOption(
+            "Retrieve Tournament Details (light)",
+            "Fetch the lightweight ui_tournament_details payload for a tournament_id and print the full result.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            tournamentDialogs.showRetrieveTournamentDetailsDialog()
+        }
+
+        appendOption(
             "Join Tournament",
             "A prompt will show to set the tournament_id. For free tournaments, will launch demographic form if email/zip missing. For paid tournaments, will launch verification if not verified.",
             apiSection,
@@ -843,6 +860,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             miniGameDialogs.preloadGeoToken()
         }
 
+        appendOption(
+            "Get MiniGames list",
+            "Headless fetch of the minigames enabled for the current tenant, each with its config options.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            miniGameDialogs.showGetMiniGamesApiDialog()
+        }
+
 
         // Add the recreational games API options
         appendRecreationalGamesApiOptions()
@@ -911,6 +937,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "View Configuration",
                         "Close all Lucra Flows in 10 seconds",
                         "Toggle Auto-Join (currently: ${if (autoJoinEnabled) "ON" else "OFF"})",
+                        "Toggle Global Suppression of Reward Sheet (currently: ${if (suppressRewardSheet) "ON" else "OFF"})",
                         "Restart SDK",
                     )
                 ) { dialog, which ->
@@ -977,6 +1004,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
 
                         9 -> {
+                            suppressRewardSheet = !suppressRewardSheet
+                            Toast.makeText(
+                                this,
+                                "Reward sheet suppression ${if (suppressRewardSheet) "enabled" else "disabled"}. Restarting SDK...",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            restartActivity()
+                        }
+
+                        10 -> {
                             restartActivity()
                         }
                     }
@@ -1114,6 +1151,11 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         ) { flowDialogs.showMatchupDetailsDialog(::launchFlow) },
 
         FlowOption(
+            "Show Minigame Matchup",
+            "Navigate directly to the Minigames-themed matchup details. Requires a matchup whose game has minigame_enabled = true. Authentication required."
+        ) { flowDialogs.showMinigameMatchupDetailsDialog(::launchFlow) },
+
+        FlowOption(
             "Show Tournament Matchup",
             "Navigate to the tournament details flow. Authentication required"
         ) { flowDialogs.showTournamentDetailsDialog(::launchFlow) },
@@ -1148,6 +1190,21 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             "MiniGame",
             "Launch the MiniGame flow. Prompts for game ID, mode (defaults to Practice), wager amount, and matchup ID."
         ) { miniGameDialogs.showLaunchMiniGameFlowDialog(::launchFlow) },
+
+        FlowOption(
+            "Minigames Profile",
+            "Launch the minigames-flavored profile with stats and competition results. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.MinigamesProfile) },
+
+        FlowOption(
+            "Minigames Home",
+            "Launch the minigames-flavored home: profile pill, achievement card, game carousel and featured tournament. Playing routes into Game Mode Selection."
+        ) { launchFlow(LucraUiProvider.LucraFlow.MinigamesHome) },
+
+        FlowOption(
+        "Minigames Rewards",
+        "Launch the minigames-flavored rewards list with claimable achievement rewards by game. Authentication required"
+        ) { launchFlow(LucraUiProvider.LucraFlow.MinigamesRewards) },
     )
 
     private fun appendFlowOptions() {
