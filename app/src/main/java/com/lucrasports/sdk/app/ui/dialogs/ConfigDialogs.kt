@@ -162,6 +162,7 @@ internal class ConfigDialogs(private val activity: Activity) : DialogManager(act
         val btnThemeChaos: Button = colorLayout.findViewById(R.id.btn_theme_chaos)
         val btnThemePsf: Button = colorLayout.findViewById(R.id.btn_theme_psf)
         val btnThemeT1: Button = colorLayout.findViewById(R.id.btn_theme_t1)
+        val btnThemeTrackman: Button = colorLayout.findViewById(R.id.btn_theme_trackman)
 
         btnThemeDefault.setOnClickListener {
             SampleColorStore.applyTheme(
@@ -191,6 +192,10 @@ internal class ConfigDialogs(private val activity: Activity) : DialogManager(act
         }
         btnThemePsf.setOnClickListener {
             SampleColorStore.applyTheme(SampleColorStore.psfTheme)
+            themeManager.resetThemingOptions(themingOptionsSection)
+        }
+        btnThemeTrackman.setOnClickListener {
+            SampleColorStore.applyTheme(SampleColorStore.trackmanTheme)
             themeManager.resetThemingOptions(themingOptionsSection)
         }
 
