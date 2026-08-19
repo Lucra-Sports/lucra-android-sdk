@@ -59,6 +59,15 @@ internal object SampleColorStore {
         onTertiary = "#05155E"
     )
 
+    val trackmanTheme = ColorStyle(
+        primary = "#EC691A",
+        secondary = "#101820",
+        tertiary = "#E8E9EB",
+        onPrimary = "#101820",
+        onSecondary = "#FFFFFF",
+        onTertiary = "#101820"
+    )
+
     val defaultBaseTheme = ColorStyle(
         primary = "#FA5455",
         secondary = "#5E5BD0",

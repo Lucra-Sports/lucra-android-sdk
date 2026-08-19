@@ -32,7 +32,9 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivitySdk"
-            android:exported="true">
+            android:configChanges="uiMode"
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

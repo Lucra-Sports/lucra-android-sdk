@@ -22,6 +22,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isNotEmpty
@@ -41,6 +42,8 @@ import com.lucrasports.sdk.app.headless_api.PhoneAuthApiHandler
 import com.lucrasports.sdk.app.headless_api.TournamentApiHandler
 import com.lucrasports.sdk.app.headless_api.UserApiHandler
 import com.lucrasports.sdk.app.logger.FirebaseLogger
+import com.lucrasports.sdk.app.notifications.DEBUG_PUSH_NOTIFICATIONS
+import com.lucrasports.sdk.app.notifications.scheduleDebugNotification
 import com.lucrasports.sdk.app.ui.OptionBuilder
 import com.lucrasports.sdk.app.ui.dialogs.ComponentDialogs
 import com.lucrasports.sdk.app.ui.dialogs.ConfigDialogs
@@ -69,6 +72,7 @@ import com.lucrasports.sdk.core.ui.LucraUiProvider
 import com.lucrasports.sdk.core.user.SDKUser
 import com.lucrasports.sdk.core.user.SDKUserResult
 import com.lucrasports.sdk.ui.LucraUi
+import com.lucrasports.sdk.ui.push_notifications.DeeplinkConstants.NOTIFICATION_DEEPLINK
 import com.lucrasports.sdk.ui.push_notifications.LucraPushNotificationService
 import io.branch.indexing.BranchUniversalObject
 import io.branch.referral.Branch
@@ -87,6 +91,8 @@ private const val AUTO_JOIN_ENABLED = "AUTO_JOIN_ENABLED"
 private const val SUPPRESS_REWARD_SHEET = "SUPPRESS_REWARD_SHEET"
 private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
 private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
+private const val TOURNAMENT_DETAIL_PATH_SEGMENT = "TournamentDetailView"
+private const val REWARDS_PATH_SEGMENT = "Rewards"
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
@@ -213,8 +219,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         setupPushNotifications()
 
-        val flow = LucraPushNotificationService.handleNotificationIntent(intent)
-        flow?.let { launchFlow(it) }
+        handleNotificationDeeplink(intent)
 
         observeLoggedInUser()
 
@@ -919,6 +924,74 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 recreationalGameDialogs.showCancelGameDialog()
             }
         }
+
+        // Debug-only tooling (hidden in release builds). Opens a picker mirroring iOS
+        // DebugPushNotificationView so each push type can be exercised in-app.
+        if (BuildConfig.BUILD_TYPE != "release") {
+            appendOption(
+                "Push Debug",
+                "Pick a mock push (tournament / achievement / funds). Banner fires after 2s — tap it to validate deeplink handling.",
+                apiSection,
+                AppCompatResources.getDrawable(this, R.drawable.ic_api)
+            ) {
+                showPushDebugPicker()
+            }
+        }
+    }
+
+    private fun showPushDebugPicker() {
+        val density = resources.displayMetrics.density
+        val horizontalPad = (24 * density).toInt()
+        val verticalPad = (8 * density).toInt()
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(horizontalPad, verticalPad, horizontalPad, verticalPad)
+        }
+
+        container.addView(
+            TextView(this).apply {
+                text =
+                    "Tap a notification to schedule it. The banner fires after 2 seconds — tap it to validate in-app handling."
+                textSize = 13f
+                setPadding(0, 0, 0, (12 * density).toInt())
+            }
+        )
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Push Debug")
+            .setView(container)
+            .setNegativeButton("Done", null)
+            .create()
+
+        DEBUG_PUSH_NOTIFICATIONS.forEach { notification ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                isClickable = true
+                isFocusable = true
+                setPadding(0, (12 * density).toInt(), 0, (12 * density).toInt())
+                setOnClickListener {
+                    dialog.dismiss()
+                    scheduleDebugNotification(notification)
+                }
+            }
+            row.addView(
+                TextView(this).apply {
+                    text = notification.label
+                    textSize = 16f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                }
+            )
+            row.addView(
+                TextView(this).apply {
+                    text = notification.body
+                    textSize = 13f
+                }
+            )
+            container.addView(row)
+        }
+
+        dialog.show()
     }
 
     private fun setupAuthSettingsButton() {
@@ -1330,8 +1403,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val flow = LucraPushNotificationService.handleNotificationIntent(intent)
-        flow?.let { launchFlow(it) }
+        setIntent(intent)
+        handleNotificationDeeplink(intent)
         if (intent.hasExtra("branch_force_new_session") && intent.getBooleanExtra(
                 "branch_force_new_session",
                 false
@@ -1344,6 +1417,39 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                     Log.i("Sample", "BranchIO referring params: $referringParams")
                 }
             }.reInit()
+        }
+    }
+
+    private fun handleNotificationDeeplink(intent: Intent) {
+        val deeplink = intent.getStringExtra(NOTIFICATION_DEEPLINK)
+            ?: intent.extras?.getString("deeplink")
+            ?: return
+
+        val uri = try {
+            deeplink.toUri()
+        } catch (_: Exception) {
+            return
+        }
+
+        val tournamentMatchupId = uri.getQueryParameter("matchupId")
+            ?.takeIf { uri.lastPathSegment.equals(TOURNAMENT_DETAIL_PATH_SEGMENT, ignoreCase = true) }
+
+        val isRewardsPath = uri.lastPathSegment.equals(REWARDS_PATH_SEGMENT, ignoreCase = true)
+        val achievementId = uri.getQueryParameter("achievementId")?.takeIf { it.isNotBlank() }
+
+        when {
+            !tournamentMatchupId.isNullOrBlank() ->
+                launchFlow(LucraUiProvider.LucraFlow.TournamentDetails(tournamentMatchupId))
+
+            isRewardsPath && achievementId != null ->
+                launchFlow(LucraUiProvider.LucraFlow.MinigamesRewards)
+
+            isRewardsPath ->
+                launchFlow(LucraUiProvider.LucraFlow.Profile)
+
+            else -> {
+                LucraPushNotificationService.handleNotificationIntent(intent)?.let { launchFlow(it) }
+            }
         }
     }
 }

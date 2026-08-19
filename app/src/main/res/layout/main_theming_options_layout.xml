@@ -82,6 +82,13 @@
                         android:layout_marginHorizontal="12dp"
                         android:text="Chaos" />
 
+                    <Button
+                        android:id="@+id/btn_theme_trackman"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="12dp"
+                        android:text="Trackman" />
+
                 </LinearLayout>
             </HorizontalScrollView>
 

@@ -1,3 +1,13 @@
+## 6.9.1
+* The Minigames profile hamburger menu no longer shows the Withdraw option when real money actions are disabled.
+* Practice-only support on the Minigames Home screen
+
+## 6.9.0
+* `ClientTheme` now takes separate `lightColorStyle` and `darkColorStyle` parameters, and its single `colorStyle` property no longer exists. The deprecated `ClientTheme(colorStyle, fontFamily)` constructor now maps `colorStyle` to `darkColorStyle` only.
+* Added light mode support to the SDK UI. Supplying only `darkColorStyle` (or using the deprecated constructor) keeps the SDK locked to dark, supplying only `lightColorStyle` locks it to light, and supplying both makes the SDK follow the system appearance. Lucra owns `background`, `surface`, `onBackground`, and `onSurface`; partner values for those `ColorStyle` fields are ignored. See [Theming/Appearance](1.2.1_theming.md) and the `uiMode` host-Activity requirement in [Project Setup](1.0.0_project_setup.md#appearance-lightdark-configuration-changes).
+* Added optional `includePrivateViewableTournaments` parameter (defaults to `false`) to the lightweight `LucraClient.queryRecommendedTournaments(locationId, ...)` overload. When `true`, the response also includes private tournaments that are viewable without a join code — a code is still required to join them. Check the new `RecommendedTournamentLight.isPrivate` convenience property (or `visibilityLevel`) to distinguish them. See [3.3_tournaments_headless.md](3.3_tournaments_headless.md).
+* The Minigames Game Mode Selection tournaments tab now surfaces private tournaments.
+
 ## 6.8.0
 * New headless method `LucraClient.retrieveTournamentDetails(tournamentId, leaderboardLimit, leaderboardOffset, onResult)` returns a lightweight `TournamentDetails` payload backed by the `ui_tournament_details` API — the same response that powers Lucra's in-app tournament details screen. It includes lifecycle flags, buy-in details, reward type, payout structure, how-to-play steps, earned rewards, attempt/replay data, a pageable leaderboard, and terms. See [3.3_tournaments_headless.md](3.3_tournaments_headless.md) for the full type reference and example.
 * Deprecated `LucraClient.retrieveTournament(tournamentId, onResult)` in favor of `retrieveTournamentDetails` for a smaller headless response. The deprecated call keeps working unchanged.
