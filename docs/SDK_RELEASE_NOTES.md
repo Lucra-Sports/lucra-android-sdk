@@ -1,3 +1,7 @@
+## 6.9.1
+* The Minigames profile hamburger menu no longer shows the Withdraw option when real money actions are disabled.
+* Practice-only support on the Minigames Home screen
+
 ## 6.9.0
 * `ClientTheme` now takes separate `lightColorStyle` and `darkColorStyle` parameters, and its single `colorStyle` property no longer exists. The deprecated `ClientTheme(colorStyle, fontFamily)` constructor now maps `colorStyle` to `darkColorStyle` only.
 * Added light mode support to the SDK UI. Supplying only `darkColorStyle` (or using the deprecated constructor) keeps the SDK locked to dark, supplying only `lightColorStyle` locks it to light, and supplying both makes the SDK follow the system appearance. Lucra owns `background`, `surface`, `onBackground`, and `onSurface`; partner values for those `ColorStyle` fields are ignored. See [Theming/Appearance](1.2.1_theming.md) and the `uiMode` host-Activity requirement in [Project Setup](1.0.0_project_setup.md#appearance-lightdark-configuration-changes).
