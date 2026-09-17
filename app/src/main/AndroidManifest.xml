@@ -65,6 +65,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".headless_api.HandshakeAuthActivity"
+            android:configChanges="uiMode"
+            android:exported="false"
+            android:label="Handshake Auth"
+            android:parentActivityName=".MainActivitySdk" />
+
         <meta-data
             android:name="io.branch.sdk.BranchKey"
             android:value="${branchio-key}" />
