@@ -131,4 +131,26 @@ internal val fakeLucraTournamentRewards = listOf(
             ),
         ),
     ),
+    LucraTournamentReward(
+        rewardId = "tournament_reward_003",
+        matchupId = "tournament_003",
+        matchupTitle = "Arcade Challenge",
+        place = 1,
+        claimedAt = null,
+        viewedAt = null,
+        reward = LucraCatalogReward(
+            id = "catalog_003",
+            type = "DISCOUNT_CODE",
+            title = "$25.00 Visa Gift Card",
+            descriptor = "Redeem a $25 Visa gift card",
+            iconUrl = "https://picsum.photos/seed/lucra-reward-2/600/400",
+            bannerIconUrl = "https://picsum.photos/seed/lucra-reward-2/600/400",
+            disclaimer = null,
+            discountCode = LucraDiscountCodeConfig(
+                code = "GETYOURSLOPBOWL2",
+                claimUrl = "https://www.lucrasports.com",
+            ),
+            freeItem = null,
+        ),
+    ),
 )

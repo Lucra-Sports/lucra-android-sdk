@@ -38,12 +38,14 @@ import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDia
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
 import com.lucrasports.sdk.app.fake_resources.fakeLucraTournamentRewards
 import com.lucrasports.sdk.app.headless_api.MatchupApiHandler
+import com.lucrasports.sdk.app.headless_api.HandshakeAuthApiHandler
 import com.lucrasports.sdk.app.headless_api.PhoneAuthApiHandler
 import com.lucrasports.sdk.app.headless_api.TournamentApiHandler
 import com.lucrasports.sdk.app.headless_api.UserApiHandler
 import com.lucrasports.sdk.app.logger.FirebaseLogger
 import com.lucrasports.sdk.app.notifications.DEBUG_PUSH_NOTIFICATIONS
 import com.lucrasports.sdk.app.notifications.scheduleDebugNotification
+import com.lucrasports.sdk.app.ui.LucraFlowPresenter
 import com.lucrasports.sdk.app.ui.OptionBuilder
 import com.lucrasports.sdk.app.ui.dialogs.ComponentDialogs
 import com.lucrasports.sdk.app.ui.dialogs.ConfigDialogs
@@ -67,6 +69,7 @@ import com.lucrasports.sdk.core.reward.toReward
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
+import com.lucrasports.sdk.core.style_guide.ThemeMode
 import com.lucrasports.sdk.core.ui.LucraFlowListener
 import com.lucrasports.sdk.core.ui.LucraUiProvider
 import com.lucrasports.sdk.core.user.SDKUser
@@ -86,13 +89,20 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
 private const val AUTO_JOIN_ENABLED = "AUTO_JOIN_ENABLED"
 private const val SUPPRESS_REWARD_SHEET = "SUPPRESS_REWARD_SHEET"
+private const val THEME_MODE_OVERRIDE = "THEME_MODE_OVERRIDE"
 private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
 private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
 private const val TOURNAMENT_DETAIL_PATH_SEGMENT = "TournamentDetailView"
 private const val REWARDS_PATH_SEGMENT = "Rewards"
+
+private fun nextThemeMode(current: ThemeMode?): ThemeMode? = when (current) {
+    null -> ThemeMode.LIGHT
+    ThemeMode.LIGHT -> ThemeMode.DARK
+    ThemeMode.DARK -> ThemeMode.AUTO
+    ThemeMode.AUTO -> null
+}
 
 class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
@@ -143,6 +153,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private lateinit var matchupApiHandler: MatchupApiHandler
     private lateinit var tournamentApiHandler: TournamentApiHandler
     private lateinit var phoneAuthApiHandler: PhoneAuthApiHandler
+    private lateinit var handshakeAuthApiHandler: HandshakeAuthApiHandler
     private lateinit var userApiHandler: UserApiHandler
     private lateinit var themeManager: ThemeManager
     private lateinit var optionBuilder: OptionBuilder
@@ -154,7 +165,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     )
 
     private val preferences by lazy {
-        getSharedPreferences("LucraSamplePrefs", MODE_PRIVATE)
+        getSharedPreferences(SAMPLE_PREFS, MODE_PRIVATE)
     }
 
     private var apiKeyOverride: String?
@@ -173,6 +184,13 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         get() = preferences.getBoolean(SUPPRESS_REWARD_SHEET, false)
         set(value) {
             preferences.edit { putBoolean(SUPPRESS_REWARD_SHEET, value) }
+        }
+
+    private var themeModeOverride: ThemeMode?
+        get() = preferences.getString(THEME_MODE_OVERRIDE, null)
+            ?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
+        set(value) {
+            preferences.edit { putString(THEME_MODE_OVERRIDE, value?.name) }
         }
 
     private var lucraRewardProviderEnabled = true
@@ -197,6 +215,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         matchupApiHandler = MatchupApiHandler(this)
         tournamentApiHandler = TournamentApiHandler(this)
         phoneAuthApiHandler = PhoneAuthApiHandler(this)
+        handshakeAuthApiHandler = HandshakeAuthApiHandler(this)
         userApiHandler = UserApiHandler(this)
         themeManager = ThemeManager(this)
         optionBuilder = OptionBuilder(this)
@@ -216,6 +235,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         initializeLucraClient()
+
+        // After initialize, like a real integration registering from app start — so an
+        // organic flow entry exercises the handshake with no menu visit.
+        handshakeAuthApiHandler.autoRegisterIfEnabled()
 
         setupPushNotifications()
 
@@ -240,10 +263,10 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         appendComponentOptions()
     }
 
-    private fun buildApiKeySet() = BuildConfig.TESTING_API_KEY != "ADD YOUR API KEY HERE"
+    private fun buildApiKeySet() = isSampleApiKeyConfigured(this)
 
     private fun initializeLucraClient() {
-        val apiKeySet = buildApiKeySet() || apiKeyOverride != null
+        val apiKeySet = buildApiKeySet()
         if (!apiKeySet) {
             Log.e("Lucra SDK Sample", "Did you forget to set your API key?")
             MaterialAlertDialogBuilder(this)
@@ -271,6 +294,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             clientTheme = ClientTheme(
                 lightColorStyle = SampleColorStore.getLightColorStyle(),
                 darkColorStyle = SampleColorStore.getDarkColorStyle(),
+                themeMode = themeModeOverride,
                 fontFamily = FontFamily(
                     mediumFont = Font("bauziet_norm_medium.otf"),
                     normalFont = Font("bauziet_norm_regular.otf"),
@@ -610,32 +634,17 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
             override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
                 Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
-                Log.d("Sample", "fragments: ${supportFragmentManager.fragments}")
-                Log.d("Sample", "backstack count: ${supportFragmentManager.backStackEntryCount}")
-                supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
-                    Log.d("Sample", "Found $entryLucraFlow as $it")
-
-                    if (it is DialogFragment)
-                        it.dismiss()
-                    else
-                        supportFragmentManager.beginTransaction().remove(it).commit()
-                } ?: run {
+                // Routed rather than looked up here: this listener is registered once, but
+                // flows are presented from more than one screen, and each activity has its
+                // own FragmentManager.
+                if (!LucraFlowPresenter.dismiss(entryLucraFlow, supportFragmentManager)) {
                     Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow not found")
                 }
             }
         }
     )
 
-    private fun getEnvironmentFromBuildType(): Environment {
-        return when (BuildConfig.BUILD_TYPE) {
-            "debug" -> Environment.DEVELOPMENT
-            "staging" -> Environment.STAGING
-            "sandbox" -> Environment.SANDBOX
-            "release" -> Environment.PRODUCTION
-            "dev2" -> Environment.DEVELOPMENT2
-            else -> Environment.STAGING
-        }
-    }
+    private fun getEnvironmentFromBuildType(): Environment = sampleEnvironment()
 
     private fun appendApiOptions() {
         appendOption(
@@ -645,6 +654,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             AppCompatResources.getDrawable(this, R.drawable.ic_api)
         ) {
             phoneAuthApiHandler.showPhoneAuthDialog()
+        }
+
+        appendOption(
+            "Handshake Authentication",
+            "Sign in from a partner-signed token with no Lucra login UI. Mints test " +
+                    "tokens on device, with failure injection to observe the phone auth fallback.",
+            apiSection,
+            AppCompatResources.getDrawable(this, R.drawable.ic_api)
+        ) {
+            handshakeAuthApiHandler.showHandshakeAuthScreen()
         }
 
         appendOption(
@@ -1011,6 +1030,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         "Close all Lucra Flows in 10 seconds",
                         "Toggle Auto-Join (currently: ${if (autoJoinEnabled) "ON" else "OFF"})",
                         "Toggle Global Suppression of Reward Sheet (currently: ${if (suppressRewardSheet) "ON" else "OFF"})",
+                        "Cycle Theme Mode (currently: ${themeModeOverride?.name ?: "UNSET (derived)"})",
                         "Restart SDK",
                     )
                 ) { dialog, which ->
@@ -1087,6 +1107,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                         }
 
                         10 -> {
+                            themeModeOverride = nextThemeMode(themeModeOverride)
+                            Toast.makeText(
+                                this,
+                                "Theme mode ${themeModeOverride?.name ?: "unset"}. Restarting SDK...",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            restartActivity()
+                        }
+
+                        11 -> {
                             restartActivity()
                         }
                     }
@@ -1255,8 +1285,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         FlowOption(
             "Claim Prize Sheet",
-            "Launches the claim prize bottom sheet seeded with sample tournament rewards. " +
-                    "Demonstrates that the sheet is invokable as a regular LucraFlow via onLaunchFlow(...)."
+            "Launches the unified reward sheet seeded with sample tournament rewards " +
+                "(carousel of discount-code and physical-item rewards).",
         ) { launchFlow(LucraUiProvider.LucraFlow.ClaimRewards(fakeLucraTournamentRewards)) },
 
         FlowOption(
@@ -1384,9 +1414,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     private fun showLucraDialogFragment(lucraFlow: LucraUiProvider.LucraFlow) {
-        LucraClient().getLucraDialogFragment(lucraFlow).also {
-            it.show(supportFragmentManager, lucraFlow.toString())
-        }
+        LucraFlowPresenter.present(this, lucraFlow)
     }
 
     private fun launchFlow(lucraFlow: LucraUiProvider.LucraFlow) {
