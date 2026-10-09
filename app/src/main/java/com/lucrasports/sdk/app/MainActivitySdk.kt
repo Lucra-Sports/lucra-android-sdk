@@ -5,7 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -16,39 +16,56 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
-import androidx.appcompat.widget.SwitchCompat
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.isNotEmpty
+import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.appbar.CollapsingToolbarLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lucrasports.feature.reward_selection_flow.components.RedeemRewardDialogFragment
 import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment
 import com.lucrasports.feature.reward_selection_flow.components.ViewMyRewardsDialogFragment.ViewMyRewardsListener
+import com.lucrasports.sdk.app.catalog.AuthRequirement
+import com.lucrasports.sdk.app.catalog.CatalogPreferences
+import com.lucrasports.sdk.app.catalog.CatalogUiState
+import com.lucrasports.sdk.app.catalog.MAX_RECENTS
+import com.lucrasports.sdk.app.catalog.SampleActions
+import com.lucrasports.sdk.app.catalog.SampleCategory
+import com.lucrasports.sdk.app.catalog.SampleEntry
+import com.lucrasports.sdk.app.catalog.SampleSurface
+import com.lucrasports.sdk.app.catalog.buildListItems
+import com.lucrasports.sdk.app.catalog.sampleCatalog
+import com.lucrasports.sdk.app.catalog.surfaceCounts
 import com.lucrasports.sdk.app.fake_resources.fakeLucraRewards
-import com.lucrasports.sdk.app.fake_resources.fakeLucraTournamentRewards
+import com.lucrasports.sdk.app.headless_api.HandshakeAuthApiHandler
 import com.lucrasports.sdk.app.headless_api.MatchupApiHandler
 import com.lucrasports.sdk.app.headless_api.PhoneAuthApiHandler
 import com.lucrasports.sdk.app.headless_api.TournamentApiHandler
 import com.lucrasports.sdk.app.headless_api.UserApiHandler
 import com.lucrasports.sdk.app.logger.FirebaseLogger
-import com.lucrasports.sdk.app.notifications.DEBUG_PUSH_NOTIFICATIONS
-import com.lucrasports.sdk.app.notifications.scheduleDebugNotification
-import com.lucrasports.sdk.app.ui.OptionBuilder
+import com.lucrasports.sdk.app.ui.LucraFlowPresenter
+import com.lucrasports.sdk.app.ui.SampleCatalogAdapter
+import com.lucrasports.sdk.app.ui.SampleSettingsSheet
+import com.lucrasports.sdk.app.ui.SettingsRow
 import com.lucrasports.sdk.app.ui.dialogs.ComponentDialogs
 import com.lucrasports.sdk.app.ui.dialogs.ConfigDialogs
+import com.lucrasports.sdk.app.ui.dialogs.DebugDialogs
 import com.lucrasports.sdk.app.ui.dialogs.FlowDialogs
 import com.lucrasports.sdk.app.ui.dialogs.MiniGameDialogs
+import com.lucrasports.sdk.app.ui.dialogs.RecentIdStore
 import com.lucrasports.sdk.app.ui.dialogs.RecreationalGameDialogs
 import com.lucrasports.sdk.app.ui.dialogs.TournamentDialogs
 import com.lucrasports.sdk.app.ui.dialogs.UserDialogs
@@ -67,6 +84,7 @@ import com.lucrasports.sdk.core.reward.toReward
 import com.lucrasports.sdk.core.style_guide.ClientTheme
 import com.lucrasports.sdk.core.style_guide.Font
 import com.lucrasports.sdk.core.style_guide.FontFamily
+import com.lucrasports.sdk.core.style_guide.ThemeMode
 import com.lucrasports.sdk.core.ui.LucraFlowListener
 import com.lucrasports.sdk.core.ui.LucraUiProvider
 import com.lucrasports.sdk.core.user.SDKUser
@@ -78,59 +96,53 @@ import io.branch.indexing.BranchUniversalObject
 import io.branch.referral.Branch
 import io.branch.referral.util.ContentMetadata
 import io.branch.referral.util.LinkProperties
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import java.util.UUID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.util.UUID
 
-private const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
 private const val AUTO_JOIN_ENABLED = "AUTO_JOIN_ENABLED"
+private const val LAUNCH_FULL_SCREEN = "LAUNCH_FULL_SCREEN"
+private const val STATE_QUERY = "STATE_QUERY"
 private const val SUPPRESS_REWARD_SHEET = "SUPPRESS_REWARD_SHEET"
+private const val THEME_MODE_OVERRIDE = "THEME_MODE_OVERRIDE"
 private const val TAG_REDEEM_DIALOG = "TAG_REDEEM_DIALOG"
+private const val TAG_REWARD_SHEET = "TAG_REWARD_SHEET"
 private const val TAG_VIEW_REWARDS = "TAG_VIEW_REWARDS_DIALOG"
 private const val TOURNAMENT_DETAIL_PATH_SEGMENT = "TournamentDetailView"
 private const val REWARDS_PATH_SEGMENT = "Rewards"
 
-class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
+private fun nextThemeMode(current: ThemeMode?): ThemeMode? = when (current) {
+    null -> ThemeMode.LIGHT
+    ThemeMode.LIGHT -> ThemeMode.DARK
+    ThemeMode.DARK -> ThemeMode.AUTO
+    ThemeMode.AUTO -> null
+}
 
-    private val topAppBar: CollapsingToolbarLayout by lazy {
-        findViewById(R.id.top_app_bar)
-    }
+internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener, SampleActions {
 
-    private val header: TextView by lazy {
-        findViewById(R.id.header_title)
-    }
+    private val rootContainer: LinearLayout by lazy { findViewById(R.id.root_container) }
 
-    private val headerAuthStatus: ImageView by lazy {
-        findViewById(R.id.header_auth_status)
-    }
+    private val headerBar: View by lazy { findViewById(R.id.header_bar) }
 
-    private val headerSettings: ImageView by lazy {
-        findViewById(R.id.header_settings)
-    }
+    private val headerAuthStatus: Chip by lazy { findViewById(R.id.header_auth_status) }
 
-    private val fullScreenSwitch: SwitchCompat by lazy {
-        findViewById(R.id.fullScreenSwitch)
-    }
+    private val headerSettings: ImageView by lazy { findViewById(R.id.header_settings) }
 
-    private val fullScreenSwitchContainer: ConstraintLayout by lazy {
-        findViewById(R.id.fullScreenSwitch_container)
-    }
+    private val catalogList: RecyclerView by lazy { findViewById(R.id.catalog_list) }
 
-    private val flowsSection: LinearLayout by lazy {
-        findViewById(R.id.ll_flow_section)
-    }
+    private val searchField: TextInputEditText by lazy { findViewById(R.id.catalog_search) }
 
-    private val componentsSection: LinearLayout by lazy {
-        findViewById(R.id.ll_components_section)
-    }
+    private val surfaceBlurb: TextView by lazy { findViewById(R.id.surface_blurb) }
 
-    private val apiSection: LinearLayout by lazy {
-        findViewById(R.id.ll_api_section)
-    }
+    private val chipEnvironment: Chip by lazy { findViewById(R.id.chip_environment) }
+    private val chipVersion: Chip by lazy { findViewById(R.id.chip_version) }
+    private val chipApiKey: Chip by lazy { findViewById(R.id.chip_api_key) }
+    private val chipSurfaceAll: Chip by lazy { findViewById(R.id.chip_surface_all) }
+    private val chipSurfaceFlows: Chip by lazy { findViewById(R.id.chip_surface_flows) }
+    private val chipSurfaceApis: Chip by lazy { findViewById(R.id.chip_surface_apis) }
+    private val chipSurfaceUi: Chip by lazy { findViewById(R.id.chip_surface_ui) }
 
     // Helper classes
     private lateinit var recreationalGameDialogs: RecreationalGameDialogs
@@ -143,18 +155,15 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private lateinit var matchupApiHandler: MatchupApiHandler
     private lateinit var tournamentApiHandler: TournamentApiHandler
     private lateinit var phoneAuthApiHandler: PhoneAuthApiHandler
+    private lateinit var handshakeAuthApiHandler: HandshakeAuthApiHandler
     private lateinit var userApiHandler: UserApiHandler
     private lateinit var themeManager: ThemeManager
-    private lateinit var optionBuilder: OptionBuilder
-
-    private data class FlowOption(
-        val title: String,
-        val description: String,
-        val action: () -> Unit
-    )
+    private lateinit var debugDialogs: DebugDialogs
+    private val settingsSheet by lazy { SampleSettingsSheet(this) }
+    private val recentIdStore by lazy { RecentIdStore(this) }
 
     private val preferences by lazy {
-        getSharedPreferences("LucraSamplePrefs", MODE_PRIVATE)
+        getSharedPreferences(SAMPLE_PREFS, MODE_PRIVATE)
     }
 
     private var apiKeyOverride: String?
@@ -175,6 +184,33 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             preferences.edit { putBoolean(SUPPRESS_REWARD_SHEET, value) }
         }
 
+    private var themeModeOverride: ThemeMode?
+        get() = preferences.getString(THEME_MODE_OVERRIDE, null)
+            ?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
+        set(value) {
+            preferences.edit { putString(THEME_MODE_OVERRIDE, value?.name) }
+        }
+
+    private val catalog by lazy {
+        sampleCatalog(includeDebugOnly = BuildConfig.BUILD_TYPE != "release")
+    }
+    private val catalogById by lazy { catalog.associateBy(SampleEntry::id) }
+    private val catalogPreferences by lazy { CatalogPreferences(preferences) }
+    private lateinit var catalogAdapter: SampleCatalogAdapter
+    private var uiState = CatalogUiState()
+
+    /**
+     * Live SDK component views for expanded rows, held here rather than in a ViewHolder so a
+     * recycled holder can never drop one or bind it under the wrong row.
+     */
+    private val hostedComponents = mutableMapOf<String, View>()
+
+    private var launchFullScreen: Boolean
+        get() = preferences.getBoolean(LAUNCH_FULL_SCREEN, true)
+        set(value) {
+            preferences.edit { putBoolean(LAUNCH_FULL_SCREEN, value) }
+        }
+
     private var lucraRewardProviderEnabled = true
     private var provideLocationIdOnInit = false
 
@@ -182,6 +218,8 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     private var lucraSDKUser: SDKUser? = null
 
     private lateinit var customLogger: FirebaseLogger
+
+    private lateinit var lucraUi: LucraUi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_sdk)
@@ -197,25 +235,36 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         matchupApiHandler = MatchupApiHandler(this)
         tournamentApiHandler = TournamentApiHandler(this)
         phoneAuthApiHandler = PhoneAuthApiHandler(this)
+        handshakeAuthApiHandler = HandshakeAuthApiHandler(this)
         userApiHandler = UserApiHandler(this)
         themeManager = ThemeManager(this)
-        optionBuilder = OptionBuilder(this)
+        debugDialogs = DebugDialogs(this)
 
-        ViewCompat.setOnApplyWindowInsetsListener(topAppBar) { _, insets ->
-            val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-
-            topAppBar.setPadding(
-                systemBarsInsets.left,
-                statusBarInsets.top,
-                systemBarsInsets.right,
-                0
+        val headerBase = Rect(
+            headerBar.paddingLeft,
+            headerBar.paddingTop,
+            headerBar.paddingRight,
+            headerBar.paddingBottom,
+        )
+        ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Horizontal insets once on the root, so every row shares one gutter under a cutout.
+            rootContainer.updatePadding(left = bars.left, right = bars.right)
+            headerBar.setPadding(
+                headerBase.left,
+                headerBase.top + bars.top,
+                headerBase.right,
+                headerBase.bottom,
             )
-
+            catalogList.updatePadding(bottom = bars.bottom)
             insets
         }
 
         initializeLucraClient()
+
+        // After initialize, like a real integration registering from app start — so an
+        // organic flow entry exercises the handshake with no menu visit.
+        handshakeAuthApiHandler.autoRegisterIfEnabled()
 
         setupPushNotifications()
 
@@ -227,23 +276,20 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
         setupAuthSettingsButton()
 
-        header.text = "${BuildConfig.BUILD_TYPE.uppercase()} SDK ${BuildConfig.VERSION_NAME}"
+        setupHeaderChips()
 
-        fullScreenSwitchContainer.setOnClickListener {
-            fullScreenSwitch.toggle()
-        }
-
-        appendFlowOptions()
-
-        appendApiOptions()
-
-        appendComponentOptions()
+        setupCatalog(savedInstanceState)
     }
 
-    private fun buildApiKeySet() = BuildConfig.TESTING_API_KEY != "ADD YOUR API KEY HERE"
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_QUERY, uiState.query)
+    }
+
+    private fun buildApiKeySet() = isSampleApiKeyConfigured(this)
 
     private fun initializeLucraClient() {
-        val apiKeySet = buildApiKeySet() || apiKeyOverride != null
+        val apiKeySet = buildApiKeySet()
         if (!apiKeySet) {
             Log.e("Lucra SDK Sample", "Did you forget to set your API key?")
             MaterialAlertDialogBuilder(this)
@@ -261,7 +307,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         customLogger = FirebaseLogger(applicationContext)
         LucraClient.initialize(
             application = application,
-            lucraUiProvider = buildLucraUiInstance(),
+            lucraUiProvider = buildLucraUiInstance().also { lucraUi = it },
             apiKey = apiKeyOverride ?: BuildConfig.TESTING_API_KEY,
             environment = getEnvironmentFromBuildType(),
             outputLogs = true,
@@ -271,6 +317,7 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             clientTheme = ClientTheme(
                 lightColorStyle = SampleColorStore.getLightColorStyle(),
                 darkColorStyle = SampleColorStore.getDarkColorStyle(),
+                themeMode = themeModeOverride,
                 fontFamily = FontFamily(
                     mediumFont = Font("bauziet_norm_medium.otf"),
                     normalFont = Font("bauziet_norm_regular.otf"),
@@ -499,108 +546,11 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
             .init()
     }
 
-    private fun appendToggleComponent(
-        title: String,
-        description: String,
-        componentProvider: () -> View
-    ) {
-        appendOption(
-            title,
-            description,
-            componentsSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
-        ) { viewGroup ->
-            if (viewGroup.isNotEmpty()) {
-                viewGroup.removeAllViews()
-            } else {
-                viewGroup.addView(componentProvider())
-            }
-        }
-    }
-
-    private fun appendComponentOptions() {
-        appendToggleComponent(
-            "Profile Pill",
-            "Show the profile pill with the user balance. Authentication not required, but clicking will launch the auth flow."
-        ) {
-            LucraClient().getLucraComponent(
-                this,
-                LucraUiProvider.LucraComponent.ProfilePill { launchFlow(it) })
-        }
-
-        appendToggleComponent(
-            "Recommended Matchups Banner",
-            "Show the recommended matchups banner component. Authentication required."
-        ) {
-            LucraClient().getLucraComponent(
-                this,
-                LucraUiProvider.LucraComponent.RecommendedMatchups { launchFlow(it) })
-        }
-
-        appendToggleComponent(
-            "Floating Action Button",
-            "Show the floating action button to create a sports contest."
-        ) {
-            LucraClient().getLucraComponent(
-                this,
-                LucraUiProvider.LucraComponent.FloatingActionButton { launchFlow(it) })
-        }
-
-        appendOption(
-            "Mini Public Feed",
-            "Show the mini public feed, showing contest cards in an non-scroll list. This will prompt for two player Ids but it can accept an array. No authentication required. Any proceeding actions with prompt the user to authenticate first",
-            componentsSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
-        ) { viewGroup ->
-            if (viewGroup.isNotEmpty()) {
-                viewGroup.removeAllViews()
-                return@appendOption
-            }
-
-            componentDialogs.showMiniPublicFeedDialog { playerOneId, playerTwoId ->
-                val view = LucraClient().getLucraComponent(
-                    this,
-                    LucraUiProvider.LucraComponent.MiniPublicFeed(
-                        listOf(
-                            playerOneId,
-                            playerTwoId
-                        )
-                    ) {
-                        launchFlow(it)
-                    }
-                )
-                viewGroup.addView(view)
-            }
-        }
-
-        appendOption(
-            "Contest Card",
-            "Show contest card for a specific contest",
-            componentsSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_arrow_down)
-        ) { viewGroup ->
-            if (viewGroup.isNotEmpty()) {
-                viewGroup.removeAllViews()
-                return@appendOption
-            }
-
-            componentDialogs.showContestCardDialog { contestId ->
-                val view = LucraClient().getLucraComponent(
-                    this,
-                    LucraUiProvider.LucraComponent.ContestCard(contestId = contestId) {
-                        launchFlow(it)
-                    }
-                )
-                viewGroup.addView(view)
-            }
-        }
-    }
-
     private fun buildLucraUiInstance() = LucraUi(
         lucraFlowListener = object : LucraFlowListener {
             override fun launchNewLucraFlowEntryPoint(entryLucraFlow: LucraUiProvider.LucraFlow): Boolean {
                 Log.d("Sample", "launchNewLucraFlowEntryPoint: $entryLucraFlow")
-                return if (fullScreenSwitch.isChecked) {
+                return if (launchFullScreen) {
                     showLucraDialogFragment(entryLucraFlow)
                     true
                 } else {
@@ -610,490 +560,156 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
 
             override fun onFlowDismissRequested(entryLucraFlow: LucraUiProvider.LucraFlow) {
                 Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow")
-                Log.d("Sample", "fragments: ${supportFragmentManager.fragments}")
-                Log.d("Sample", "backstack count: ${supportFragmentManager.backStackEntryCount}")
-                supportFragmentManager.findFragmentByTag(entryLucraFlow.toString())?.let {
-                    Log.d("Sample", "Found $entryLucraFlow as $it")
-
-                    if (it is DialogFragment)
-                        it.dismiss()
-                    else
-                        supportFragmentManager.beginTransaction().remove(it).commit()
-                } ?: run {
+                // Routed rather than looked up here: this listener is registered once, but
+                // flows are presented from more than one screen, and each activity has its
+                // own FragmentManager.
+                if (!LucraFlowPresenter.dismiss(entryLucraFlow, supportFragmentManager)) {
                     Log.d("Sample", "onFlowDismissRequested: $entryLucraFlow not found")
                 }
             }
         }
     )
 
-    private fun getEnvironmentFromBuildType(): Environment {
-        return when (BuildConfig.BUILD_TYPE) {
-            "debug" -> Environment.DEVELOPMENT
-            "staging" -> Environment.STAGING
-            "sandbox" -> Environment.SANDBOX
-            "release" -> Environment.PRODUCTION
-            "dev2" -> Environment.DEVELOPMENT2
-            else -> Environment.STAGING
-        }
+    private fun getEnvironmentFromBuildType(): Environment = sampleEnvironment()
+
+    private fun setupAuthSettingsButton() {
+        headerSettings.setOnClickListener { settingsSheet.show(::settingsRows) }
     }
 
-    private fun appendApiOptions() {
-        appendOption(
-            "Phone Authentication",
-            "Authenticate via phone number with SMS verification code. No login required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            phoneAuthApiHandler.showPhoneAuthDialog()
-        }
-
-        appendOption(
-            "Logout",
-            "Logout the current user.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            userApiHandler.logout()
-        }
-
-        appendOption(
-            "Update Username",
-            "A prompt will show to update the current user's username. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            userDialogs.showUpdateUsernameDialog(lucraSDKUser) { updatedUser ->
-                lucraSDKUser = updatedUser
-            }
-        }
-
-        appendOption(
-            "Configure User",
-            "A prompt will show to update or preconfigure the SDK User. Authentication not required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            userDialogs.showConfigureUserDialog(lucraSDKUser) { updatedUser ->
-                lucraSDKUser = updatedUser
-            }
-        }
-
-        appendOption(
-            "Retrieve Matchup Details",
-            "A prompt will show to set the matchup_id.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            matchupApiHandler.showRetrieveMatchupDialog()
-        }
-
-        appendOption(
-            "Get User Matchups",
-            "Retrieve the current user's matchups grouped by type and status. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                userApiHandler.getUserMatchups()
-            }
-        }
-
-        appendOption(
-            "Subscribe to Matchup Details",
-            "A prompt will show to set the matchup_id and subscribe to live updates.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            matchupApiHandler.showSubscribeMatchupDialog()
-        }
-
-        appendOption(
-            "Cancel Matchup Details Subscription",
-            "Cancel the active matchup details subscription, if any.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            matchupApiHandler.cancelMatchupDetailsSubscription()
-        }
-
-        appendOption(
-            "Check KYC Status",
-            "Verify the KYC status of the current user. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                userApiHandler.checkKYCStatus(lucraSDKUser!!.userId!!)
-            }
-        }
-
-        appendOption(
-            "Submit Demographic Form",
-            "Submit demographic data headlessly (DOB, email, zip, name). Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                userDialogs.showSubmitDemographicFormDialog()
-            }
-        }
-
-        appendOption(
-            "Retrieve Tournament",
-            "A prompt will show to set the tournament_id.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            tournamentDialogs.showRetrieveTournamentDialog()
-        }
-
-        appendOption(
-            "Retrieve Tournament Details (light)",
-            "Fetch the lightweight ui_tournament_details payload for a tournament_id and print the full result.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            tournamentDialogs.showRetrieveTournamentDetailsDialog()
-        }
-
-        appendOption(
-            "Join Tournament",
-            "A prompt will show to set the tournament_id. For free tournaments, will launch demographic form if email/zip missing. For paid tournaments, will launch verification if not verified.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                tournamentDialogs.showJoinTournamentDialog(::launchFlow)
-            }
-        }
-
-        appendOption(
-            "Submit tournament score manually",
-            "Submit the score of a tournament for a specified tournament. Tournament ID is required",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                tournamentDialogs.showSubmitScoreDialog(::launchFlow)
-            }
-        }
-
-        appendOption(
-            "Submit Score by Metadata",
-            "Submit a tournament score by matching matchup details, game ID or location ID.. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@appendOption
-            }
-            tournamentDialogs.showSubmitUserScoreByMetadataDialog()
-        }
-
-        appendOption(
-            "Search Matchups by Metadata",
-            "Search for matchups using metadata criteria. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            if (lucraSDKUser?.userId == null) {
-                Toast.makeText(
-                    this@MainActivitySdk,
-                    "Not logged in yet!",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@appendOption
-            }
-            tournamentDialogs.showSearchMatchupsByMetadataDialog()
-        }
-
-
-        appendOption(
-            "Recommended Tournaments",
-            "Retrieve 20 recommended tournaments.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                tournamentDialogs.showRecommendedTournamentsDialog()
-            }
-        }
-
-
-        appendOption(
-            "Recommended Tournaments Light",
-            "Retrieve lightweight recommended tournament data. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                tournamentDialogs.showRecommendedTournamentsLightDialog()
-            }
-        }
-
-        appendOption(
-            "Auto-Join Tournaments",
-            "Manually trigger auto-join for all eligible free tournaments. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                tournamentApiHandler.autoJoinTournaments()
-            }
-        }
-
-        appendOption(
-            "Start MiniGame (Headless)",
-            "Headless start of a minigame session. Prompts for game ID, mode (defaults to Practice), wager amount, and matchup ID. Returns the iframe URL for the partner-owned WebView.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            miniGameDialogs.showStartMiniGameApiDialog()
-        }
-
-        appendOption(
-            "Preload Geo Token",
-            "Pre-fetch a GeoComply token for cash modes. Fire-and-forget — call early so the token is cached before starting a cash minigame.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            miniGameDialogs.preloadGeoToken()
-        }
-
-        appendOption(
-            "Get MiniGames list",
-            "Headless fetch of the minigames enabled for the current tenant, each with its config options.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            miniGameDialogs.showGetMiniGamesApiDialog()
-        }
-
-
-        // Add the recreational games API options
-        appendRecreationalGamesApiOptions()
-    }
-
-
-    private fun appendRecreationalGamesApiOptions() {
-        appendOption(
-            "Create Recreational Game",
-            "Create a recreational game with specified parameters. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                recreationalGameDialogs.showCreateGameDialog()
-            }
-        }
-
-        appendOption(
-            "Accept Versus Recreational Game",
-            "Accept a Group vs Group recreational game. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                recreationalGameDialogs.showAcceptVersusGameDialog()
-            }
-        }
-
-        appendOption(
-            "Accept Free-For-All Recreational Game",
-            "Accept a Free-For-All recreational game. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                recreationalGameDialogs.showAcceptFreeForAllGameDialog()
-            }
-        }
-
-        appendOption(
-            "Cancel Recreational Game",
-            "Cancel a recreational game. Authentication required.",
-            apiSection,
-            AppCompatResources.getDrawable(this, R.drawable.ic_api)
-        ) {
-            requireAuth {
-                recreationalGameDialogs.showCancelGameDialog()
-            }
-        }
-
-        // Debug-only tooling (hidden in release builds). Opens a picker mirroring iOS
-        // DebugPushNotificationView so each push type can be exercised in-app.
-        if (BuildConfig.BUILD_TYPE != "release") {
-            appendOption(
-                "Push Debug",
-                "Pick a mock push (tournament / achievement / funds). Banner fires after 2s — tap it to validate deeplink handling.",
-                apiSection,
-                AppCompatResources.getDrawable(this, R.drawable.ic_api)
+    private fun settingsRows(): List<SettingsRow> = buildList {
+        add(SettingsRow.Group("SDK"))
+        add(SettingsRow.Info("Environment", BuildConfig.BUILD_TYPE))
+        add(
+            SettingsRow.Action(
+                title = "API key",
+                value = if (apiKeyOverride != null) "override" else "from build",
+                restarts = true,
+                onClick = ::overrideApiUrlAndKey,
+            )
+        )
+        add(
+            SettingsRow.Action(
+                title = "Theme mode",
+                value = themeModeOverride?.name ?: "derived",
+                restarts = true,
             ) {
-                showPushDebugPicker()
+                themeModeOverride = nextThemeMode(themeModeOverride)
+                restartActivity()
             }
-        }
-    }
-
-    private fun showPushDebugPicker() {
-        val density = resources.displayMetrics.density
-        val horizontalPad = (24 * density).toInt()
-        val verticalPad = (8 * density).toInt()
-
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(horizontalPad, verticalPad, horizontalPad, verticalPad)
-        }
-
-        container.addView(
-            TextView(this).apply {
-                text =
-                    "Tap a notification to schedule it. The banner fires after 2 seconds — tap it to validate in-app handling."
-                textSize = 13f
-                setPadding(0, 0, 0, (12 * density).toInt())
+        )
+        add(
+            SettingsRow.Toggle(
+                title = "Full screen flows",
+                checked = launchFullScreen,
+            ) { launchFullScreen = it }
+        )
+        add(
+            SettingsRow.Toggle(
+                title = "Auto-join tournaments",
+                checked = autoJoinEnabled,
+                restarts = true,
+            ) { autoJoinEnabled = it }
+        )
+        add(
+            SettingsRow.Toggle(
+                title = "Suppress reward sheet",
+                checked = suppressRewardSheet,
+                restarts = true,
+            ) {
+                suppressRewardSheet = it
+                restartActivity()
             }
         )
 
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Push Debug")
-            .setView(container)
-            .setNegativeButton("Done", null)
-            .create()
-
-        DEBUG_PUSH_NOTIFICATIONS.forEach { notification ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                isClickable = true
-                isFocusable = true
-                setPadding(0, (12 * density).toInt(), 0, (12 * density).toInt())
-                setOnClickListener {
-                    dialog.dismiss()
-                    scheduleDebugNotification(notification)
+        add(SettingsRow.Group("Providers"))
+        add(
+            SettingsRow.Action(
+                title = "Reward provider",
+                value = if (lucraRewardProviderEnabled) "on · ${fakeLucraRewards.size}" else "off",
+            ) {
+                configDialogs.showRewardProviderDialog(
+                    currentRewards = fakeLucraRewards,
+                    enabled = lucraRewardProviderEnabled
+                ) { enabled, updatedRewards ->
+                    lucraRewardProviderEnabled = enabled
+                    fakeLucraRewards = updatedRewards
+                    setupRewardProvider(if (enabled) updatedRewards else null)
                 }
             }
-            row.addView(
-                TextView(this).apply {
-                    text = notification.label
-                    textSize = 16f
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+        )
+        add(
+            SettingsRow.Action(title = "Convert to credit") {
+                configDialogs.showConvertToCreditDialog { provider ->
+                    LucraClient().setConvertToCreditProvider(provider)
                 }
+            }
+        )
+        add(
+            SettingsRow.Action(
+                title = "League filter",
+                value = LucraClient().getPublicFeedLeagueIdFilter()
+                    .currentIdFilters.value.size
+                    .let { if (it == 0) "none" else "$it" },
+            ) {
+                val leagueFilter = LucraClient().getPublicFeedLeagueIdFilter()
+                configDialogs.showLeagueFilterDialog(
+                    currentFilters = leagueFilter.currentIdFilters.value,
+                    onAddFilter = { id -> leagueFilter.addId(id) },
+                    onClearFilters = { leagueFilter.clearIds() }
+                )
+            }
+        )
+        add(
+            SettingsRow.Action(title = "Theme colors") {
+                configDialogs.showThemingDialog(themeManager, ::restartActivity)
+            }
+        )
+        add(
+            SettingsRow.Action(
+                title = "Remembered IDs",
+                value = recentIdStore.total().let { if (it == 0) "none" else "$it stored" },
+                onClick = ::showRememberedIds,
             )
-            row.addView(
-                TextView(this).apply {
-                    text = notification.body
-                    textSize = 13f
-                }
-            )
-            container.addView(row)
-        }
+        )
 
-        dialog.show()
+        add(SettingsRow.Group("Actions"))
+        add(
+            SettingsRow.Action(title = "View configuration") {
+                configDialogs.showViewConfigurationDialog(LucraClient().revealConfiguration())
+            }
+        )
+        add(
+            SettingsRow.Action(title = "Close all flows in 10s") {
+                lifecycleScope.launch {
+                    delay(10000)
+                    LucraClient().closeFullScreenLucraFlows(supportFragmentManager)
+                }
+            }
+        )
+        add(
+            SettingsRow.Action(title = "Restart SDK", destructive = true, onClick = ::restartActivity)
+        )
+
+        add(SettingsRow.Group("Build"))
+        add(SettingsRow.Info("Version", "${BuildConfig.VERSION_NAME} ${BuildConfig.BUILD_TYPE}"))
+        if (BuildConfig.GIT_BRANCH.isNotEmpty()) {
+            add(SettingsRow.Info("Branch", BuildConfig.GIT_BRANCH))
+        }
+        if (BuildConfig.GIT_COMMIT.isNotEmpty()) {
+            add(SettingsRow.Info("Commit", BuildConfig.GIT_COMMIT))
+        }
     }
 
-    private fun setupAuthSettingsButton() {
-        headerSettings.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Settings Options")
-                .setPositiveButton("Close", null)
-                .setItems(
-                    arrayOf<CharSequence>(
-                        "Override API URL and key",
-                        "Set League Filter",
-                        "View Recent IDs of games, leagues and players",
-                        "Update Style Colors",
-                        "Configure Reward Service",
-                        "Update Convert to Credit Info",
-                        "View Configuration",
-                        "Close all Lucra Flows in 10 seconds",
-                        "Toggle Auto-Join (currently: ${if (autoJoinEnabled) "ON" else "OFF"})",
-                        "Toggle Global Suppression of Reward Sheet (currently: ${if (suppressRewardSheet) "ON" else "OFF"})",
-                        "Restart SDK",
-                    )
-                ) { dialog, which ->
-                    when (which) {
-                        0 -> {
-                            overrideApiUrlAndKey()
-                        }
-
-                        1 -> {
-                            val leagueFilter = LucraClient().getPublicFeedLeagueIdFilter()
-                            configDialogs.showLeagueFilterDialog(
-                                currentFilters = leagueFilter.currentIdFilters.value,
-                                onAddFilter = { id -> leagueFilter.addId(id) },
-                                onClearFilters = { leagueFilter.clearIds() }
-                            )
-                        }
-
-                        2 -> {
-                            // TODO expose an internal list which contains list of recent
-                            //  Games Ids, League Ids, and Player Ids
-                            //  It should be a capped list and for testing purposes only
-                            configDialogs.showNotImplementedDialog("Recent Game Data")
-                        }
-
-                        3 -> {
-                            configDialogs.showThemingDialog(themeManager, ::restartActivity)
-                        }
-
-                        4 -> {
-                            configDialogs.showRewardProviderDialog(
-                                currentRewards = fakeLucraRewards,
-                                enabled = lucraRewardProviderEnabled
-                            ) { enabled, updatedRewards ->
-                                lucraRewardProviderEnabled = enabled
-                                fakeLucraRewards = updatedRewards
-                                setupRewardProvider(if (enabled) updatedRewards else null)
-                            }
-                        }
-
-                        5 -> {
-                            configDialogs.showConvertToCreditDialog { provider ->
-                                LucraClient().setConvertToCreditProvider(provider)
-                            }
-                        }
-
-                        6 -> {
-                            configDialogs.showViewConfigurationDialog(LucraClient().revealConfiguration())
-                        }
-
-                        7 -> {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                delay(10000)
-                                LucraClient().closeFullScreenLucraFlows(supportFragmentManager)
-                            }
-                        }
-
-                        8 -> {
-                            autoJoinEnabled = !autoJoinEnabled
-                            Toast.makeText(
-                                this,
-                                "Auto-join ${if (autoJoinEnabled) "enabled" else "disabled"}. Restart SDK to apply.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-
-                        9 -> {
-                            suppressRewardSheet = !suppressRewardSheet
-                            Toast.makeText(
-                                this,
-                                "Reward sheet suppression ${if (suppressRewardSheet) "enabled" else "disabled"}. Restarting SDK...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            restartActivity()
-                        }
-
-                        10 -> {
-                            restartActivity()
-                        }
-                    }
-                    dialog.dismiss()
-                }
-                .show()
-        }
+    private fun showRememberedIds() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Remembered IDs")
+            .setMessage(recentIdStore.summary())
+            .setPositiveButton("Close", null)
+            .setNegativeButton("Clear") { dialog, _ ->
+                recentIdStore.clear()
+                dialog.dismiss()
+            }
+            .show()
     }
 
     private fun overrideApiUrlAndKey() {
@@ -1162,128 +778,162 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
-    private fun getFlowOptions(): List<FlowOption> = listOf(
-        FlowOption(
-            "Profile",
-            "Navigate to the current user's profile. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.Profile) },
+    private fun setupHeaderChips() {
+        chipEnvironment.text = BuildConfig.BUILD_TYPE
+        chipEnvironment.setTextColor(
+            ContextCompat.getColor(
+                this,
+                when (BuildConfig.BUILD_TYPE) {
+                    "release" -> R.color.env_release
+                    "staging", "sandbox" -> R.color.env_staging
+                    else -> R.color.env_debug
+                }
+            )
+        )
+        chipVersion.text = "v${BuildConfig.VERSION_NAME}"
+        chipApiKey.isVisible = !buildApiKeySet()
+        renderAuthChip()
+    }
 
-        FlowOption(
-            "Home Page",
-            "Navigate to the primary starting point for Tournaments and Games."
-        ) { flowDialogs.showHomePageDialog(::launchFlow) },
+    private fun renderAuthChip() {
+        val user = lucraSDKUser
+        headerAuthStatus.text = user?.username?.takeIf { it.isNotBlank() }
+            ?: user?.userId?.take(8)
+            ?: getString(R.string.catalog_signed_out)
+        headerAuthStatus.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (user?.userId != null) R.color.signed_in else R.color.text_muted
+            )
+        )
+    }
 
-        FlowOption(
-            "Wallet",
-            "Navigate to the current user's wallet. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.Wallet) },
+    private fun setupCatalog(savedInstanceState: Bundle?) {
+        catalogAdapter = SampleCatalogAdapter(
+            onEntryClick = ::onEntrySelected,
+            onCategoryClick = ::onCategoryToggled,
+            onClearSearch = { searchField.setText("") },
+            hostedComponent = hostedComponents::get,
+        )
+        catalogList.layoutManager = LinearLayoutManager(this)
+        catalogList.adapter = catalogAdapter
+        // Cross-fading every row on each keystroke reads as flicker.
+        (catalogList.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
 
-        FlowOption(
-            "Verify User Identity",
-            "Navigate user identity verification screen. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.VerifyIdentity) },
+        searchField.doAfterTextChanged { text ->
+            update { it.copy(query = text?.toString().orEmpty()) }
+        }
 
-        FlowOption(
-            "Demographic Form",
-            "Navigate to the demographic form to collect user information. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.DemographicForm) },
+        // Per chip, not on the ChipGroup: CompoundButton is stable across the Material versions
+        // this module compiles against and runs against.
+        surfaceChips().forEach { (chip, surface) ->
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) update { it.copy(surface = surface) }
+            }
+        }
 
-        FlowOption(
-            "Create Games Matchup",
-            "Navigate to the create games match up flow. Authentication required"
-        ) { flowDialogs.showCreateGamesMatchupDialog(::launchFlow) },
+        uiState = catalogPreferences.load().copy(
+            query = savedInstanceState?.getString(STATE_QUERY).orEmpty(),
+            signedIn = lucraSDKUser?.userId != null,
+        )
+        surfaceChips().first { (_, surface) -> surface == uiState.surface }.first.isChecked = true
+        if (uiState.query.isNotEmpty()) searchField.setText(uiState.query)
+        render()
+    }
 
-        FlowOption(
-            "Login",
-            "Navigate directly to the login screen. If user is already logged in, this will exit immediately"
-        ) { launchFlow(LucraUiProvider.LucraFlow.Login) },
-
-        FlowOption(
-            "Add Funds",
-            "Navigate to the add funds flow. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.AddFunds) },
-
-        FlowOption(
-            "Withdraw Funds",
-            "Navigate to the withdraw funds flow. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.WithdrawFunds) },
-
-        FlowOption(
-            "Public Sports Feed",
-            "Navigate to the public sports feed. No authentication required. Any proceeding actions with prompt the user to authenticate first"
-        ) { launchFlow(LucraUiProvider.LucraFlow.PublicFeed) },
-
-        FlowOption(
-            "Create Sports Matchup",
-            "Navigate to the create sports match up flow. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.CreateSportsMatchup) },
-
-        FlowOption(
-            "Show Matchup",
-            "Navigate to the matchup details flow. Authentication required"
-        ) { flowDialogs.showMatchupDetailsDialog(::launchFlow) },
-
-        FlowOption(
-            "Show Minigame Matchup",
-            "Navigate directly to the Minigames-themed matchup details. Requires a matchup whose game has minigame_enabled = true. Authentication required."
-        ) { flowDialogs.showMinigameMatchupDetailsDialog(::launchFlow) },
-
-        FlowOption(
-            "Show Tournament Matchup",
-            "Navigate to the tournament details flow. Authentication required"
-        ) { flowDialogs.showTournamentDetailsDialog(::launchFlow) },
-
-        FlowOption(
-            "My Matchups",
-            "Navigate to the user's created matchups screen. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.MyMatchup) },
-
-        FlowOption(
-            "Deeplink to Matchup Details",
-            "Navigate to specific matchup via a legacy deeplink uri. Authentication required"
-        ) { flowDialogs.showDeeplinkDialog(::launchFlow) },
-
-        FlowOption(
-            "Tournaments",
-            "Navigate to the Tournaments screen."
-        ) { launchFlow(LucraUiProvider.LucraFlow.Tournaments) },
-
-        FlowOption(
-            "Achievements",
-            "Navigate to the Achievements screen to view and claim achievement rewards. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.Achievements) },
-
-        FlowOption(
-            "Claim Prize Sheet",
-            "Launches the claim prize bottom sheet seeded with sample tournament rewards. " +
-                    "Demonstrates that the sheet is invokable as a regular LucraFlow via onLaunchFlow(...)."
-        ) { launchFlow(LucraUiProvider.LucraFlow.ClaimRewards(fakeLucraTournamentRewards)) },
-
-        FlowOption(
-            "MiniGame",
-            "Launch the MiniGame flow. Prompts for game ID, mode (defaults to Practice), wager amount, and matchup ID."
-        ) { miniGameDialogs.showLaunchMiniGameFlowDialog(::launchFlow) },
-
-        FlowOption(
-            "Minigames Profile",
-            "Launch the minigames-flavored profile with stats and competition results. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.MinigamesProfile) },
-
-        FlowOption(
-            "Minigames Home",
-            "Launch the minigames-flavored home: profile pill, achievement card, game carousel and featured tournament. Playing routes into Game Mode Selection."
-        ) { launchFlow(LucraUiProvider.LucraFlow.MinigamesHome) },
-
-        FlowOption(
-        "Minigames Rewards",
-        "Launch the minigames-flavored rewards list with claimable achievement rewards by game. Authentication required"
-        ) { launchFlow(LucraUiProvider.LucraFlow.MinigamesRewards) },
+    private fun surfaceChips(): List<Pair<Chip, SampleSurface?>> = listOf(
+        chipSurfaceAll to null,
+        chipSurfaceFlows to SampleSurface.Flow,
+        chipSurfaceApis to SampleSurface.Api,
+        chipSurfaceUi to SampleSurface.Ui,
     )
 
-    private fun appendFlowOptions() {
-        getFlowOptions().forEach { option ->
-            appendOption(option.title, option.description, flowsSection) { option.action() }
+    private fun update(transform: (CatalogUiState) -> CatalogUiState) {
+        uiState = transform(uiState)
+        catalogPreferences.save(uiState)
+        render()
+    }
+
+    private fun render() {
+        catalogAdapter.submitList(buildListItems(catalog, uiState))
+
+        val counts = surfaceCounts(catalog, uiState.query)
+        chipSurfaceAll.text = getString(R.string.catalog_filter_all, counts[null] ?: 0)
+        chipSurfaceFlows.text =
+            getString(R.string.catalog_filter_flows, counts[SampleSurface.Flow] ?: 0)
+        chipSurfaceApis.text =
+            getString(R.string.catalog_filter_apis, counts[SampleSurface.Api] ?: 0)
+        chipSurfaceUi.text = getString(R.string.catalog_filter_ui, counts[SampleSurface.Ui] ?: 0)
+
+        surfaceBlurb.setText(
+            when (uiState.surface) {
+                SampleSurface.Flow -> R.string.lucra_flow_description
+                SampleSurface.Api -> R.string.lucra_headless_description
+                SampleSurface.Ui -> R.string.lucra_component_description
+                null -> R.string.catalog_blurb_all
+            }
+        )
+    }
+
+    private fun onEntrySelected(entryId: String) {
+        val entry = catalogById[entryId] ?: return
+        if (entry.auth == AuthRequirement.HostBlocks && lucraSDKUser?.userId == null) {
+            Toast.makeText(this, "Not logged in yet!", Toast.LENGTH_SHORT).show()
+            return
         }
+        update {
+            it.copy(recentIds = (listOf(entryId) + it.recentIds).distinct().take(MAX_RECENTS))
+        }
+        if (entry.surface == SampleSurface.Ui) toggleComponent(entry) else entry.onSelect(this)
+    }
+
+    private fun onCategoryToggled(category: SampleCategory) {
+        update {
+            val expanded =
+                if (category in it.expanded) it.expanded - category else it.expanded + category
+            it.copy(expanded = expanded)
+        }
+    }
+
+    override val flows get() = flowDialogs
+    override val tournaments get() = tournamentDialogs
+    override val users get() = userDialogs
+    override val recreational get() = recreationalGameDialogs
+    override val components get() = componentDialogs
+    override val miniGames get() = miniGameDialogs
+    override val debug get() = debugDialogs
+    override val matchupApi get() = matchupApiHandler
+    override val tournamentApi get() = tournamentApiHandler
+    override val phoneAuthApi get() = phoneAuthApiHandler
+    override val handshakeAuthApi get() = handshakeAuthApiHandler
+    override val userApi get() = userApiHandler
+
+    override val currentUser: SDKUser? get() = lucraSDKUser
+
+    override fun onUserUpdated(user: SDKUser?) {
+        lucraSDKUser = user
+    }
+
+    override fun lucraComponent(component: LucraUiProvider.LucraComponent): View =
+        LucraClient().getLucraComponent(this, component)
+
+    /** A cancelled ID prompt never calls back, so nothing expands in that case. */
+    private fun toggleComponent(entry: SampleEntry) {
+        if (entry.id in uiState.expandedComponents) {
+            releaseComponent(entry.id)
+            update { it.copy(expandedComponents = it.expandedComponents - entry.id) }
+            return
+        }
+        val provider = entry.embedded ?: return
+        provider.provide(this) { view ->
+            hostedComponents[entry.id] = view
+            update { it.copy(expandedComponents = it.expandedComponents + entry.id) }
+        }
+    }
+
+    private fun releaseComponent(entryId: String) {
+        val view = hostedComponents.remove(entryId) ?: return
+        (view.parent as? ViewGroup)?.removeView(view)
     }
 
     override fun onColorSelected(dialogId: Int, color: Int) {
@@ -1293,24 +943,6 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     override fun onDialogDismissed(dialogId: Int) { /* no-op */
     }
 
-    private inline fun requireAuth(action: () -> Unit) {
-        if (lucraSDKUser?.userId == null) {
-            Toast.makeText(this, "Not logged in yet!", Toast.LENGTH_SHORT).show()
-            return
-        }
-        action()
-    }
-
-    private fun appendOption(
-        title: String,
-        description: String,
-        root: ViewGroup,
-        drawable: Drawable? = null,
-        onClick: (ViewGroup) -> Unit
-    ) {
-        optionBuilder.appendOption(title, description, root, drawable, onClick)
-    }
-
     private fun observeLoggedInUser() {
         // Or use observeSDKUser { result -> ... }
         LucraClient().observeSDKUserFlow().onEach { sdkUserResult ->
@@ -1318,52 +950,30 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
                 is SDKUserResult.Success -> {
                     Log.d("Lucra SDK Sample", "Fetched latest user")
                     lucraSDKUser = sdkUserResult.sdkUser
-                    headerAuthStatus.setImageDrawable(
-                        AppCompatResources.getDrawable(
-                            this,
-                            R.drawable.ic_logged_in
-                        )
-                    )
                 }
 
                 is SDKUserResult.Error -> {
                     Log.e("Lucra SDK Sample", "Unable to get username ${sdkUserResult.error}")
                     lucraSDKUser = null
-                    headerAuthStatus.setImageDrawable(
-                        AppCompatResources.getDrawable(
-                            this,
-                            R.drawable.ic_logged_out
-                        )
-                    )
-                }
-
-                SDKUserResult.InvalidUsername -> {
-                    // Shouldn't happen here
                 }
 
                 SDKUserResult.NotLoggedIn, SDKUserResult.WaitingForLogin -> {
-                    Log.e(
-                        "Lucra SDK Sample",
-                        "User not logged in yet!"
-                    )
+                    Log.e("Lucra SDK Sample", "User not logged in yet!")
                     lucraSDKUser = null
-                    headerAuthStatus.setImageDrawable(
-                        AppCompatResources.getDrawable(
-                            this,
-                            R.drawable.ic_logged_out
-                        )
-                    )
                 }
 
-                SDKUserResult.Loading -> {
-
-                }
-
-                else -> {
-
-                }
+                // Transient: keep the last known user rather than flashing signed out.
+                SDKUserResult.Loading, SDKUserResult.InvalidUsername -> Unit
             }
+            onAuthStateChanged()
         }.launchIn(lifecycleScope)
+    }
+
+    private fun onAuthStateChanged() {
+        val signedIn = lucraSDKUser?.userId != null
+        renderAuthChip()
+        // Drives the lock icons, so signing in visibly unlocks the gated rows.
+        if (::catalogAdapter.isInitialized) update { it.copy(signedIn = signedIn) }
     }
 
     /**
@@ -1384,14 +994,16 @@ class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     private fun showLucraDialogFragment(lucraFlow: LucraUiProvider.LucraFlow) {
-        LucraClient().getLucraDialogFragment(lucraFlow).also {
-            it.show(supportFragmentManager, lucraFlow.toString())
-        }
+        LucraFlowPresenter.present(this, lucraFlow)
     }
 
-    private fun launchFlow(lucraFlow: LucraUiProvider.LucraFlow) {
-//        showLucraFragment(lucraFlow)
-        showLucraDialogFragment(lucraFlow)
+    override fun launchFlow(flow: LucraUiProvider.LucraFlow) {
+        showLucraDialogFragment(flow)
+    }
+
+    override fun showRewardSheet() {
+        // Unseeded, so the sheet runs the same combined-rewards fetch auto-show does.
+        lucraUi.getRewardSheetDialogFragment().show(supportFragmentManager, TAG_REWARD_SHEET)
     }
 
     override fun onDestroy() {

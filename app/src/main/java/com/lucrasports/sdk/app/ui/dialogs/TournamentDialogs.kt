@@ -34,7 +34,7 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
         scoreInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
         layout.addView(scoreLayout)
 
-        val (tournamentIdLayout, tournamentIdInput) = createTextInputLayout("Tournament ID")
+        val (tournamentIdLayout, tournamentIdInput) = createTextInputLayout("Tournament ID", recallKey = RecallKey.TOURNAMENT_ID)
         layout.addView(tournamentIdLayout)
 
         val isFinalCheckbox = androidx.appcompat.widget.AppCompatCheckBox(context).apply {
@@ -133,13 +133,13 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
         val layout = createVerticalLayout()
         scrollView.addView(layout)
 
-        val (gameIdLayout, gameIdInput) = createTextInputLayout("Game ID (optional)")
+        val (gameIdLayout, gameIdInput) = createTextInputLayout("Game ID (optional)", recallKey = RecallKey.GAME_ID)
         layout.addView(gameIdLayout)
 
-        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)")
+        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)", recallKey = RecallKey.LOCATION_ID)
         layout.addView(locationIdLayout)
 
-        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID (optional)")
+        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID (optional)", recallKey = RecallKey.MATCHUP_ID)
         layout.addView(matchupIdLayout)
 
         val metadataLabel = TextView(context).apply {
@@ -219,13 +219,13 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
         val (scoreLayout, scoreInput) = createTextInputLayout("Score", "25")
         layout.addView(scoreLayout)
 
-        val (gameIdLayout, gameIdInput) = createTextInputLayout("Game ID (optional)")
+        val (gameIdLayout, gameIdInput) = createTextInputLayout("Game ID (optional)", recallKey = RecallKey.GAME_ID)
         layout.addView(gameIdLayout)
 
-        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)")
+        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)", recallKey = RecallKey.LOCATION_ID)
         layout.addView(locationIdLayout)
 
-        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID (optional)")
+        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID (optional)", recallKey = RecallKey.MATCHUP_ID)
         layout.addView(matchupIdLayout)
 
         val isFinalCheckbox = AppCompatCheckBox(context).apply {
@@ -342,7 +342,7 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
         scrollView.addView(layout)
 
         val (tournamentIdLayout, tournamentIdInput) =
-            createTextInputLayout("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d")
+            createTextInputLayout("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d", RecallKey.TOURNAMENT_ID)
         layout.addView(tournamentIdLayout)
 
         val (limitLayout, limitInput) = createTextInputLayout("Leaderboard Limit (optional)")
@@ -391,7 +391,7 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
      */
     @Suppress("DEPRECATION")
     fun showRetrieveTournamentDialog() {
-        val input = createEditText("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d")
+        val input = createRecallField("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d", RecallKey.TOURNAMENT_ID)
         
         createDialogBuilder()
             .setTitle("Set Tournament Id")
@@ -452,7 +452,7 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
         val layout = createVerticalLayout()
         scrollView.addView(layout)
 
-        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)")
+        val (locationIdLayout, locationIdInput) = createTextInputLayout("Location ID (optional)", recallKey = RecallKey.LOCATION_ID)
         layout.addView(locationIdLayout)
 
         val (limitLayout, limitInput) = createTextInputLayout("Limit", "20")
@@ -505,7 +505,7 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
      * Shows dialog to join a tournament.
      */
     fun showJoinTournamentDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val input = createEditText("Tournament ID", "d0b78c81-a22b-4f54-b1fe-2fadc8354c3b")
+        val input = createRecallField("Tournament ID", "d0b78c81-a22b-4f54-b1fe-2fadc8354c3b", RecallKey.TOURNAMENT_ID)
         
         createDialogBuilder()
             .setTitle("Set Tournament Id")

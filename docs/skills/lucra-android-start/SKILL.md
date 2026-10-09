@@ -49,6 +49,8 @@ Then satisfy the **host contract** — each item fails at a different, non-obvio
 - **Any Activity hosting a Lucra flow must extend `FragmentActivity`** (or `AppCompatActivity`). A
   pure-Compose `ComponentActivity` compiles and runs, but silently fails to present the
   device-security prompt in Add/Withdraw Funds.
+- **Leave `android:taskAffinity` unset** on the Activity that hosts Lucra flows so it uses the
+  default application affinity. Do not set it to `""` or a custom value.
 - **Publishing:** disable Google Play's Automatic Integrity Protection — it conflicts with the
   GeoComply runtime protection and crashes the app.
 
@@ -88,6 +90,7 @@ If any box fails, go to Troubleshoot before writing more code.
 | Manifest merger failure mentioning `auth0Domain`/`auth0Scheme` | Auth0 manifest placeholders missing from `defaultConfig` | [Project Setup](../../1.0.0_project_setup.md) |
 | Launching a flow does nothing (no screen, no error) | `lucraUiProvider` was left at its no-op default — pass `LucraUi(...)`, and confirm `sdk-ui` is a dependency | [Init](../../1.2.0_initialize_client.md) |
 | Add/Withdraw Funds never shows the device-security prompt | Host Activity is a `ComponentActivity` — must be `FragmentActivity`/`AppCompatActivity` | [Project Setup](../../1.0.0_project_setup.md) |
+| A hosted flow that leaves the app does not return | Host Activity has `android:taskAffinity=""` (or a custom affinity). Leave it unset. | [Project Setup](../../1.0.0_project_setup.md#task-affinity) |
 | SDK images/SVGs render blank | `Application` doesn't provide `LucraCoilImageLoader` via `ImageLoaderFactory` | [Project Setup](../../1.0.0_project_setup.md) |
 | Headless call fails immediately / `NotInitialized` | Called before init finished — gate with `waitForLucraClient`; also requires a signed-in user for user-scoped calls | [Init → asynchronously](../../1.2.0_initialize_client.md) |
 | Auth/unauthorized-style failures | Key/environment mismatch (e.g. sandbox key with `Environment.PRODUCTION`) | [Init](../../1.2.0_initialize_client.md) |

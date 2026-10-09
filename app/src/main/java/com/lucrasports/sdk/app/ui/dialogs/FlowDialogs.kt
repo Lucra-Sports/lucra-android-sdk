@@ -38,7 +38,7 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
      * Shows dialog to create a games matchup with optional game ID or location ID.
      */
     fun showCreateGamesMatchupDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val inputGameId = createEditText("Game ID Ex: CORNHOLE")
+        val inputGameId = createRecallField("Game ID Ex: CORNHOLE", recallKey = RecallKey.GAME_ID)
         
         val (locationScrollView, locationRadioGroup) = LocationSelector.createLocationSelector(context)
 
@@ -85,7 +85,7 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
      * Shows dialog to navigate to matchup details.
      */
     fun showMatchupDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val input = createEditText("ID of Any Matchup", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
+        val input = createRecallField("ID of Any Matchup", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657", RecallKey.MATCHUP_ID)
 
         createDialogBuilder()
             .setTitle("Provide a Matchup ID")
@@ -105,7 +105,7 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
      * has `minigame_enabled = true`).
      */
     fun showMinigameMatchupDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val input = createEditText("ID of a Minigame Matchup", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657")
+        val input = createRecallField("ID of a Minigame Matchup", "6e1c8e78-20f4-4f1b-a104-fa6f4925c657", RecallKey.MATCHUP_ID)
 
         createDialogBuilder()
             .setTitle("Provide a Minigame Matchup ID")
@@ -123,7 +123,7 @@ internal class FlowDialogs(activity: Activity) : DialogManager(activity) {
      * Shows dialog to navigate to tournament details.
      */
     fun showTournamentDetailsDialog(onLaunchFlow: (LucraUiProvider.LucraFlow) -> Unit) {
-        val input = createEditText("ID of Tournament", "4a31e824-0d15-42b3-bc35-e016a660241d")
+        val input = createRecallField("ID of Tournament", "4a31e824-0d15-42b3-bc35-e016a660241d", RecallKey.TOURNAMENT_ID)
 
         createDialogBuilder()
             .setTitle("Provide a Tournament ID")

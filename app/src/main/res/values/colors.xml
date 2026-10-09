@@ -1,4 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Light values. values-night/colors.xml carries the dark ones. -->
 <resources>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="text_primary">#FF111827</color>
+    <color name="text_muted">#FF4B5563</color>
+    <color name="text_faint">#FF6B7280</color>
+    <color name="divider">#FFE5E7EB</color>
+    <color name="surface_raised">#FFF3F4F6</color>
+
+    <color name="badge_flow_text">#FF1D4ED8</color>
+    <color name="badge_flow_bg">#FFDBEAFE</color>
+    <color name="badge_api_text">#FFB45309</color>
+    <color name="badge_api_bg">#FFFEF3C7</color>
+    <color name="badge_ui_text">#FF0F766E</color>
+    <color name="badge_ui_bg">#FFCCFBF1</color>
+
+    <color name="signed_in">#FF15803D</color>
+    <color name="warning">#FFB45309</color>
+
+    <!-- Fixed per build type, darkened for a white background. -->
+    <color name="env_debug">#FF7C3AED</color>
+    <color name="env_staging">#FFB45309</color>
+    <color name="env_release">#FF15803D</color>
 </resources>

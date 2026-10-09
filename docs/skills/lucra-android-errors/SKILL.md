@@ -51,7 +51,16 @@ user-facing wording alone — several friendly messages share one cause and vice
 | `UserStateError.DemographicInformationMissing` | Tenant defers KYC but required demographic fields are missing | Present `LucraFlow.DemographicForm` or collect headlessly. → [Headless Interactions](../../1.2.9_headless_interactions.md) |
 | `PhoneAuthError.InvalidPhoneNumber` / `InvalidCode` / `PhoneNumberNotSubmitted` | User input problem in headless phone auth | Re-prompt the user; each case names the field to fix. |
 | `PhoneAuthError.AlreadyLoggedIn` | A user session already exists | Not a failure — proceed, or log out first if switching users. |
+| `PhoneAuthError.MessagingDisabled` | The user replied STOP to Lucra's SMS sender | Not retryable. Tell them to reply START or UNSTOP to that number, or to use a different number. |
+| `PhoneAuthError.SmsNotDelivered` | The SMS provider could not deliver to this number | Re-prompt for the number. |
+| `PhoneAuthError.TooManyAttempts` | Send or verify rate limit | Retryable after a wait; do not retry immediately. |
 | `PhoneAuthError.NetworkError(message)` | Connectivity during auth | Retryable. |
+| `HandshakeAuthError.NoProviderRegistered` | `signInWithHandshakeAuth` called with no token provider registered | Call `registerHandshakeAuthTokenProvider` first. → [Handshake Auth](../../1.2.12_handshake_authentication.md) |
+| `HandshakeAuthError.ProviderTimedOut` / `ProviderFailed(cause)` | The partner's own token lambda timed out (5s) or threw — not a Lucra failure | Check the partner token endpoint's reachability from the device (`10.0.2.2`, not `localhost`, on emulator) and that the host app's session is valid. |
+| `HandshakeAuthError.ExchangeFailed(cause)` | Lucra rejected the partner-signed token | Verify signature key/encoding, `iat` freshness (60s), and the exact payload shape; the message carries the underlying code and description. |
+| `HandshakeAuthError.TenantIdUnavailable` | Handshake ran before initialization produced a tenant | Confirm `LucraClient.initialize` completed with a valid API key. → [Init](../../1.2.0_initialize_client.md) |
+| `HandshakeAuthError.ProfileTimedOut` | Session landed but the profile did not | Retryable — the credentials are already installed; check connectivity. |
+| `HandshakeAuthError.Unknown` | A concurrent sign-out superseded the attempt, or the sign-in failed unexpectedly | Retryable. Phone auth remains the fallback either way. |
 
 ## Opaque message fingerprints (`APIError` / `LocationError`)
 
@@ -75,6 +84,7 @@ between SDK/backend releases).
 | `An unexpected error has occurred. Please try again, or contact Customer Support…` | GeoComply internal error | Yes | Retry once; then treat as Lucra-side. |
 | Multi-line list of geo reasons (varies) | Backend `GEOCOMPLY_RULE_ERROR` — user positively located somewhere the action is prohibited; message lists the actionable reasons | No (until location changes) | Show the reasons verbatim — they are written to be user-actionable. |
 | `Failed to start minigame session.` | `startMiniGame` failed with no server message at all | Maybe | Check connectivity and Logcat; escalate with `sessionId`/timestamps if reproducible. |
+| `No data returned from payment method.` | Host Activity `android:taskAffinity` is `""` or a custom value | After host fix | Leave `android:taskAffinity` unset on the Lucra host Activity. → [Project Setup](../../1.0.0_project_setup.md#task-affinity) |
 
 Two auth-shaped causes are easy to conflate: `Unauthorized Access` is your *integration's*
 credentials (key/env — fix config), while `UserStateError.NotInitialized`/`NotLoggedIn` is the

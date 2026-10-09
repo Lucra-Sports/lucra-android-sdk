@@ -32,7 +32,6 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivitySdk"
-            android:configChanges="uiMode"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
@@ -65,6 +64,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".headless_api.HandshakeAuthActivity"
+            android:exported="false"
+            android:label="Handshake Auth"
+            android:parentActivityName=".MainActivitySdk" />
+
         <meta-data
             android:name="io.branch.sdk.BranchKey"
             android:value="${branchio-key}" />
@@ -89,7 +94,7 @@
         <receiver
             android:name="com.geocomply.client.GeoComplyClientBootBroadcastReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
