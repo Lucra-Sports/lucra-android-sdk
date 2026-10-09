@@ -9,4 +9,20 @@
     <string name="metadata_value_hint">Value</string>
     <string name="add_metadata_field">Add metadata field</string>
     <string name="remove_metadata_row">Remove metadata row</string>
+    <string name="catalog_title">Lucra SDK</string>
+    <string name="catalog_search_hint">Search flows, APIs, components</string>
+    <string name="catalog_recent">Recent</string>
+    <string name="catalog_clear_search">Clear search</string>
+    <string name="catalog_no_matches">No matches for \u201c%1$s\u201d</string>
+    <string name="catalog_requires_auth">Requires sign in</string>
+    <string name="catalog_filter_all">All %1$d</string>
+    <string name="catalog_filter_flows">Flows %1$d</string>
+    <string name="catalog_filter_apis">APIs %1$d</string>
+    <string name="catalog_filter_ui">UI %1$d</string>
+    <string name="catalog_api_key_missing">No API key</string>
+    <string name="catalog_signed_out">Signed out</string>
+    <string name="catalog_blurb_all">Every flow, headless API and embedded component the SDK exposes. Search, or open a section.</string>
+    <string name="settings_restarts">restarts</string>
+    <string name="settings_title">Settings</string>
+    <string name="components_host_page">Host page</string>
 </resources>

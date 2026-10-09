@@ -68,61 +68,43 @@ internal object SampleColorStore {
         onTertiary = "#101820"
     )
 
+    // Lucra's own default theme, from the 2026 Lucra Style Guide Library.
+    private const val SECONDARY = "#6654D8"
+    private const val ON_SECONDARY = "#FDFEFF"
+    private const val TERTIARY = "#FFB364"
+    private const val ON_TERTIARY = "#FDFEFF"
+
+    /*
+     * 2026's dark-mode onPrimary, used in both modes: 2026 pairs its dark-green light primary with
+     * white, which is unreadable on the bright 2025 environment primaries (the staging yellow).
+     */
+    private const val ON_PRIMARY = "#09090A"
+
+    /** Per-environment primary, from the 2025 style guide's environment swatches. */
+    private val environmentPrimary: String = when (BuildConfig.BUILD_TYPE) {
+        "release" -> "#09E35F"
+        "sandbox" -> "#C2B280"
+        "staging" -> "#FDE92B"
+        "dev2" -> "#3A79E0"
+        // debug, and any other variant, which is important for the public sample
+        else -> "#FE5B00"
+    }
+
     val defaultBaseTheme = ColorStyle(
-        primary = "#FA5455",
-        secondary = "#5E5BD0",
-        tertiary = "#9C99FC",
-        onPrimary = "#001448",
-        onSecondary = "#FFFFFF",
-        onTertiary = "#FFFFFF"
+        primary = environmentPrimary,
+        secondary = SECONDARY,
+        tertiary = TERTIARY,
+        onPrimary = ON_PRIMARY,
+        onSecondary = ON_SECONDARY,
+        onTertiary = ON_TERTIARY,
     )
 
-    val defaultLightModeTheme = when (BuildConfig.BUILD_TYPE) {
-        "release" -> ColorStyle(
-            primary = "#09E35F",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-
-        "sandbox" -> ColorStyle(
-            primary = "#C2B280",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-
-        "staging" -> ColorStyle(
-            primary = "#FDE92B",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-        // debug and any other variant, which is important for the public sample
-        else -> ColorStyle(
-            primary = "#FA5455",
-            secondary = "#5E5BD0",
-            tertiary = "#9C99FC",
-            onPrimary = "#001448",
-            onSecondary = "#FFFFFF",
-            onTertiary = "#FFFFFF"
-        )
-    }
-
-    val defaultDarkModeTheme = when (BuildConfig.BUILD_TYPE) {
-        "release" -> defaultBaseTheme.copy(primary = "#09E35F")
-        "sandbox" -> defaultBaseTheme.copy(primary = "#C2B280")
-        "staging" -> defaultBaseTheme.copy(primary = "#FDE92B")
-        "debug" -> defaultBaseTheme.copy(primary = "#FE5B00")
-        "dev2" -> defaultBaseTheme.copy(primary = "#3A79E0")
-        else -> defaultBaseTheme
-    }
+    /*
+     * Identical under the 2026 guide, but kept as two so `ClientTheme` still receives both modes
+     * and the theme picker can re-point either one.
+     */
+    val defaultLightModeTheme = defaultBaseTheme
+    val defaultDarkModeTheme = defaultBaseTheme
 
     private var activeLightModeTheme: ColorStyle = defaultLightModeTheme
     private var activeDarkModeTheme: ColorStyle = defaultDarkModeTheme

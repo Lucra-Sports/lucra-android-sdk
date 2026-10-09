@@ -24,7 +24,7 @@ internal class RecreationalGameDialogs(private val activity: Activity) : DialogM
         val layout = createVerticalLayout()
 
         // Game Type ID
-        val (gameTypeIdLayout, gameTypeIdInput) = createTextInputLayout("Game Type ID", "CORNHOLE")
+        val (gameTypeIdLayout, gameTypeIdInput) = createTextInputLayout("Game Type ID", "CORNHOLE", RecallKey.GAME_ID)
         layout.addView(gameTypeIdLayout)
 
         // PlayStyle selection spinner
@@ -109,7 +109,7 @@ internal class RecreationalGameDialogs(private val activity: Activity) : DialogM
     fun showAcceptVersusGameDialog() {
         val layout = createVerticalLayout()
 
-        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID")
+        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID", recallKey = RecallKey.MATCHUP_ID)
         layout.addView(matchupIdLayout)
 
         val (teamIdLayout, teamIdInput) = createTextInputLayout("Team ID")
@@ -158,7 +158,7 @@ internal class RecreationalGameDialogs(private val activity: Activity) : DialogM
     fun showAcceptFreeForAllGameDialog() {
         val layout = createVerticalLayout()
 
-        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID")
+        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID", recallKey = RecallKey.MATCHUP_ID)
         layout.addView(matchupIdLayout)
 
         val dialog = createDialogBuilder()
@@ -198,7 +198,7 @@ internal class RecreationalGameDialogs(private val activity: Activity) : DialogM
     fun showCancelGameDialog() {
         val layout = createVerticalLayout()
 
-        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID")
+        val (matchupIdLayout, matchupIdInput) = createTextInputLayout("Matchup ID", recallKey = RecallKey.MATCHUP_ID)
         layout.addView(matchupIdLayout)
 
         val dialog = createDialogBuilder()
