@@ -692,12 +692,6 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
 
         add(SettingsRow.Group("Build"))
         add(SettingsRow.Info("Version", "${BuildConfig.VERSION_NAME} ${BuildConfig.BUILD_TYPE}"))
-        if (BuildConfig.GIT_BRANCH.isNotEmpty()) {
-            add(SettingsRow.Info("Branch", BuildConfig.GIT_BRANCH))
-        }
-        if (BuildConfig.GIT_COMMIT.isNotEmpty()) {
-            add(SettingsRow.Info("Commit", BuildConfig.GIT_COMMIT))
-        }
     }
 
     private fun showRememberedIds() {
