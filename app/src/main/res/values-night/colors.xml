@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_muted">#FF9CA3AF</color>
+    <color name="text_faint">#FF6B7280</color>
+    <color name="divider">#FF1F1F1F</color>
+    <color name="surface_raised">#FF121212</color>
+
+    <color name="badge_flow_text">#FF93C5FD</color>
+    <color name="badge_flow_bg">#2660A5FA</color>
+    <color name="badge_api_text">#FFFCD34D</color>
+    <color name="badge_api_bg">#26FBBF24</color>
+    <color name="badge_ui_text">#FF5EEAD4</color>
+    <color name="badge_ui_bg">#262DD4BF</color>
+
+    <color name="signed_in">#FF86EFAC</color>
+    <color name="warning">#FFFCD34D</color>
+
+    <color name="env_debug">#FFD8B4FE</color>
+    <color name="env_staging">#FFFCD34D</color>
+    <color name="env_release">#FF86EFAC</color>
+</resources>

@@ -15,8 +15,8 @@ internal class ComponentDialogs(activity: Activity) : DialogManager(activity) {
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
-        val playerOneInput = createEditText("Set player 1 ID (optional)")
-        val playerTwoInput = createEditText("Set player 2 ID (optional)")
+        val playerOneInput = createRecallField("Set player 1 ID (optional)", recallKey = RecallKey.PLAYER_ID)
+        val playerTwoInput = createRecallField("Set player 2 ID (optional)", recallKey = RecallKey.PLAYER_ID)
 
         layout.addView(playerOneInput)
         layout.addView(playerTwoInput)

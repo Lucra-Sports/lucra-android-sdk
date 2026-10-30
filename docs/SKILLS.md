@@ -19,7 +19,7 @@ The SDK is a self-contained flow engine. You do **not** build auth, screens, or 
 
 1. **Add the SDK** from Maven Central — `com.lucrasports.sdk:sdk-core` (headless APIs) and
    `com.lucrasports.sdk:sdk-ui` (screens; transitively includes `sdk-core`) — pin `6.8.0` or later. Your app must also meet
-   a short list of host requirements (manifest entries, `FragmentActivity`, image loader).
+   a short list of host requirements (manifest entries, `FragmentActivity`, default `taskAffinity`, image loader).
 2. **Configure one client** — `LucraClient.initialize(...)` with your API key + environment, passing
    a `LucraUi` instance as the `lucraUiProvider` if you want any SDK screens.
 3. **Delegate the user session** to the SDK — present its `Login` flow (or use headless phone auth)
@@ -37,6 +37,7 @@ types and Flows the SDK hands back to you.
 | Add the SDK / first run / it won't build | [Project Setup](1.0.0_project_setup.md) → skill `lucra-android-start` |
 | Initialize the client / API keys / environment | [LucraClient Initialization](1.2.0_initialize_client.md) |
 | Know if a user is signed in / delegate auth | [Headless Interactions → Observe the SDK User](1.2.9_headless_interactions.md) |
+| Sign users in with your own session, no Lucra login UI | [Handshake Authentication](1.2.12_handshake_authentication.md) |
 | Present any SDK screen | [Lucra Flows](1.2.7_lucraflows.md) |
 | Mini Games (UI or headless) | skill `lucra-android-minigames` + [Flows](6.3_mini_games_flows.md) / [Headless](6.1_mini_games_headless.md) |
 | A user's recent matchups for a custom screen | [Headless Interactions → User Matchups](1.2.9_headless_interactions.md) |
@@ -52,17 +53,21 @@ types and Flows the SDK hands back to you.
 - **Install is two artifacts plus a host contract.** `sdk-core` alone is headless-only; add `sdk-ui`
   for any SDK screen. The host app must satisfy the setup contract — manifest permissions +
   GeoComply entries, Auth0 manifest placeholders (even if you don't use Auth0), a
-  `LucraCoilImageLoader`-backed `Application`, and a **`FragmentActivity`** host (a plain
-  `ComponentActivity` silently fails to show the device-security prompt for funds flows).
+  `LucraCoilImageLoader`-backed `Application`, a **`FragmentActivity`** host (a plain
+  `ComponentActivity` silently fails to show the device-security prompt for funds flows), and
+  **default `taskAffinity`** on that host (leave `android:taskAffinity` unset).
   → [Project Setup](1.0.0_project_setup.md)
 - **Flows need a real `LucraUiProvider`.** `initialize`'s `lucraUiProvider` defaults to a no-op —
   headless calls work, but every flow launch does nothing. Pass `LucraUi(lucraFlowListener = ...)`
   from `sdk-ui`. → [Initialization](1.2.0_initialize_client.md)
 - **Auth is delegated.** Present `LucraFlow.Login` (it dismisses immediately if already signed in),
-  or use the headless phone-auth pair. You learn the result by collecting `observeSDKUserFlow()` —
-  there is no `isSignedIn` boolean; you subscribe, you don't poll. `configure(SDKUser)` is a
-  *different* path (pushing your user's profile attributes into Lucra) — don't confuse the two.
-  → [Headless Interactions](1.2.9_headless_interactions.md)
+  or use the headless phone-auth pair. If your users are already signed into your app, register a
+  handshake auth token provider instead and Lucra signs them in with no login UI at all, falling
+  back to phone auth on failure. You learn the result by collecting `observeSDKUserFlow()` — there
+  is no `isSignedIn` boolean; you subscribe, you don't poll. `configure(SDKUser)` is a *different*
+  path (pushing your user's profile attributes into Lucra) — don't confuse the two.
+  → [Headless Interactions](1.2.9_headless_interactions.md),
+  [Handshake Authentication](1.2.12_handshake_authentication.md)
 - **Headless calls must wait for init.** They fail if invoked before initialization completes — gate
   them with `LucraClient.waitForLucraClient()`. Flows handle this themselves by showing a loading
   state. → [Initialization → asynchronously](1.2.0_initialize_client.md)

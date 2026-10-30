@@ -141,13 +141,6 @@ internal class ConfigDialogs(private val activity: Activity) : DialogManager(act
     }
 
     /**
-     * Shows a simple not implemented message.
-     */
-    fun showNotImplementedDialog(feature: String) {
-        showMessageDialog(feature, "This feature is not yet implemented")
-    }
-
-    /**
      * Shows dialog for configuring SDK theming.
      */
     fun showThemingDialog(

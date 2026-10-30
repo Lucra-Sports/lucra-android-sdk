@@ -1,0 +1,580 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The partner app's side of handshake auth, laid out the way the iOS sample lays it out:
+  a live status readout at the top, the two things you configure (Provider, Token) folded
+  behind summary rows, the session actions, and a running log.
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/handshake_app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/handshake_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:elevation="0dp"
+            app:title="Handshake Auth"
+            app:titleTextColor="@color/white" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/cat_list_horizontal_padding"
+            android:paddingBottom="32dp">
+
+            <TextView
+                android:id="@+id/environment_chip"
+                style="@style/HandshakeFooter"
+                android:layout_marginTop="12dp"
+                android:fontFamily="monospace"
+                tools:text="debug · DEVELOPMENT · API key set · on-device signing available" />
+
+            <Button
+                android:id="@+id/how_to_test"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="start|center_vertical"
+                android:paddingHorizontal="0dp"
+                android:text="How to test different scenarios" />
+
+            <!-- Status -->
+
+            <TextView
+                style="@style/HandshakeSectionHeader"
+                android:text="Status" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/status_dot"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/handshake_status_dot" />
+
+                <TextView
+                    android:id="@+id/status_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="@color/white"
+                    tools:text="Idle — provider ready" />
+
+                <ProgressBar
+                    android:id="@+id/status_progress"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Last failure -->
+
+            <LinearLayout
+                android:id="@+id/failure_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/failure_header"
+                    style="@style/HandshakeSectionHeader"
+                    android:text="Last failure"
+                    tools:text="Last failure · 10:31:02 (previous attempt)" />
+
+                <TextView
+                    android:id="@+id/failure_type"
+                    style="@style/HandshakeBody"
+                    android:fontFamily="monospace"
+                    android:textColor="#FF6B6B"
+                    tools:text="ProviderTimedOut" />
+
+                <TextView
+                    android:id="@+id/failure_message"
+                    style="@style/HandshakeBody"
+                    android:textColor="#FF6B6B"
+                    tools:text="Auth0 rejected the token exchange" />
+
+                <TextView
+                    android:id="@+id/failure_suggestion"
+                    style="@style/HandshakeFooter"
+                    tools:text="What to check…" />
+            </LinearLayout>
+
+            <!-- Provider -->
+
+            <LinearLayout
+                android:id="@+id/provider_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    style="@style/HandshakeSectionHeader"
+                    android:layout_width="0dp"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:layout_weight="1"
+                    android:text="Provider" />
+
+                <TextView
+                    android:id="@+id/provider_status_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceCaption"
+                    tools:text="Registered" />
+
+                <ImageView
+                    android:id="@+id/provider_chevron"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="10dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_down" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/provider_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/provider_source_label"
+                    style="@style/HandshakeFieldLabel"
+                    android:text="Token source" />
+
+                <RadioGroup
+                    android:id="@+id/provider_source"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/source_local"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="16dp"
+                        android:text="Mint on device"
+                        android:textColor="@color/white" />
+
+                    <RadioButton
+                        android:id="@+id/source_partner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Partner BE"
+                        android:textColor="@color/white" />
+                </RadioGroup>
+
+                <TextView
+                    style="@style/HandshakeFieldLabel"
+                    android:text="Partner BE base URL" />
+
+                <EditText
+                    android:id="@+id/partner_base_url"
+                    style="@style/HandshakeField"
+                    android:autofillHints=""
+                    android:hint="http://10.0.2.2:4000"
+                    android:inputType="textUri" />
+
+                <CheckBox
+                    android:id="@+id/bypass_tos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Request TOS bypass (needs the Statsig gate on for this tenant)"
+                    android:textColor="@color/white" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/register_provider"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:text="Register" />
+
+                    <Button
+                        android:id="@+id/clear_provider"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Clear" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/HandshakeFooter"
+                    android:text="The lambda that returns a partner token — the whole client-side integration. Registering only stores it; signing in is a separate call. On the emulator, localhost is the emulator itself: use 10.0.2.2 for your machine.\n\nThe bypass is handed to the SDK when the provider is stored, not carried by the token, so changing it re-registers." />
+            </LinearLayout>
+
+            <!-- Token -->
+
+            <LinearLayout
+                android:id="@+id/token_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    style="@style/HandshakeSectionHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:text="Token" />
+
+                <TextView
+                    android:id="@+id/token_summary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:textAppearance="?attr/textAppearanceCaption"
+                    tools:text="SAMPLE · Test User 1 · local" />
+
+                <ImageView
+                    android:id="@+id/token_chevron"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="10dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_down" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/token_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/signing_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/HandshakeFieldLabel"
+                        android:text="Signing secret (shared HS256 key)" />
+
+                    <EditText
+                        android:id="@+id/signing_secret"
+                        style="@style/HandshakeField"
+                        android:autofillHints=""
+                        android:hint="shared HS256 secret"
+                        android:inputType="textPassword" />
+
+                    <TextView
+                        style="@style/HandshakeFieldLabel"
+                        android:text="Secret encoding (wrong pick = opaque signature rejection)" />
+
+                    <Spinner
+                        android:id="@+id/key_encoding"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        style="@style/HandshakeFieldLabel"
+                        android:text="kid (optional)" />
+
+                    <EditText
+                        android:id="@+id/key_id"
+                        style="@style/HandshakeField"
+                        android:autofillHints=""
+                        android:hint="key id" />
+
+                    <TextView
+                        android:id="@+id/signing_footer"
+                        style="@style/HandshakeFooter"
+                        android:text="On-device signing is for testing only — a shared secret in an app can mint a token for any phone number. If the exchange rejects the signature, the key is probably being read in the other encoding." />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/HandshakeFieldLabel"
+                    android:text="Tenant" />
+
+                <Spinner
+                    android:id="@+id/tenant"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    style="@style/HandshakeFieldLabel"
+                    android:text="Partner user" />
+
+                <Spinner
+                    android:id="@+id/partner_user"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/partner_user_phone"
+                    style="@style/HandshakeFooter"
+                    android:layout_marginTop="4dp"
+                    android:gravity="end"
+                    tools:text="+17045550109" />
+
+                <LinearLayout
+                    android:id="@+id/custom_user_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/HandshakeFieldLabel"
+                        android:text="sub" />
+
+                    <EditText
+                        android:id="@+id/custom_sub"
+                        style="@style/HandshakeField"
+                        android:autofillHints=""
+                        android:hint="partner user id" />
+
+                    <TextView
+                        android:id="@+id/custom_sub_hint"
+                        style="@style/HandshakeFooter"
+                        android:layout_marginTop="4dp"
+                        tools:text="sub is empty — minting as custom-17045550109" />
+
+                    <TextView
+                        style="@style/HandshakeFieldLabel"
+                        android:text="phone_number" />
+
+                    <EditText
+                        android:id="@+id/custom_phone"
+                        style="@style/HandshakeField"
+                        android:autofillHints=""
+                        android:hint="+15555550123"
+                        android:inputType="phone" />
+
+                    <TextView
+                        android:id="@+id/phone_warning"
+                        style="@style/HandshakeFooter"
+                        android:layout_marginTop="4dp"
+                        android:text="Not E.164 — needs a leading + and country code, digits only."
+                        android:textColor="#FF6B6B"
+                        android:visibility="gone" />
+
+                    <TextView
+                        style="@style/HandshakeFieldLabel"
+                        android:text="email (optional)" />
+
+                    <EditText
+                        android:id="@+id/custom_email"
+                        style="@style/HandshakeField"
+                        android:autofillHints=""
+                        android:hint="user@example.com"
+                        android:inputType="textEmailAddress" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/HandshakeFieldLabel"
+                    android:text="Break it (watch the fallback to phone auth)" />
+
+                <Spinner
+                    android:id="@+id/inject"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/inject_expected"
+                    style="@style/HandshakeFooter"
+                    android:layout_marginTop="4dp"
+                    tools:text="Outlasts the SDK's 5s provider deadline: ProviderTimedOut, then the phone screen." />
+
+                <TextView
+                    style="@style/HandshakeFooter"
+                    android:text="sub is the account identity — reusing one resolves the same Lucra account no matter what phone the token carries. Only a NEW sub consults the phone: a known phone links to that account, an unused one creates a user. Leave sub empty to derive it from the phone.\n\nEverything here applies to the next sign-in as you change it — the summary on the Token row is what will actually be minted." />
+
+                <Button
+                    android:id="@+id/reset_defaults"
+                    style="?attr/borderlessButtonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Reset to defaults" />
+            </LinearLayout>
+
+            <!-- Session -->
+
+            <TextView
+                style="@style/HandshakeSectionHeader"
+                android:text="Session" />
+
+            <Button
+                android:id="@+id/sign_in"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sign in with handshake auth" />
+
+            <Button
+                android:id="@+id/sign_out"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Sign out" />
+
+            <Button
+                android:id="@+id/present_tos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Present Terms of Service flow" />
+
+            <Button
+                android:id="@+id/open_profile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Open Lucra profile" />
+
+            <TextView
+                style="@style/HandshakeFooter"
+                android:text="Tapping a Lucra component while signed out is the interesting path: the handshake runs in place behind a loader and you land where you tapped — pick a failure under Token (timeout, error, bad-sig, …) to watch it fall through to the phone screen instead. Presenting a flow directly (Open Lucra profile) also signs in via handshake.\n\nSigning in as a user who has never accepted fails with TOS not accepted, and this screen presents the Terms of Service flow off that error, exactly as an integrator would. That gate applies to NEW users only — the seeded test users already exist, so pick Custom with an unused phone number to reach it.\n\nAfter Sign out, only background traffic stays signed out — any user action (a tap or a presented flow) counts as asking and signs back in." />
+
+            <!-- Last token -->
+
+            <LinearLayout
+                android:id="@+id/token_inspect_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    style="@style/HandshakeSectionHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:text="Last token" />
+
+                <TextView
+                    android:id="@+id/token_inspect_summary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:textAppearance="?attr/textAppearanceCaption"
+                    tools:text="minted on device" />
+
+                <ImageView
+                    android:id="@+id/token_inspect_chevron"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="10dp"
+                    android:alpha="0.7"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_down" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/token_inspect_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/token_claims"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="#B3FFFFFF"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp"
+                    tools:text="payload\n{\n  &quot;sub&quot;: &quot;acme-test-0009&quot;\n}" />
+
+                <Button
+                    android:id="@+id/copy_token"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Copy token" />
+
+                <TextView
+                    style="@style/HandshakeFooter"
+                    android:text="The token the provider last handed the SDK. When the exchange rejects one, this is what to compare against what the Token row said it would mint — and what to paste into a decoder." />
+            </LinearLayout>
+
+            <!-- Log -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/HandshakeSectionHeader"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="Log" />
+
+                <Button
+                    android:id="@+id/clear_log"
+                    style="?attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Clear" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/log_output"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="#B3FFFFFF"
+                android:textIsSelectable="true"
+                android:textSize="12sp"
+                tools:text="10:31:02  provider registered" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

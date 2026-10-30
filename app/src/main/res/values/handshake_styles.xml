@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared by activity_handshake_auth.xml, which is a long form and unreadable with these
+     attributes repeated inline. -->
+<resources>
+
+    <style name="HandshakeSectionHeader">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">24dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:textAppearance">?attr/textAppearanceTitleMedium</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
+    <style name="HandshakeBody">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?attr/textAppearanceBodyMedium</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="HandshakeFooter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+        <item name="android:textAppearance">?attr/textAppearanceCaption</item>
+        <item name="android:textColor">#B3FFFFFF</item>
+    </style>
+
+    <style name="HandshakeFieldLabel" parent="HandshakeFooter">
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:layout_marginBottom">0dp</item>
+    </style>
+
+    <style name="HandshakeField">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:inputType">textNoSuggestions</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+</resources>

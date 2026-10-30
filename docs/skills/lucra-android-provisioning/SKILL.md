@@ -52,9 +52,9 @@ Four partner-side causes mimic provisioning gaps. Check these before contacting 
 - [ ] **Free-to-play options missing** → your app never registered a reward provider via
       `LucraClient().setRewardProvider(...)`. Without it, FTP contest options disappear even on a
       fully provisioned tenant. → [Free to Play](../../1.2.6_free_to_play_support.md)
-- [ ] **Reward sheet never auto-shows** → `allowRewardSheetToDisplay = false` was passed at
-      `initialize` (it defaults to `true`), or the tenant gate
-      `disable_reward_sheet_outside_sdk` is set intentionally.
+- [ ] **Reward sheet never shows on its own (on sign-in, after a deposit, or on other account changes)** →
+      `allowRewardSheetToDisplay = false` was passed at `initialize` (it defaults to `true`), or
+      the tenant gate `disable_reward_sheet_outside_sdk` is set intentionally.
 
 **The gate-timing gotcha:** feature gates resolve only after the SDK's flag service initializes —
 up to ~10 seconds on a cold start. A gate check made too early returns the default, not the real
@@ -78,6 +78,7 @@ Lucra can act without translation.
 | `autoJoinTournaments` returns `FailedTournamentCall.FeatureDisabled` | Auto-join gate (`auto_join_pool_tournaments_on_launch`); manual join still works | Lucra | "Enable tournament auto-join on launch for tenant [X]" |
 | Tournaments home renders but lists nothing | Tournaments and their payout/reward structures are created per tenant by Lucra | Lucra | "Set up [sandbox test] tournaments and payout structures for tenant [X]" |
 | Push token registration succeeds but Lucra pushes never arrive | Tenant push-notification setup is an out-of-band Lucra process; token inserts succeed regardless | Lucra | "Complete push-notification setup for tenant [X]" → [Push Notifications](../../1.2.3_push_notifications.md) |
+| Add Funds never shows a deposit bonus banner | Deposit bonus promotions are set up per tenant, and the banner shows only while one is active, the user has not earned it, and its minimum deposit is no higher than the tenant's maximum | Lucra | "Set up a deposit bonus promotion for tenant [X] in [env]" |
 | Feature geo-blocked in a state you legitimately operate in | Per-tenant supported-states registration (`SUPPORTED_STATES`) | Lucra | "Add states [list] to tenant [X]'s supported states" |
 | `LocationError("GeoComply invalid license")` | GeoComply license provisioned by Lucra per tenant | Lucra | "Our GeoComply license appears invalid/expired for tenant [X] in [env]" — see `lucra-android-errors` |
 | Expected payment methods missing from Add Funds | Per-tenant payment provider credentials + method config (`PAYPAL_VENMO_ENABLED`, `ADD_CREDIT_CARD_ENABLED`) | Lucra | "Enable [PayPal/Venmo / credit card / ...] deposits for tenant [X]" → [Payments](../../1.2.4_payments.md) |

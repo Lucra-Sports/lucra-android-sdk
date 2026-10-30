@@ -1,252 +1,196 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- A fixed header, not a CollapsingToolbarLayout: the search field has to stay reachable while
+     the catalog scrolls. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/header_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true">
+        android:paddingHorizontal="@dimen/cat_list_horizontal_padding"
+        android:paddingTop="10dp"
+        android:paddingBottom="8dp">
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            style="?attr/collapsingToolbarLayoutLargeStyle"
-            android:id="@+id/top_app_bar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/collapsingToolbarLayoutLargeSize"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
+        <ImageView
+            android:id="@+id/header_logo_image"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@string/catalog_title"
+            android:src="@drawable/lucra_bolt"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <androidx.appcompat.widget.Toolbar
-                style="@style/Widget.Material3.CollapsingToolbar.Large"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:elevation="0dp"
-                app:layout_collapseMode="pin" />
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:scrollbars="none"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/header_settings"
+            app:layout_constraintStart_toEndOf="@id/header_logo_image"
+            app:layout_constraintTop_toTopOf="parent">
 
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/header_chips"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                app:layout_collapseMode="parallax">
+                app:chipSpacingHorizontal="6dp"
+                app:singleLine="true">
 
-                <ImageView
-                    android:id="@+id/header_logo_image"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="16dp"
-                    android:src="@drawable/lucra_bolt"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <TextView
-                    android:id="@+id/header_title"
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_environment"
+                    style="@style/Widget.Material3.Chip.Suggestion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:gravity="center_vertical"
-                    android:includeFontPadding="false"
-                    android:text="Lucra SDK"
-                    android:textAppearance="?attr/textAppearanceTitleLarge"
-                    android:textColor="@color/white"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/header_logo_image"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:checkable="false"
+                    android:clickable="false"
+                    tools:text="debug" />
 
-                <ImageView
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_version"
+                    style="@style/Widget.Material3.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:clickable="false"
+                    tools:text="v7.0.1" />
+
+                <!-- Opens the Authentication Status dialog. -->
+                <com.google.android.material.chip.Chip
                     android:id="@+id/header_auth_status"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginEnd="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:src="@drawable/ic_logged_out"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    style="@style/Widget.Material3.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:text="@string/catalog_signed_out"
+                    tools:text="Signed out" />
 
-                <ImageView
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:id="@+id/header_settings"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginEnd="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:src="@drawable/ic_settings"
-                    app:layout_constraintEnd_toStartOf="@id/header_auth_status"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_api_key"
+                    style="@style/Widget.Material3.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:text="@string/catalog_api_key_missing"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-    </com.google.android.material.appbar.AppBarLayout>
+        <ImageView
+            android:id="@+id/header_settings"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/settings_title"
+            android:focusable="true"
+            android:src="@drawable/ic_settings"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/catalog_search_layout"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/cat_list_horizontal_padding"
+        android:layout_marginTop="10dp"
+        android:hint="@string/catalog_search_hint"
+        app:endIconMode="clear_text"
+        app:startIconDrawable="@drawable/ic_search">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/catalog_search"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:freezesText="false"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-            <LinearLayout
-                android:id="@+id/ll_flow_section"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/cat_list_horizontal_padding"
+        android:scrollbars="none">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginRight="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:text="Lucra Flows"
-                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                    android:textColor="@color/white" />
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/surface_filters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:chipSpacingHorizontal="6dp"
+            app:selectionRequired="true"
+            app:singleLine="true"
+            app:singleSelection="true">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginRight="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginBottom="@dimen/cat_list_text_margin_from_button"
-                    android:lineSpacingMultiplier="1.5"
-                    android:text="@string/lucra_flow_description"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="@color/white" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_surface_all"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                tools:text="All 56" />
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/fullScreenSwitch_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:paddingHorizontal="@dimen/cat_list_horizontal_padding"
-                    android:paddingVertical="@dimen/cat_list_vertical_padding">
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_surface_flows"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="Flows 23" />
 
-                    <TextView
-                        android:id="@+id/fullScreenSwitch_title"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:lineSpacingMultiplier="1.5"
-                        android:text="Launch Full Screen Entry Points"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textColor="@color/white" />
-                    <TextView
-                        android:id="@+id/fullScreenSwitch_description"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/fullScreenSwitch_title"
-                        app:layout_constraintEnd_toStartOf="@+id/fullScreenSwitch"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="LucraUI's launchNewLucraFlowEntryPoint will return true, allowing integrators to show the flow in a new full screen."
-                        android:textAppearance="?attr/textAppearanceCaption"
-                        android:textColor="@color/white" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_surface_apis"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="APIs 28" />
 
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/fullScreenSwitch"
-                        android:layout_width="54dp"
-                        android:layout_height="38dp"
-                        android:checked="true"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toEndOf="@id/fullScreenSwitch_description"
-                        app:layout_constraintTop_toTopOf="parent" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_surface_ui"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="UI 5" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
 
-                </androidx.constraintlayout.widget.ConstraintLayout>
+    <TextView
+        android:id="@+id/surface_blurb"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/cat_list_horizontal_padding"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:ellipsize="end"
+        android:maxLines="3"
+        android:textColor="@color/text_faint"
+        android:textSize="12sp"
+        tools:text="Flows are provided via a Fragment or DialogFragment." />
 
-            </LinearLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/cat_list_divider_size"
+        android:layout_marginTop="6dp"
+        android:background="@color/divider" />
 
-            <LinearLayout
-                android:id="@+id/ll_api_section"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/ll_flow_section">
-
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/cat_list_divider_size"
-                    android:background="?attr/colorOutline" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginTop="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginRight="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginBottom="@dimen/cat_list_text_margin_from_button"
-                    android:text="Lucra API functions"
-                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                    android:textColor="@color/white" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
-                    android:layout_marginRight="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:lineSpacingMultiplier="1.5"
-                    android:text="@string/lucra_headless_description"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="@color/white" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/ll_components_section"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/ll_api_section">
-
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/cat_list_divider_size"
-                    android:background="?attr/colorOutline" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginRight="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:text="Lucra Components"
-                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                    android:textColor="@color/white" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginRight="@dimen/cat_list_text_margin_from_button"
-                    android:layout_marginBottom="@dimen/cat_list_text_margin_from_button"
-                    android:lineSpacingMultiplier="1.5"
-                    android:text="@string/lucra_component_description"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="@color/white" />
-
-            </LinearLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.core.widget.NestedScrollView>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/catalog_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        tools:listitem="@layout/item_catalog_entry" />
+</LinearLayout>

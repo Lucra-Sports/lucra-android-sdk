@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="@dimen/cat_list_horizontal_padding"
+    android:paddingVertical="11dp">
+
+    <TextView
+        android:id="@+id/settings_row_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        tools:text="Auto-join tournaments" />
+
+    <TextView
+        android:id="@+id/settings_row_restarts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_badge"
+        android:paddingHorizontal="5dp"
+        android:paddingVertical="1dp"
+        android:text="@string/settings_restarts"
+        android:textSize="11sp"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/settings_row_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:textColor="@color/text_muted"
+        android:textSize="13sp"
+        tools:text="debug" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/settings_row_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/settings_row_chevron"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="6dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_chevron_right"
+        android:visibility="gone"
+        tools:visibility="visible" />
+</LinearLayout>

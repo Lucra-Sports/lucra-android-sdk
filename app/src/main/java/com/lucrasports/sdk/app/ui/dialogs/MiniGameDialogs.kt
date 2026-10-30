@@ -81,7 +81,7 @@ internal class MiniGameDialogs(private val activity: Activity) : DialogManager(a
     ) {
         val layout = createVerticalLayout()
 
-        val (gameIdLayout, gameIdInput) = createTextInputLayout("Game ID", "runaway-web")
+        val (gameIdLayout, gameIdInput) = createTextInputLayout("Game ID", "runaway-web", RecallKey.GAME_ID)
         layout.addView(gameIdLayout)
 
         val gameModeSpinner = createSpinner(
