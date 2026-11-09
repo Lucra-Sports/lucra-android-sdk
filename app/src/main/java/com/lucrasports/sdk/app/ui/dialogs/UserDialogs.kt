@@ -8,13 +8,13 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.lucrasports.data.demographic.DemographicInteractions.DemographicFormError
-import com.lucrasports.data.demographic.DemographicInteractions.SubmitDemographicFormResult
 import com.lucrasports.sdk.app.R
 import com.lucrasports.sdk.app.utils.MetadataHelper
 import com.lucrasports.sdk.core.LucraClient
+import com.lucrasports.sdk.core.user.DemographicError
 import com.lucrasports.sdk.core.user.SDKUser
 import com.lucrasports.sdk.core.user.SDKUserResult
+import com.lucrasports.sdk.core.user.SubmitDemographicsResult
 
 /**
  * Manages dialogs related to user configuration and management.
@@ -281,7 +281,7 @@ internal class UserDialogs(private val activity: Activity) : DialogManager(activ
                     return@setPositiveButton
                 }
 
-                LucraClient().submitDemographicForm(
+                LucraClient().submitDemographics(
                     dobDay = dobDay,
                     dobMonth = dobMonth,
                     dobYear = dobYear,
@@ -292,16 +292,16 @@ internal class UserDialogs(private val activity: Activity) : DialogManager(activ
                 ) { result ->
                     activity.runOnUiThread {
                         when (result) {
-                            is SubmitDemographicFormResult.Success -> {
+                            is SubmitDemographicsResult.Success -> {
                                 Toast.makeText(context, "Demographic form submitted successfully!", Toast.LENGTH_SHORT).show()
                             }
-                            is SubmitDemographicFormResult.Failure -> {
+                            is SubmitDemographicsResult.Failure -> {
                                 val message = when (val error = result.error) {
-                                    is DemographicFormError.APIError -> "API Error: ${error.message}"
-                                    is DemographicFormError.NotInitialized -> "SDK not initialized"
-                                    is DemographicFormError.NotAllowed -> "Account is blocked or suspended"
-                                    is DemographicFormError.InvalidDateOfBirth -> "Invalid date of birth"
-                                    is DemographicFormError.Unknown -> "Unknown error"
+                                    is DemographicError.APIError -> "API Error: ${error.message}"
+                                    is DemographicError.NotInitialized -> "SDK not initialized"
+                                    is DemographicError.NotAllowed -> "Account is blocked or suspended"
+                                    is DemographicError.InvalidDateOfBirth -> "Invalid date of birth"
+                                    is DemographicError.Unknown -> "Unknown error"
                                 }
                                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                             }

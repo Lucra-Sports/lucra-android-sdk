@@ -44,8 +44,8 @@ lives in what you fetch.**
 
 | You want to know… | Use | Not |
 |---|---|---|
-| My user just created / accepted / canceled / joined something in an SDK flow | `LucraEvent` listener → [Event Listener](../../1.2.10_lucra_event_listener.md) | — |
-| The opponent acted, or a matchup changed remotely | Re-fetch on flow dismissal (`LucraFlowListener.onFlowDismissRequested`) or on resume → [Headless Interactions](../../1.2.9_headless_interactions.md) | Events — they never fire for remote actions |
+| My user just created / accepted / canceled / joined something in an SDK flow | `LucraEvent` listener → [Event Listener](../../1.2.9_lucra_event_listener.md) | — |
+| The opponent acted, or a matchup changed remotely | Re-fetch on flow dismissal (`LucraFlowListener.onFlowDismissRequested`) or on resume → [Headless Interactions](../../1.2.8_headless_interactions.md) | Events — they never fire for remote actions |
 | A matchup settled / money moved | Webhooks server-side; client re-fetch for display | Events — no settlement event exists |
 | Where a matchup is in its lifecycle | Its status field (glossary below) | Inferring from which events you have seen |
 | A mini game session ended | `LucraEvent.MiniGame.Finished` — **only when the session ran through the SDK's `MiniGame` flow**; a fully-headless session in your own WebView emits nothing, detect the end yourself | Waiting on `Finished` for headless sessions |

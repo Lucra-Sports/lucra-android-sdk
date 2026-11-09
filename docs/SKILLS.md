@@ -36,14 +36,15 @@ types and Flows the SDK hands back to you.
 |---|---|
 | Add the SDK / first run / it won't build | [Project Setup](1.0.0_project_setup.md) → skill `lucra-android-start` |
 | Initialize the client / API keys / environment | [LucraClient Initialization](1.2.0_initialize_client.md) |
-| Know if a user is signed in / delegate auth | [Headless Interactions → Observe the SDK User](1.2.9_headless_interactions.md) |
-| Sign users in with your own session, no Lucra login UI | [Handshake Authentication](1.2.12_handshake_authentication.md) |
-| Present any SDK screen | [Lucra Flows](1.2.7_lucraflows.md) |
+| Know if a user is signed in / delegate auth | [Headless Interactions → Observe the SDK User](1.2.8_headless_interactions.md) |
+| Sign users in with your own session, no Lucra login UI | [Handshake Authentication](1.2.11_handshake_authentication.md) |
+| Present any SDK screen | [Lucra Flows](1.2.6_lucraflows.md) |
 | Mini Games (UI or headless) | skill `lucra-android-minigames` + [Flows](6.3_mini_games_flows.md) / [Headless](6.1_mini_games_headless.md) |
-| A user's recent matchups for a custom screen | [Headless Interactions → User Matchups](1.2.9_headless_interactions.md) |
+| A user's recent matchups for a custom screen | [Headless Interactions → User Matchups](1.2.8_headless_interactions.md) |
 | Tournaments UI (tournaments home) | `LucraFlow.HomePage(locationId:)` — see [Tournaments Flows](3.1_tournaments_flows.md) |
 | Handle deep links (shared / matchup-invite links) | [Deep Links](1.2.2_deeplinks.md) |
-| React to game/tournament state / wire the event listener | skill `lucra-android-events` → [Event Listener](1.2.10_lucra_event_listener.md), [Mini Game Events](6.2_mini_game_events.md) |
+| Handle push notifications / route a Lucra push to your own screen | [Push Notifications](1.2.3_push_notifications.md) |
+| React to game/tournament state / wire the event listener | skill `lucra-android-events` → [Event Listener](1.2.9_lucra_event_listener.md), [Mini Game Events](6.2_mini_game_events.md) |
 | A `LucraClient` call returned `Failure` / runtime errors after setup | skill `lucra-android-errors` |
 | A feature renders empty / an option is missing, with no error | skill `lucra-android-provisioning` |
 | Confirm the tenant is provisioned before building a feature | skill `lucra-android-provisioning` |
@@ -66,15 +67,15 @@ types and Flows the SDK hands back to you.
   back to phone auth on failure. You learn the result by collecting `observeSDKUserFlow()` — there
   is no `isSignedIn` boolean; you subscribe, you don't poll. `configure(SDKUser)` is a *different*
   path (pushing your user's profile attributes into Lucra) — don't confuse the two.
-  → [Headless Interactions](1.2.9_headless_interactions.md),
-  [Handshake Authentication](1.2.12_handshake_authentication.md)
+  → [Headless Interactions](1.2.8_headless_interactions.md),
+  [Handshake Authentication](1.2.11_handshake_authentication.md)
 - **Headless calls must wait for init.** They fail if invoked before initialization completes — gate
   them with `LucraClient.waitForLucraClient()`. Flows handle this themselves by showing a loading
   state. → [Initialization → asynchronously](1.2.0_initialize_client.md)
 - **Flows vs Headless.** A `LucraFlow` is a full SDK screen you present (as a Fragment, full-screen
   dialog, or Composable) and observe; a headless call returns data you render yourself. Pick the
   lightest one that meets the goal, and mix them: headless powers *your* lists, flows power the
-  *interactive* parts. → [Flows](1.2.7_lucraflows.md) / [Headless](1.2.9_headless_interactions.md)
+  *interactive* parts. → [Flows](1.2.6_lucraflows.md) / [Headless](1.2.8_headless_interactions.md)
 - **State comes back as sealed result types** (exhaustive `when`) through callbacks and Kotlin
   Flows — not as return values from the flow you presented. Wire your UI to those, plus the
   `LucraEventListener` for session/tournament lifecycle events.

@@ -48,14 +48,14 @@ user-facing wording alone — several friendly messages share one cause and vice
 | `UserStateError.Unverified` | User has not completed KYC and the action requires it | Present `LucraFlow.VerifyIdentity`. Not an error to retry. |
 | `UserStateError.NotAllowed` | User is blocked/ineligible per backend rules | Terminal client-side. Show messaging; do not retry. |
 | `UserStateError.InsufficientFunds` | Wallet balance below the attempted stake | Present `LucraFlow.AddFunds` (host Activity must be a `FragmentActivity` — see start skill). |
-| `UserStateError.DemographicInformationMissing` | Tenant defers KYC but required demographic fields are missing | Present `LucraFlow.DemographicForm` or collect headlessly. → [Headless Interactions](../../1.2.9_headless_interactions.md) |
+| `UserStateError.DemographicInformationMissing` | Tenant defers KYC but required demographic fields are missing | Present `LucraFlow.DemographicForm` or collect headlessly. → [Headless Interactions](../../1.2.8_headless_interactions.md) |
 | `PhoneAuthError.InvalidPhoneNumber` / `InvalidCode` / `PhoneNumberNotSubmitted` | User input problem in headless phone auth | Re-prompt the user; each case names the field to fix. |
 | `PhoneAuthError.AlreadyLoggedIn` | A user session already exists | Not a failure — proceed, or log out first if switching users. |
 | `PhoneAuthError.MessagingDisabled` | The user replied STOP to Lucra's SMS sender | Not retryable. Tell them to reply START or UNSTOP to that number, or to use a different number. |
 | `PhoneAuthError.SmsNotDelivered` | The SMS provider could not deliver to this number | Re-prompt for the number. |
 | `PhoneAuthError.TooManyAttempts` | Send or verify rate limit | Retryable after a wait; do not retry immediately. |
 | `PhoneAuthError.NetworkError(message)` | Connectivity during auth | Retryable. |
-| `HandshakeAuthError.NoProviderRegistered` | `signInWithHandshakeAuth` called with no token provider registered | Call `registerHandshakeAuthTokenProvider` first. → [Handshake Auth](../../1.2.12_handshake_authentication.md) |
+| `HandshakeAuthError.NoProviderRegistered` | `signInWithHandshakeAuth` called with no token provider registered | Call `registerHandshakeAuthTokenProvider` first. → [Handshake Auth](../../1.2.11_handshake_authentication.md) |
 | `HandshakeAuthError.ProviderTimedOut` / `ProviderFailed(cause)` | The partner's own token lambda timed out (5s) or threw — not a Lucra failure | Check the partner token endpoint's reachability from the device (`10.0.2.2`, not `localhost`, on emulator) and that the host app's session is valid. |
 | `HandshakeAuthError.ExchangeFailed(cause)` | Lucra rejected the partner-signed token | Verify signature key/encoding, `iat` freshness (60s), and the exact payload shape; the message carries the underlying code and description. |
 | `HandshakeAuthError.TenantIdUnavailable` | Handshake ran before initialization produced a tenant | Confirm `LucraClient.initialize` completed with a valid API key. → [Init](../../1.2.0_initialize_client.md) |

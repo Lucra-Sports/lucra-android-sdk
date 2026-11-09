@@ -5,6 +5,8 @@ import com.lucrasports.sdk.core.LucraClient.Companion.Environment
 
 internal const val SAMPLE_PREFS = "LucraSamplePrefs"
 internal const val API_KEY_OVERRIDE = "API_KEY_OVERRIDE"
+internal const val LUCRA_DEBUG_OVERRIDES_PREFS = "lucra_debug_overrides"
+internal const val WALLET_WEB_APP_URL_OVERRIDE = "wallet_web_app_url"
 
 /** The placeholder [BuildConfig.TESTING_API_KEY] ships with, meaning "not configured". */
 private const val API_KEY_PLACEHOLDER = "ADD YOUR API KEY HERE"

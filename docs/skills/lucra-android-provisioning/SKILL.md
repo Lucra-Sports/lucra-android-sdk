@@ -30,7 +30,7 @@ integration:
 
 1. **Backend configuration** for your tenant (which contest types exist, payment methods, limits,
    supported states, KYC policy).
-2. **Per-tenant feature gates** (e.g. real-money actions, convert-to-credit).
+2. **Per-tenant feature gates** (e.g. real-money actions, free-to-play).
 3. **Out-of-band provisioning** Lucra performs for you (mini game catalog, push notifications,
    payment processor credentials, geolocation licensing).
 
@@ -51,7 +51,7 @@ Four partner-side causes mimic provisioning gaps. Check these before contacting 
       Confirm `observeSDKUserFlow()` emits `Success` first.
 - [ ] **Free-to-play options missing** → your app never registered a reward provider via
       `LucraClient().setRewardProvider(...)`. Without it, FTP contest options disappear even on a
-      fully provisioned tenant. → [Free to Play](../../1.2.6_free_to_play_support.md)
+      fully provisioned tenant. → [Free to Play](../../1.2.5_free_to_play_support.md)
 - [ ] **Reward sheet never shows on its own (on sign-in, after a deposit, or on other account changes)** →
       `allowRewardSheetToDisplay = false` was passed at `initialize` (it defaults to `true`), or
       the tenant gate `disable_reward_sheet_outside_sdk` is set intentionally.
@@ -74,7 +74,6 @@ Lucra can act without translation.
 | Cash contests hidden; Add/Withdraw Funds absent or no-op; only free entries offered | Real-money actions gate (`real_money_actions_enabled`) | Lucra | "Enable real-money actions for tenant [X] in [env]" |
 | A contest type is missing from create flows (recreational games or sports) | Contest-type config (`GYP_ENABLED` for recreational games, `SYW_ENABLED` for sports contests) | Lucra | "Enable [recreational games / sports contests] for tenant [X]" |
 | Free-to-play contest options missing (and `setRewardProvider` IS registered) | Free-to-play gate (`gyp_ftp_enabled`) | Lucra | "Enable free-to-play recreational games for tenant [X]" |
-| Convert-to-credit option absent from Withdraw Funds | Credit conversion gate (`convert_to_credit`) | Lucra | "Enable convert-to-credit withdrawals for tenant [X]" |
 | `autoJoinTournaments` returns `FailedTournamentCall.FeatureDisabled` | Auto-join gate (`auto_join_pool_tournaments_on_launch`); manual join still works | Lucra | "Enable tournament auto-join on launch for tenant [X]" |
 | Tournaments home renders but lists nothing | Tournaments and their payout/reward structures are created per tenant by Lucra | Lucra | "Set up [sandbox test] tournaments and payout structures for tenant [X]" |
 | Push token registration succeeds but Lucra pushes never arrive | Tenant push-notification setup is an out-of-band Lucra process; token inserts succeed regardless | Lucra | "Complete push-notification setup for tenant [X]" → [Push Notifications](../../1.2.3_push_notifications.md) |

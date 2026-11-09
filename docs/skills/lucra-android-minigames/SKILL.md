@@ -59,12 +59,12 @@ You present an SDK flow; it renders and navigates itself. The flow cases:
   router over `MinigameMatchupDetails`; it auto-routes to the minigames-themed screen when the
   matchup is a minigame.
 - `LucraFlow.MinigamesProfile` — the user's Mini Games profile (stats, recent results, balance).
-- `LucraFlow.MinigamesRewards` — achievement rewards grouped by game, with redeem sheet.
+- `LucraFlow.MinigamesRewards` — the My Rewards page (same screen as `LucraFlow.Achievements`).
 
 Present any of them via `LucraClient().getLucraDialogFragment(flow)` (full-screen),
 `getLucraFragment(flow)` (embedded), or `GetLucraFlowComposable(flow)` (Compose) — always tagging
 with `flow.toString()`. Exact signatures + examples: [Mini Games Flows](../../6.3_mini_games_flows.md),
-[Lucra Flows setup](../../1.2.7_lucraflows.md).
+[Lucra Flows setup](../../1.2.6_lucraflows.md).
 
 ### Non-headless checkpoints
 
@@ -81,7 +81,7 @@ You call `LucraClient().*`, get a sealed result, render it yourself.
   `getUserMatchupsByTypeStatus(type, status, limit, offset)`. Tapping a row →
   `LucraFlow.MatchupDetails(matchupId)`. There is **no aggregate-stats payload** (win rate,
   earnings) — derive anything like that client-side from the sections.
-  → [Headless Interactions → User Matchups](../../1.2.9_headless_interactions.md)
+  → [Headless Interactions → User Matchups](../../1.2.8_headless_interactions.md)
 - **Launch a session yourself (own WebView):** `startMiniGame(gameId, gameMode, amount, matchupId,
   onProgress, onResult)` returns a `MiniGameSession` whose `iframeUrl` you load. Pre-warm geo with
   `preloadGeoToken(...)`. → [Mini Games Headless](../../6.1_mini_games_headless.md)
