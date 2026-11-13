@@ -311,20 +311,20 @@ private val allEntries: List<SampleEntry> = listOf(
     ) { flows.showTournamentDetailsDialog { flow -> launchFlow(flow) } },
 
     SampleEntry(
-        id = "api.retrieve_tournament",
-        title = "Retrieve Tournament",
-        description = "Fetch a tournament by ID and print the result.",
+        id = "api.retrieve_tournament_details_light",
+        title = "Retrieve Tournament Details",
+        description = "Fetch a tournament's details and print the full result.",
         category = Tournaments, surface = Api,
-        keywords = listOf(HEADLESS, "fetch"),
-    ) { tournaments.showRetrieveTournamentDialog() },
+        keywords = listOf(HEADLESS, "fetch", "forge"),
+    ) { tournaments.showRetrieveTournamentDetailsDialog() },
 
     SampleEntry(
-        id = "api.retrieve_tournament_details_light",
-        title = "Retrieve Tournament Details (light)",
-        description = "Fetch the lightweight ui_tournament_details payload and print the full result.",
+        id = "api.retrieve_tournament_leaderboard",
+        title = "Retrieve Tournament Leaderboard",
+        description = "Fetch a page of a tournament's leaderboard, plus your own entry when signed in.",
         category = Tournaments, surface = Api,
-        keywords = listOf(HEADLESS, "fetch", "light", "ui_tournament_details"),
-    ) { tournaments.showRetrieveTournamentDetailsDialog() },
+        keywords = listOf(HEADLESS, "fetch", "forge", "rank", "standings"),
+    ) { tournaments.showRetrieveTournamentLeaderboardDialog() },
 
     SampleEntry(
         id = "api.join_tournament",
@@ -378,7 +378,8 @@ private val allEntries: List<SampleEntry> = listOf(
     SampleEntry(
         id = "flow.achievements",
         title = "Achievements",
-        description = "View and claim achievement rewards.",
+        description = "The My Rewards page: featured rewards, rewards by game, see-all and " +
+            "earned grids, and claiming.",
         category = RewardsAchievements, surface = Flow, auth = SdkPrompts,
         keywords = listOf(AUTH, "badges", "claim"),
     ) { launchFlow(LucraFlow.Achievements) },
@@ -395,7 +396,7 @@ private val allEntries: List<SampleEntry> = listOf(
     SampleEntry(
         id = "flow.minigames_rewards",
         title = "Minigames Rewards",
-        description = "The minigames-flavored rewards list with claimable achievement rewards by game.",
+        description = "The arcade entry to the My Rewards page; opens the same screen as Achievements.",
         category = RewardsAchievements, surface = Flow, auth = SdkPrompts,
         keywords = listOf(AUTH, "minigame", "arcade", "claim"),
     ) { launchFlow(LucraFlow.MinigamesRewards) },

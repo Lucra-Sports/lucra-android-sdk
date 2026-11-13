@@ -13,9 +13,9 @@ import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.contest.GameInteractions.SearchMatchupsByMetadataResult
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreMatchingResult
-import com.lucrasports.sdk.core.contest.tournament.TournamentDetails
 import com.lucrasports.sdk.core.contest.tournament.PoolTournament.SubmitTournamentScoreResult
 import com.lucrasports.sdk.core.ui.LucraUiProvider
+import com.lucrasports.tournament.LucraTournamentDetails
 
 /**
  * Manages dialogs related to tournaments.
@@ -334,43 +334,25 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
     }
 
     /**
-     * Shows dialog to retrieve the lightweight tournament details (ui_tournament_details).
+     * Shows dialog to retrieve a tournament's details.
      */
     fun showRetrieveTournamentDetailsDialog() {
-        val scrollView = ScrollView(context)
-        val layout = createVerticalLayout()
-        scrollView.addView(layout)
-
-        val (tournamentIdLayout, tournamentIdInput) =
-            createTextInputLayout("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d", RecallKey.TOURNAMENT_ID)
-        layout.addView(tournamentIdLayout)
-
-        val (limitLayout, limitInput) = createTextInputLayout("Leaderboard Limit (optional)")
-        limitInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        layout.addView(limitLayout)
-
-        val (offsetLayout, offsetInput) = createTextInputLayout("Leaderboard Offset (optional)")
-        offsetInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        layout.addView(offsetLayout)
+        val input = createRecallField("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d", RecallKey.TOURNAMENT_ID)
 
         createDialogBuilder()
             .setTitle("Retrieve Tournament Details")
-            .setView(scrollView)
+            .setView(input)
             .setPositiveButton("Retrieve") { _, _ ->
-                val tournamentId = tournamentIdInput.text.toString()
+                val tournamentId = input.text.toString()
                 if (tournamentId.isBlank()) {
                     Toast.makeText(context, "Tournament ID is required", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                LucraClient().retrieveTournamentDetails(
-                    tournamentId = tournamentId,
-                    leaderboardLimit = limitInput.text.toString().toIntOrNull(),
-                    leaderboardOffset = offsetInput.text.toString().toIntOrNull(),
-                ) { result ->
+                LucraClient().retrieveTournamentDetails(tournamentId = tournamentId) { result ->
                     activity.runOnUiThread {
                         when (result) {
                             is PoolTournament.RetrieveTournamentDetailsResult.TournamentDetailsOutput -> {
-                                displayTournamentDetailsLight(result.details)
+                                displayTournamentDetails(result.details)
                             }
                             is PoolTournament.RetrieveTournamentDetailsResult.Failure -> {
                                 showMessageDialog(
@@ -387,27 +369,48 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
     }
 
     /**
-     * Shows dialog to retrieve tournament details.
+     * Shows dialog to retrieve a page of a tournament's leaderboard.
      */
-    @Suppress("DEPRECATION")
-    fun showRetrieveTournamentDialog() {
-        val input = createRecallField("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d", RecallKey.TOURNAMENT_ID)
-        
+    fun showRetrieveTournamentLeaderboardDialog() {
+        val scrollView = ScrollView(context)
+        val layout = createVerticalLayout()
+        scrollView.addView(layout)
+
+        val (tournamentIdLayout, tournamentIdInput) =
+            createTextInputLayout("Tournament ID", "eb77921c-aad1-4ac3-b64b-916c45c1373d", RecallKey.TOURNAMENT_ID)
+        layout.addView(tournamentIdLayout)
+
+        val (limitLayout, limitInput) = createTextInputLayout("Limit", "10")
+        limitInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        layout.addView(limitLayout)
+
+        val (offsetLayout, offsetInput) = createTextInputLayout("Offset", "0")
+        offsetInput.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        layout.addView(offsetLayout)
+
         createDialogBuilder()
-            .setTitle("Set Tournament Id")
-            .setView(input)
-            .setPositiveButton("OK") { dialog, _ ->
-                val tournamentId = input.text.toString()
-                LucraClient().retrieveTournament(tournamentId) {
+            .setTitle("Retrieve Tournament Leaderboard")
+            .setView(scrollView)
+            .setPositiveButton("Retrieve") { _, _ ->
+                val tournamentId = tournamentIdInput.text.toString()
+                if (tournamentId.isBlank()) {
+                    Toast.makeText(context, "Tournament ID is required", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                LucraClient().retrieveTournamentLeaderboard(
+                    tournamentId = tournamentId,
+                    limit = limitInput.text.toString().toIntOrNull() ?: 10,
+                    offset = offsetInput.text.toString().toIntOrNull() ?: 0,
+                ) { result ->
                     activity.runOnUiThread {
-                        when (it) {
-                            is PoolTournament.RetrieveTournamentResult.RetrieveTournamentOutput -> {
-                                displayTournamentDetails(it)
+                        when (result) {
+                            is PoolTournament.RetrieveTournamentLeaderboardResult.TournamentLeaderboardOutput -> {
+                                displayTournamentLeaderboard(result)
                             }
-                            is PoolTournament.RetrieveTournamentResult.Failure -> {
+                            is PoolTournament.RetrieveTournamentLeaderboardResult.Failure -> {
                                 showMessageDialog(
-                                    "Failed to find tournament",
-                                    it.failure.toString()
+                                    "Failed to find tournament leaderboard",
+                                    result.failure.toString()
                                 )
                             }
                         }
@@ -522,109 +525,54 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
             .show()
     }
 
-    private fun displayTournamentDetails(result: PoolTournament.RetrieveTournamentResult.RetrieveTournamentOutput) {
-        val displayString = buildString {
-            append("Title > ${result.tournament.title}\n")
-            append("Type > ${result.tournament.type}\n")
-            append("Fee > ${result.tournament.fee}\n")
-            append("Buy In Amount > ${result.tournament.buyInAmount}\n")
-            append("Pot Total > ${result.tournament.potTotal}\n\n")
-            append("Pot Net Amount > ${result.tournament.potNetAmount}\n\n")
-            append("Expires at > ${result.tournament.expiresAt}\n\n")
-            append("===Participants===\n")
-
-            result.tournament.participants.forEach { participant ->
-                append("UserId: ${participant.id}\n")
-                append("Username: ${participant.username}\n")
-                append("Place: ${participant.place}\n")
-                append("Reward Value: ${participant.rewardValue}\n\n")
-            }
-        }
-
-        val textView = TextView(context).apply {
-            text = displayString
-            setPadding(50, 50, 50, 50)
-        }
-
-        val scrollView = ScrollView(context).apply {
-            addView(textView)
-        }
-
-        createDialogBuilder()
-            .setTitle("Tournament Results")
-            .setView(scrollView)
-            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-            .show()
-    }
-
-    private fun displayTournamentDetailsLight(details: TournamentDetails) {
+    private fun displayTournamentDetails(details: LucraTournamentDetails) {
         val displayString = buildString {
             append("Id > ${details.id}\n")
             append("Title > ${details.title}\n")
             append("Description > ${details.description}\n")
             append("Image Url > ${details.imageUrl}\n")
-            append("Status > ${details.status}\n")
-            append("Visibility > ${details.visibilityLevel} (private: ${details.isPrivate})\n")
+            append("Display Image Url > ${details.displayImageUrl}\n")
+            append("Status > ${details.status} (${details.matchupStatus})\n")
+            append("Type > ${details.type} (${details.matchupRewardType})\n")
+            append("Visibility > ${details.visibility} (private: ${details.isPrivate})\n")
             append("Completed > ${details.isCompleted}\n")
             append("Not Started > ${details.isNotStarted}\n")
             append("Expired > ${details.isExpired}\n")
+            append("Joinable > ${details.isJoinable}\n")
             append("Free Buy In > ${details.freeBuyIn}\n")
-            append("Buy In Amount > ${details.buyInAmount}\n")
-            append("Participants > ${details.totalParticipants}/${details.maxParticipants}\n")
-            append("Reward Type > ${details.rewardType}\n")
+            append("Buy In > ${details.buyIn} (${details.buyInAmount}), fee ${details.feePercent}%\n")
+            append("Pool Net > ${details.poolNetAmount} (complete ${details.poolNetAmountComplete})\n")
+            append("Participants > ${details.participantsCount}/${details.maxParticipants}\n")
+            append("Max Attempts > ${details.maxAttempts}\n")
+            append("Starts At > ${details.startsAt}\n")
+            append("Expires At > ${details.expiresAt}\n")
+            append("Sign Up > ${details.signUpStart} – ${details.signUpEnd}\n")
             append("Game Id > ${details.gameId}\n")
-            append("Minigame Enabled > ${details.minigameEnabled}\n")
-            details.timer?.let { append("Timer > ${it.caption} (${it.state})\n") }
+            details.game?.let { append("Game > ${it.gameId}, minigame ${it.minigameEnabled}, unit ${it.scoringUnit}\n") }
+            append("Timer > ${details.timer.caption} (${details.timer.state}, target ${details.timer.targetAt})\n")
 
-            if (details.howToPlay.isNotEmpty()) {
+            details.howToPlay?.let { steps ->
                 append("\n===How To Play===\n")
-                details.howToPlay.forEach { append("${it.step}. ${it.text}\n") }
+                steps.forEach { append("${it.step}. ${it.text}\n") }
             }
 
-            details.attemptData?.let { attempt ->
-                append("\n===Attempt Data===\n")
-                append("Can Join > ${attempt.canJoinTournament}\n")
-                append("Replayable > ${attempt.isReplayable}\n")
-                append("User Present > ${attempt.isUserPresent}\n")
-                append("Attempts Remaining > ${attempt.attemptsRemaining}\n")
-                append("Rank Variation > ${attempt.rankVariation}\n")
-                append("Icon Type > ${attempt.iconType}\n")
-                attempt.scores.forEach {
-                    append("Attempt ${it.attempt}: ${it.score}${if (it.isBest) " (best)" else ""}\n")
-                }
+            val payout = details.payoutStructure
+            append("\n===Payout Structure===\n")
+            append("${payout.title} — ${payout.description}\n")
+            append("Jackpot > ${payout.jackpotDescriptor} ${payout.jackpotAmount}\n")
+            append("No Payout > ${payout.noPayout}, Percentage > ${payout.isPercentagePayout}, Show Amount > ${payout.showAmount}\n")
+            payout.rewards.forEach { reward ->
+                append("${reward.positionLabel} > ${reward.rewardLabel} (${reward.amountLabel})")
+                reward.catalogReward?.let { append(" prize: ${it.title} [${it.type}]") }
+                append("\n")
             }
 
-            details.payoutStructure?.let { payout ->
-                append("\n===Payout Structure===\n")
-                append("${payout.title} — ${payout.description}\n")
-                append("Jackpot > ${payout.jackpotDescriptor} ${payout.jackpotAmount}\n")
-                append("No Payout > ${payout.noPayout}, Percentage > ${payout.isPercentagePayout}, Show Amount > ${payout.showAmount}\n")
-                payout.rewards.forEach { reward ->
-                    append("${reward.positionLabel ?: reward.placeLabel} > ${reward.rewardLabel} (${reward.amountLabel})")
-                    reward.catalogReward?.let { append(" prize: ${it.title} [${it.type}]") }
-                    append("\n")
-                }
-            }
+            append("\n===Leaderboard Columns===\n")
+            append("${details.leaderboardColumns.joinToString { it.label }}\n")
 
-            if (details.earnedRewards.isNotEmpty()) {
-                append("\n===Earned Rewards===\n")
-                details.earnedRewards.forEach {
-                    append("Place ${it.place} > ${it.reward?.title} (${it.id})\n")
-                }
-            }
-
-            details.leaderboard?.let { board ->
-                append("\n===Leaderboard===\n")
-                append("Columns > ${board.columns.joinToString { it.label }}\n")
-                append("Pagination > offset ${board.pagination.offset}, limit ${board.pagination.limit}, total ${board.pagination.totalCount}\n")
-                board.rows.forEach { row ->
-                    append("${row.rank ?: "-"}: ${row.name} points=${row.points ?: "-"} payout=${row.payout}\n")
-                }
-            }
-
-            details.userLeaderboardRow?.let { row ->
-                append("\n===Your Row===\n")
-                append("${row.rank ?: "-"}: ${row.name} points=${row.points ?: "-"} payout=${row.payout}\n")
+            if (details.notices.isNotEmpty()) {
+                append("\n===Notices===\n")
+                details.notices.forEach { append("${it.type}: ${it.message} ${it.affectedFields}\n") }
             }
 
             if (details.terms.isNotEmpty()) {
@@ -633,8 +581,34 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
             }
         }
 
+        showScrollingResult("Tournament Details Result", displayString)
+    }
+
+    private fun displayTournamentLeaderboard(
+        result: PoolTournament.RetrieveTournamentLeaderboardResult.TournamentLeaderboardOutput,
+    ) {
+        val displayString = buildString {
+            val leaderboard = result.leaderboard
+            append("Total > ${leaderboard.totalCount}\n\n")
+            leaderboard.entries.forEach { row ->
+                append("${row.rank ?: "-"}: ${row.name} points=${row.points ?: "-"} payout=${row.payout ?: "-"}")
+                if (row.isCurrentUser) append(" (you)")
+                append("\n")
+            }
+            append("\n===Your Entry===\n")
+            leaderboard.currentUserEntry?.let { entry ->
+                append("Position > ${entry.positionOverride ?: entry.position}\n")
+                append("Score > ${entry.score}\n")
+                append("Last Updated > ${entry.lastUpdatedAt}\n")
+            } ?: append("None\n")
+        }
+
+        showScrollingResult("Tournament Leaderboard Result", displayString)
+    }
+
+    private fun showScrollingResult(title: String, text: String) {
         val textView = TextView(context).apply {
-            text = displayString
+            this.text = text
             setPadding(50, 50, 50, 50)
         }
 
@@ -643,7 +617,7 @@ internal class TournamentDialogs(private val activity: Activity) : DialogManager
         }
 
         createDialogBuilder()
-            .setTitle("Tournament Details Result")
+            .setTitle(title)
             .setView(scrollView)
             .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
             .show()

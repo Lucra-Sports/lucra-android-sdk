@@ -73,9 +73,6 @@ import com.lucrasports.sdk.app.ui.theming.SampleColorStore
 import com.lucrasports.sdk.app.ui.theming.ThemeManager
 import com.lucrasports.sdk.core.LucraClient
 import com.lucrasports.sdk.core.LucraClient.Companion.Environment
-import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
-import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
-import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
 import com.lucrasports.sdk.core.events.LucraEvent
 import com.lucrasports.sdk.core.events.LucraEventListener
 import com.lucrasports.sdk.core.reward.LucraReward
@@ -96,7 +93,6 @@ import io.branch.indexing.BranchUniversalObject
 import io.branch.referral.Branch
 import io.branch.referral.util.ContentMetadata
 import io.branch.referral.util.LinkProperties
-import java.util.UUID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -170,6 +166,16 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
         get() = preferences.getString(API_KEY_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
         set(value) {
             preferences.edit { putString(API_KEY_OVERRIDE, value) }
+        }
+
+    private val debugOverridePreferences by lazy {
+        getSharedPreferences(LUCRA_DEBUG_OVERRIDES_PREFS, MODE_PRIVATE)
+    }
+
+    private var walletWebAppUrlOverride: String?
+        get() = debugOverridePreferences.getString(WALLET_WEB_APP_URL_OVERRIDE, null).takeIf { !it.isNullOrBlank() }
+        set(value) {
+            debugOverridePreferences.edit { putString(WALLET_WEB_APP_URL_OVERRIDE, value) }
         }
 
     private var autoJoinEnabled: Boolean
@@ -388,31 +394,6 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
                 .setLocationId("f2708938-2517-46fb-a639-229f4d2ca6c7") // locationId for navy_pier
         }
 
-        LucraClient().setConvertToCreditProvider(object : LucraConvertToCreditProvider {
-            override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod {
-                val convertedAmount = cashAmount + 10.0
-                delay(2000L)
-                return LucraConvertToCreditWithdrawMethod(
-                    id = UUID.randomUUID().toString(),
-                    conversionTerms = "No Fee  |  Instant transfer",
-                    title = "Gift card",
-                    amount = cashAmount,
-                    convertedAmount = cashAmount + 10.0,
-                    convertedAmountDisplay = "$convertedAmount credits",
-                    shortDescription = "This is a short description",
-                    longDescription = "This is a long description. This is a long description. This is a long description",
-                    metaData = mapOf("testingKey" to "testingValue"),
-                    theme = LucraWithdrawCardTheme(
-                        cardColor = "#5A1668",
-                        cardTextColor = "#FFFFFF",
-                        pillColor = "#5A1668",
-                        pillTextColor = "#FFFFFF",
-                    )
-                )
-            }
-        })
-
-
         LucraClient().setDeeplinkTransformer { url ->
             val link = try {
                 val branchLinkProperties = LinkProperties()
@@ -587,6 +568,15 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
                 onClick = ::overrideApiUrlAndKey,
             )
         )
+        if (BuildConfig.BUILD_TYPE != "release") {
+            add(
+                SettingsRow.Action(
+                    title = "Wallet web app URL",
+                    value = if (walletWebAppUrlOverride != null) "override" else "from backend",
+                    onClick = ::overrideWalletWebAppUrl,
+                )
+            )
+        }
         add(
             SettingsRow.Action(
                 title = "Theme mode",
@@ -638,13 +628,6 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
             }
         )
         add(
-            SettingsRow.Action(title = "Convert to credit") {
-                configDialogs.showConvertToCreditDialog { provider ->
-                    LucraClient().setConvertToCreditProvider(provider)
-                }
-            }
-        )
-        add(
             SettingsRow.Action(
                 title = "League filter",
                 value = LucraClient().getPublicFeedLeagueIdFilter()
@@ -692,6 +675,12 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
 
         add(SettingsRow.Group("Build"))
         add(SettingsRow.Info("Version", "${BuildConfig.VERSION_NAME} ${BuildConfig.BUILD_TYPE}"))
+        if (BuildConfig.GIT_BRANCH.isNotEmpty()) {
+            add(SettingsRow.Info("Branch", BuildConfig.GIT_BRANCH))
+        }
+        if (BuildConfig.GIT_COMMIT.isNotEmpty()) {
+            add(SettingsRow.Info("Commit", BuildConfig.GIT_COMMIT))
+        }
     }
 
     private fun showRememberedIds() {
@@ -704,6 +693,13 @@ internal class MainActivitySdk : AppCompatActivity(), ColorPickerDialogListener,
                 dialog.dismiss()
             }
             .show()
+    }
+
+    private fun overrideWalletWebAppUrl() {
+        configDialogs.showWalletWebAppUrlDialog(
+            currentUrl = walletWebAppUrlOverride,
+            onSave = { newUrl -> walletWebAppUrlOverride = newUrl }
+        )
     }
 
     private fun overrideApiUrlAndKey() {

@@ -2,14 +2,10 @@ package com.lucrasports.sdk.app.ui.dialogs
 
 import android.app.Activity
 import android.content.DialogInterface
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+import android.text.InputType
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.Spinner
-import androidx.appcompat.widget.SwitchCompat
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -17,14 +13,7 @@ import com.lucrasports.sdk.app.BuildConfig
 import com.lucrasports.sdk.app.R
 import com.lucrasports.sdk.app.ui.theming.SampleColorStore
 import com.lucrasports.sdk.app.ui.theming.ThemeManager
-import com.lucrasports.sdk.core.LucraClient
-import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditProvider
-import com.lucrasports.sdk.core.convert_credit.LucraConvertToCreditWithdrawMethod
-import com.lucrasports.sdk.core.convert_credit.LucraWithdrawCardTheme
 import com.lucrasports.sdk.core.reward.LucraReward
-import kotlinx.coroutines.delay
-import org.json.JSONObject
-import java.util.UUID
 
 /**
  * Manages configuration-related dialogs.
@@ -89,6 +78,35 @@ internal class ConfigDialogs(private val activity: Activity) : DialogManager(act
             }
         }
         configureApiDialog.show()
+    }
+
+    fun showWalletWebAppUrlDialog(
+        currentUrl: String?,
+        onSave: (String?) -> Unit
+    ) {
+        val layout = layoutInflater.inflate(R.layout.main_option_setting_edit_text, null)
+        val textInputLayout = layout.findViewById<TextInputLayout>(R.id.option_setting_edit_text_layout)
+        textInputLayout.hint = "Wallet web app URL"
+        val editText = layout.findViewById<EditText>(R.id.option_setting_edit_text)
+        editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        editText.setText(currentUrl.orEmpty())
+        layout.findViewById<android.widget.TextView>(R.id.option_setting_edit_text_supporting_text).text =
+            "Non-release builds only, and only while the release_wallet_web_app gate is on: " +
+                "the wallet flows load this URL instead of asking the backend for one."
+
+        createDialogBuilder()
+            .setTitle("Wallet Web App URL Override")
+            .setView(layout)
+            .setNeutralButton("Clear") { dialog, _ ->
+                onSave(null)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Close", null)
+            .setPositiveButton("Save") { dialog, _ ->
+                onSave(editText.text.toString().trim().takeIf { it.isNotEmpty() })
+                dialog.dismiss()
+            }
+            .show()
     }
 
     /**
@@ -249,105 +267,6 @@ internal class ConfigDialogs(private val activity: Activity) : DialogManager(act
                     )
                 ) + currentRewards
                 onUpdate(rewardEnabledSwitch.isChecked, updatedRewards)
-            }
-            .show()
-    }
-
-    /**
-     * Shows dialog for configuring convert-to-credit provider.
-     */
-    fun showConvertToCreditDialog(onUpdate: (LucraConvertToCreditProvider?) -> Unit) {
-        val convertToCredit = layoutInflater.inflate(R.layout.main_option_convert_to_credit, null)
-
-        val onOffSwitch = convertToCredit.findViewById<SwitchCompat>(R.id.csc_enabled)
-        onOffSwitch.isChecked = LucraClient().isConvertToCreditAvailable()
-
-        val idEditText = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_id)
-        idEditText.setText(UUID.randomUUID().toString())
-        val convertedAmountEditText = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_converted_amount)
-        convertedAmountEditText.setText("10.00")
-        val convertedAmountDisplayEditText = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_converted_amount_display)
-        convertedAmountDisplayEditText.setText("$10.00 Credits")
-        val iconUrl = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_icon_url)
-        iconUrl.setText("https://lucrasports.com/images/homepage/lucra-l.svg")
-        val metaData = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_meta_data)
-        val longDescription = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_long_description)
-        longDescription.setText("This is a really really really really really really long description")
-        val shortDescription = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_short_description)
-        shortDescription.setText("Short description")
-        val title = convertToCredit.findViewById<TextInputEditText>(R.id.et_c2c_title)
-        title.setText("Awesome Credits")
-
-        val spinner: Spinner = convertToCredit.findViewById(R.id.meta_spinner)
-        val items = arrayOf(
-            "{\"showError\":\"blank\"}",
-            "{\"showError\":\"extraShort\"}",
-            "{\"showError\":\"short\"}",
-            "{\"showError\":\"medium\"}",
-            "{\"showError\":\"long\"}",
-            "{\"showError\":\"extraLong\"}",
-            "{\"showError\":\"superLong\"}",
-            "{\"showSuccess\":\"blank\"}",
-            "{\"showSuccess\":\"extraShort\"}",
-            "{\"showSuccess\":\"short\"}",
-            "{\"showSuccess\":\"medium\"}",
-            "{\"showSuccess\":\"long\"}",
-            "{\"showSuccess\":\"extraLong\"}",
-            "{\"showSuccess\":\"superLong\"}"
-        )
-        val adapter = ArrayAdapter(activity, R.layout.meta_dropdown_list_item, items)
-        spinner.adapter = adapter
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                metaData.setText(items[position])
-            }
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        createDialogBuilder()
-            .setTitle("Convert to Credit Options")
-            .setView(convertToCredit)
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Apply") { dialog, _ ->
-                if (onOffSwitch.isChecked) {
-                    val metaMap = try {
-                        val jsonObject = JSONObject(metaData.text.toString())
-                        mutableMapOf<String, Any>().apply {
-                            for (key in jsonObject.keys()) {
-                                this[key] = jsonObject.get(key)
-                            }
-                        }.mapValues { it.value.toString() }
-                    } catch (e: Exception) {
-                        null
-                    }
-
-                    onUpdate(object : LucraConvertToCreditProvider {
-                        override suspend fun getCreditAmount(cashAmount: Double): LucraConvertToCreditWithdrawMethod? {
-                            delay(2000L)
-                            return LucraConvertToCreditWithdrawMethod(
-                                id = idEditText.text.toString(),
-                                conversionTerms = "No Fee  |  Instant transfer",
-                                title = title.text.toString(),
-                                amount = cashAmount,
-                                convertedAmount = convertedAmountEditText.text.toString().toDouble(),
-                                convertedAmountDisplay = convertedAmountDisplayEditText.text.toString(),
-                                shortDescription = shortDescription.text.toString(),
-                                longDescription = longDescription.text.toString(),
-                                iconUrl = if (iconUrl.text.isNullOrBlank()) null else iconUrl.text.toString(),
-                                metaData = metaMap,
-                                theme = LucraWithdrawCardTheme(
-                                    cardColor = "#5A1668",
-                                    cardTextColor = "#FFFFFF",
-                                    pillColor = "#5A1668",
-                                    pillTextColor = "#FFFFFF",
-                                )
-                            )
-                        }
-                    })
-                } else {
-                    onUpdate(null)
-                }
-                dialog.dismiss()
             }
             .show()
     }

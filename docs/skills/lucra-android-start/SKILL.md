@@ -25,9 +25,9 @@ integration code until the goal maps to one of these:
 |---|---|
 | First-time setup / build failing | this skill: "Install", then "Troubleshoot" |
 | Show Mini Games, or fetch Mini Games data | skill `lucra-android-minigames` |
-| A user's recent matchups on a custom screen | [Headless Interactions → User Matchups](../../1.2.9_headless_interactions.md) |
+| A user's recent matchups on a custom screen | [Headless Interactions → User Matchups](../../1.2.8_headless_interactions.md) |
 | Tournaments UI (tournaments home) | `LucraFlow.HomePage(locationId:)` — see [Tournaments Flows](../../3.1_tournaments_flows.md) |
-| Auth / user linking / demographics | [Init](../../1.2.0_initialize_client.md), [Headless Interactions](../../1.2.9_headless_interactions.md) |
+| Auth / user linking / demographics | [Init](../../1.2.0_initialize_client.md), [Headless Interactions](../../1.2.8_headless_interactions.md) |
 
 ## Install (do this first, always)
 
@@ -94,7 +94,7 @@ If any box fails, go to Troubleshoot before writing more code.
 | SDK images/SVGs render blank | `Application` doesn't provide `LucraCoilImageLoader` via `ImageLoaderFactory` | [Project Setup](../../1.0.0_project_setup.md) |
 | Headless call fails immediately / `NotInitialized` | Called before init finished — gate with `waitForLucraClient`; also requires a signed-in user for user-scoped calls | [Init → asynchronously](../../1.2.0_initialize_client.md) |
 | Auth/unauthorized-style failures | Key/environment mismatch (e.g. sandbox key with `Environment.PRODUCTION`) | [Init](../../1.2.0_initialize_client.md) |
-| `observeSDKUserFlow()` never emits `Success` | Are you collecting the Flow (not reading once)? Did the `Login` flow actually complete? Network reachable? | [Headless Interactions](../../1.2.9_headless_interactions.md) |
+| `observeSDKUserFlow()` never emits `Success` | Are you collecting the Flow (not reading once)? Did the `Login` flow actually complete? Network reachable? | [Headless Interactions](../../1.2.8_headless_interactions.md) |
 | A Mini Games / Tournaments flow shows nothing or reports unavailable | The feature must be enabled for your tenant on the backend | skill `lucra-android-provisioning` |
 
 This table covers **setup-time** failures. Once initialization has succeeded: runtime `Failure`
