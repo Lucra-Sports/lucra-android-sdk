@@ -4,6 +4,21 @@ plugins {
 }
 val mavenVersion = project.findProperty("publishVersion") as String
 
+// Mirrors app-sdk-development in the internal repo: the synced sample app code reads
+// BuildConfig.GIT_BRANCH / GIT_COMMIT to show build info in its settings screen.
+// Falls back to "" (the row is hidden) when git isn't available.
+fun gitOutput(vararg args: String): String = try {
+    val process = ProcessBuilder(listOf("git") + args)
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText().trim()
+    if (process.waitFor() == 0) output else ""
+} catch (e: Exception) {
+    project.logger.warn("Could not read git metadata: ${e.message}")
+    ""
+}
+
 android {
     namespace = "com.lucrasports.sdk.app"
     compileSdk = 35
@@ -18,6 +33,9 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = mavenVersion
+
+        buildConfigField("String", "GIT_BRANCH", "\"${gitOutput("rev-parse", "--abbrev-ref", "HEAD")}\"")
+        buildConfigField("String", "GIT_COMMIT", "\"${gitOutput("rev-parse", "--short", "HEAD")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // These are required for auth0 to run even though it won't use the web auth callback flow
