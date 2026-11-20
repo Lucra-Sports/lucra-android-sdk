@@ -146,14 +146,6 @@ private val allEntries: List<SampleEntry> = listOf(
     ) { launchFlow(LucraFlow.WithdrawFunds) },
 
     SampleEntry(
-        id = "flow.minigames_profile",
-        title = "Minigames Profile",
-        description = "The minigames-flavored profile with stats and competition results.",
-        category = ProfileWallet, surface = Flow, auth = SdkPrompts,
-        keywords = listOf(AUTH, "minigame", "arcade", "stats"),
-    ) { launchFlow(LucraFlow.MinigamesProfile) },
-
-    SampleEntry(
         id = "flow.home_page",
         title = "Home Page",
         description = "The primary starting point for Tournaments and Games.",
