@@ -41,7 +41,7 @@ away — do not "fix" the warnings by avoiding the APIs.
 | Product term | Maps to |
 |---|---|
 | "Battle Mode" / 1v1 | `LucraMiniGameMode.OneVsOne` (there is no "Battle" case in the mode enum) |
-| "Minigames Profile" | `LucraFlow.MinigamesProfile` |
+| "Minigames Profile" / "My Profile" | `LucraFlow.Profile` (`MinigamesProfile` was removed; there is one profile) |
 | "Completed" matchup | `ProfileMatchupStatus.RESULTS` (there is **no** `COMPLETED` case) |
 | "In progress" matchup | `ProfileMatchupStatus.IN_PROGRESS` |
 | "The games list / catalog" | `LucraClient().getMiniGames { ... }` → `List<MiniGameCatalogItem>` |
@@ -58,7 +58,7 @@ You present an SDK flow; it renders and navigates itself. The flow cases:
 - `LucraFlow.MatchupDetails(matchupId)` — a matchup's result/pending state. Prefer this generic
   router over `MinigameMatchupDetails`; it auto-routes to the minigames-themed screen when the
   matchup is a minigame.
-- `LucraFlow.MinigamesProfile` — the user's Mini Games profile (stats, recent results, balance).
+- `LucraFlow.Profile` — My Profile, the SDK's only profile (stats, recent results, balance).
 - `LucraFlow.MinigamesRewards` — the My Rewards page (same screen as `LucraFlow.Achievements`).
 
 Present any of them via `LucraClient().getLucraDialogFragment(flow)` (full-screen),
